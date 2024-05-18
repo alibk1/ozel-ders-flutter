@@ -1,3 +1,4 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -59,5 +60,32 @@ class CoursesPage extends StatelessWidget {
         child: Text('Welcome to Courses Page'),
       ),
     );
+  }
+}
+*/
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:ozel_ders/App.dart'; // App.dart dosyanızdaki App widget'ını ekleyin
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: "AIzaSyAoEBxQyBErpVzHH8-jhyrSgRU5OLTnBrE",
+      authDomain: "ortakozelders.firebaseapp.com",
+      projectId: "ortakozelders",
+      storageBucket: "ortakozelders.appspot.com",
+      messagingSenderId: "619520758342",
+      appId: "1:619520758342:web:12c44b2582dbdcb9b67047",
+      measurementId: "G-MZLW5M94M2",
+    ),
+  );
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return App();
   }
 }
