@@ -6,41 +6,75 @@ import 'dart:html' as html;
 import 'package:url_launcher/url_launcher.dart';
 
 class BBBService {
-  final String bbbUrl = 'https://test-install.blindsidenetworks.com/bigbluebutton/api/';
-  final String secret = '8cd8ef52e8e101574e400365b55e11a6';
+  final String bbbUrl = 'http://165.232.45.70/bigbluebutton/api';
+  final String secret = 'iKqpjGWkYzXx0K14th3PRwEndrJADZHiCQHtu6vY';
   final String proxyUrl = 'http://localhost:3000/proxy?url=';
 
-  String generateChecksum(String query) {
+  /*String generateChecksum(String query) {
     var bytes = utf8.encode(query + secret);
     return sha1.convert(bytes).toString();
 
+  }*/
+  String generateChecksum(String apiCall, Map<String, String> params, String secret) {
+    var paramsString = Uri(queryParameters: params).query;
+    var stringToHash = apiCall + paramsString + secret;
+    var bytes = utf8.encode(stringToHash);
+    var digest = sha1.convert(bytes);
+    return digest.toString();
   }
 
+
   Future<void> createMeeting(String meetingID, String meetingName) async {
+    const apiCall = 'create';
+    final params = {
+      'name': meetingName,
+      'meetingID': meetingID,
+      'attendeePW': 'ap',
+      'moderatorPW': 'mp',
+      'welcome': 'Welcome to the meeting!',
+      'dialNumber': '',
+      'voiceBridge': '71234',
+      'webVoice': '',
+      'logoutURL': 'https://your-logout-url.com',
+      'record': 'true',
+      'duration': '60',
+      'meta_course': 'Math 101',
+    };
     print("GİRDİM BABBA");
     String query = 'create?meetingID=$meetingID&name=$meetingName';
-    String checksum = generateChecksum(query);
-    String url = '$bbbUrl/$query&checksum=$checksum';
-    url = "https://test-install.blindsidenetworks.com/bigbluebutton/api/create?allowStartStopRecording=true&attendeePW=ap&autoStartRecording=false&meetingID=random-3587986&moderatorPW=mp&name=random-3587986&record=false&voiceBridge=71493&welcome=%3Cbr%3EWelcome+to+%3Cb%3E%25%25CONFNAME%25%25%3C%2Fb%3E%21&checksum=42941ec4ed0fb44bdc3b6ee80bcbe4059470432e";
+    //String checksum = generateChecksum(query);
+    //String url = '$bbbUrl/$query&checksum=$checksum';
 
-    var response = await http.get(Uri.parse(proxyUrl + Uri.encodeComponent(url)));
+    var checksum = generateChecksum(apiCall, params, secret);
+    var url = Uri.parse('$bbbUrl/$apiCall?${Uri(queryParameters: params).query}&checksum=$checksum');
+    //url = "https://test-install.blindsidenetworks.com/bigbluebutton/api/create?allowStartStopRecording=true&attendeePW=ap&autoStartRecording=false&meetingID=random-3587986&moderatorPW=mp&name=random-3587986&record=false&voiceBridge=71493&welcome=%3Cbr%3EWelcome+to+%3Cb%3E%25%25CONFNAME%25%25%3C%2Fb%3E%21&checksum=42941ec4ed0fb44bdc3b6ee80bcbe4059470432e";
+
+    //var response = await http.get(Uri.parse(proxyUrl + Uri.encodeComponent(url)));
+    //var response = await http.get(url);
+    html.window.open(url.toString(), 'hey');
+
+
     print("GİRDİM BABBA 2");
 
-    if (response.statusCode == 200) {
-      print('Meeting created successfully');
-      print(response.body);
-    } else {
-      print('Failed to create meeting');
-      print(response.body);
 
-    }
   }
 
   String generateJoinUrl(String meetingID, String userName, String userID, bool isModerator) {
+    const apiCall = 'join';
+    final params = {
+      'meetingID': '1234',
+      'fullName': 'John Doe',
+      'password': 'mp',  // Kullanıcı parolası, moderatör veya katılımcı
+      'redirect': 'true',
+    };
+    var checksum = generateChecksum(apiCall, params, secret);
+    var url = Uri.parse('$bbbUrl/$apiCall?${Uri(queryParameters: params).query}&checksum=$checksum');
+
     String role = isModerator ? 'moderator' : 'attendee';
     String query = 'join?meetingID=$meetingID&fullName=$userName&userID=$userID&password=$role';
-    String checksum = generateChecksum(query);
-    return '$bbbUrl/$query&checksum=$checksum';
+    //&&//String checksum = generateChecksum(query);
+    //return '$bbbUrl/$query&checksum=$checksum';
+    return url.toString();
   }
 
 
