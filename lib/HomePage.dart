@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/Components/ContactForm.dart';
 import 'package:ozel_ders/Components/Footer.dart';
+import 'package:ozel_ders/services/BBB.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -16,6 +17,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     // TODO: implement initState
+    BBBService().createMeeting("Bugranın ANNESİNİN AMCUĞU", "abk");
     super.initState();
   }
   @override

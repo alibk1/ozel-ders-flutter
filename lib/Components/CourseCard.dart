@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:ozel_ders/CoursePage.dart';
 
 class CourseCard extends StatefulWidget {
   final Map<String, dynamic> course;
-  final String authorName;
+  final Map<String, dynamic> author;
 
   CourseCard({
     required this.course,
-    required this.authorName,
+    required this.author,
   });
 
   @override
@@ -52,16 +53,27 @@ class _CourseCardState extends State<CourseCard> {
             ),
           ),
           SizedBox(height: 4),
-          Text(
-            widget.course['name'],
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 25,
-              color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+          TextButton(
+            child: Text(
+              widget.course['name'],
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 25,
+                color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+              ),
             ),
+            onPressed: ()
+            {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>CoursePage(course: widget.course, teacher: widget.author),
+                ),
+              );
+            },
           ),
           Text(
-            widget.authorName,
+            widget.author["name"],
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,

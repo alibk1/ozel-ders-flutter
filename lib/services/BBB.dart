@@ -16,13 +16,17 @@ class BBBService {
   }
 
   Future<void> createMeeting(String meetingID, String meetingName) async {
+    print("GİRDİM BABBA");
     String query = 'create?meetingID=$meetingID&name=$meetingName';
     String checksum = generateChecksum(query);
     String url = '$bbbUrl/$query&checksum=$checksum';
 
     var response = await http.get(Uri.parse(proxyUrl + Uri.encodeComponent(url)));
+    print("GİRDİM BABBA 2");
+
     if (response.statusCode == 200) {
       print('Meeting created successfully');
+      print(response.body);
     } else {
       print('Failed to create meeting');
     }
@@ -35,14 +39,10 @@ class BBBService {
     return '$bbbUrl/$query&checksum=$checksum';
   }
 
-  String meetingID = '1234';
-  String meetingName = 'Test_Meeting';
-  String userName = 'John Doe';
-  String userID = 'user123';
-  bool isModerator = true;
 
-  void joinMeeting() async {
-    await createMeeting(meetingID, meetingName);
+
+  void joinMeeting(String meetingID, String meetingName, String userName, String userID, bool isModerator) async {
+
     print("meetijg created");
     String joinUrl = generateJoinUrl(meetingID, userName, userID, isModerator);
     print(joinUrl);

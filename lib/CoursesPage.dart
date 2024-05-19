@@ -23,9 +23,17 @@ class _CoursesPageState extends State<CoursesPage> {
   bool isLoading = true;
   bool isLoggedIn = false;
 
+  String? selectedCategory;
+  String? selectedSubCategory;
+  String sortBy = 'none';
+  double minPrice = 0;
+  double maxPrice = 1000;
+
   @override
   void initState() {
     super.initState();
+    selectedCategory = widget.category.isEmpty ? 'Seçilmedi' : widget.category;
+    selectedSubCategory = widget.subCategory.isEmpty ? 'Seçilmedi' : widget.subCategory;
     loadInitialData();
   }
 
@@ -37,25 +45,197 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 
   void filterCourses() {
-    if (widget.category.isEmpty && widget.subCategory.isEmpty) {
-      // Tüm kursları göster
-      setState(() {
-        isLoading = false;
-      });
-    } else {
-      // Kategorilere göre filtreleme yap
-      List<Map<String, dynamic>> filteredCourses = [];
-      for (var course in courses) {
-        if ((course['category'] == widget.category || widget.category.isEmpty) &&
-            (course['subCategory'] == widget.subCategory || widget.subCategory.isEmpty)) {
-          filteredCourses.add(course);
-        }
+    setState(() {
+      print(selectedCategory);
+      List<Map<String, dynamic>> filteredCourses = courses.where((course) {
+        return (selectedCategory == 'Seçilmedi' || course['category'] == selectedCategory) &&
+            (selectedSubCategory == 'Seçilmedi' || course['subCategory'] == selectedSubCategory) &&
+            (course['hourlyPrice'] >= minPrice && course['hourlyPrice'] <= maxPrice);
+      }).toList();
+
+      if (sortBy == 'price_asc') {
+        filteredCourses.sort((a, b) => a['hourlyPrice'].compareTo(b['hourlyPrice']));
+      } else if (sortBy == 'price_desc') {
+        filteredCourses.sort((a, b) => b['hourlyPrice'].compareTo(a['hourlyPrice']));
       }
-      setState(() {
-        courses = filteredCourses;
-        isLoading = false;
-      });
-    }
+
+      courses = filteredCourses;
+      isLoading = false;
+    });
+  }
+
+  void _showFilterModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            // DropDown listelerinde hata oluşmaması için kontrol ekliyoruz
+            final validCategories = categories.map((category) => category['UID']).toList();
+            validCategories.add('Seçilmedi');
+            if (selectedCategory != null && !validCategories.contains(selectedCategory)) {
+              selectedCategory = 'Seçilmedi';
+            }
+
+            final validSubCategories = selectedCategory != 'Seçilmedi'
+                ? categories
+                .firstWhere((category) => category['UID'] == selectedCategory)['subCategories']
+                .map((subCategory) => subCategory['UID'])
+                .toList()
+                : [];
+            validSubCategories.add('Seçilmedi');
+            if (selectedSubCategory != null && !validSubCategories.contains(selectedSubCategory)) {
+              selectedSubCategory = 'Seçilmedi';
+            }
+
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              height: 400,
+              child: Column(
+                children: [
+                  Text(
+                    'Filtreleme',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+                  DropdownButton<String>(
+                    value: selectedCategory,
+                    hint: Text('Kategori Seç'),
+                    onChanged: (String? newValue) {
+                      setModalState(() {
+                        selectedCategory = newValue!;
+                        selectedSubCategory = 'Seçilmedi'; // Alt kategoriyi sıfırla
+                      });
+                      setState(() {}); // Add this to update the UI
+                    },
+                    items: [
+                      DropdownMenuItem<String>(
+                        value: 'Seçilmedi',
+                        child: Text('Seçilmedi'),
+                      ),
+                      ...categories.map<DropdownMenuItem<String>>((category) {
+                        return DropdownMenuItem<String>(
+                          value: category['uid'],
+                          child: Text(category['name']),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                  if (selectedCategory != 'Seçilmedi')
+                    DropdownButton<String>(
+                      value: selectedSubCategory,
+                      hint: Text('Alt Kategori Seç'),
+                      onChanged: (String? newValue) {
+                        setModalState(() {
+                          selectedSubCategory = newValue!;
+                        });
+                        setState(() {}); // Add this to update the UI
+                      },
+                      items: [
+                        DropdownMenuItem<String>(
+                          value: 'Seçilmedi',
+                          child: Text('Seçilmedi'),
+                        ),
+                        ...categories
+                            .firstWhere((category) => category['uid'] == selectedCategory)['subCategories']
+                            .map<DropdownMenuItem<String>>((subCategory) {
+                          return DropdownMenuItem<String>(
+                            value: subCategory['uid'],
+                            child: Text(subCategory['name']),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Fiyat Aralığı',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  RangeSlider(
+                    values: RangeValues(minPrice, maxPrice),
+                    min: 0,
+                    max: 1000,
+                    divisions: 20,
+                    labels: RangeLabels(
+                      '${minPrice.round()} TL',
+                      '${maxPrice.round()} TL',
+                    ),
+                    onChanged: (RangeValues values) {
+                      setModalState(() {
+                        minPrice = values.start;
+                        maxPrice = values.end;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      filterCourses();
+                      Navigator.pop(context);
+                    },
+                    child: Text('Uygula'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showSortModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              height: 200,
+              child: Column(
+                children: [
+                  Text(
+                    'Sıralama',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+                  RadioListTile<String>(
+                    title: Text('Fiyata Göre Artan'),
+                    value: 'price_asc',
+                    groupValue: sortBy,
+                    onChanged: (String? value) {
+                      setModalState(() {
+                        sortBy = value!;
+                      });
+                      setState(() {}); // Add this to update the UI
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text('Fiyata Göre Azalan'),
+                    value: 'price_desc',
+                    groupValue: sortBy,
+                    onChanged: (String? value) {
+                      setModalState(() {
+                        sortBy = value!;
+                      });
+                      setState(() {}); // Add this to update the UI
+                    },
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      filterCourses();
+                      Navigator.pop(context);
+                    },
+                    child: Text('Uygula'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -147,13 +327,13 @@ class _CoursesPageState extends State<CoursesPage> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: Filtreleme butonu tıklama işlemi
+                    _showFilterModal(context);
                   },
                   child: Text('Filtreleme'),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: Sıralama butonu tıklama işlemi
+                    _showSortModal(context);
                   },
                   child: Text('Sıralama'),
                 ),
@@ -163,7 +343,7 @@ class _CoursesPageState extends State<CoursesPage> {
           Expanded(
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: MediaQuery.of(context).size.width >= 600 ? 3 : 1,
+                crossAxisCount: MediaQuery.of(context).size.width >= 600 ? 4 : 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 childAspectRatio: 0.75,
@@ -173,7 +353,7 @@ class _CoursesPageState extends State<CoursesPage> {
                 final course = courses[index];
                 return CourseCard(
                   course: course,
-                  authorName: teachers.firstWhere((element) => element["UID"] == course["author"])["name"],
+                  author: teachers.firstWhere((element) => element["UID"] == course["author"]),
                 );
               },
             ),
