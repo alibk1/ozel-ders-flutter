@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_button/sign_button.dart';
 
 import 'HomePage.dart';
 
@@ -14,6 +16,39 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController(); // Yeni TextField için controller
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // eklenmeli
+
+  );
+
+  Future<void> _loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // Kullanıcı Google Sign-In penceresini kapattı
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      // Giriş başarılı, ana sayfaya yönlendir
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } on FirebaseAuthException catch (e) {
+      // Hata mesajını göster
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Google ile giriş hatası')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +90,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             },
             child: Text(_isLogin ? 'Hala kayıt olmadın mı? Kayıt Ol' : 'Zaten hesabın var mı? Giriş Yap'),
           ),
+          const SizedBox(height: 10),
+         // _buildGoogleSignInButton(),
         ],
       ),
     );
@@ -89,6 +126,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
               },
               child: Text(_isLogin ? 'Hala kayıt olmadın mı? Kayıt Ol' : 'Zaten hesabın var mı? Giriş Yap'),
             ),
+            const SizedBox(height: 10),
+            //_buildGoogleSignInButton(),
           ],
         ),
       ),
@@ -149,6 +188,26 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         child: const Text('Kayıt Ol'),
       ),
     ];
+  }
+
+  Widget _buildGoogleSignInButton() {
+    return ElevatedButton.icon(
+      onPressed: _loginWithGoogle,
+      icon: Image.network(
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
+        height: 24.0,
+        width: 24.0,
+      ),
+      label: Text('Google ile Giriş Yap'),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black, backgroundColor: Colors.white,
+        minimumSize: Size(double.infinity, 50), // Set the button to fill the width
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        side: BorderSide(color: Colors.grey),
+      ),
+    );
   }
 
   Future<void> _login() async {
