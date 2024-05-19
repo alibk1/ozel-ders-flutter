@@ -218,7 +218,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Login başarılı, ana sayfaya yönlendir
-      context.go("/");
+      context.go("/profile");
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
@@ -234,7 +234,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Kayıt başarılı, giriş ekranına yönlendir
-      context.go("/");
+      context.go("/profile");
 
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster

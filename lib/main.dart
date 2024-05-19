@@ -38,6 +38,10 @@ class MyApp extends StatelessWidget {
         path: '/login',
         builder: (context, state) => LoginSignupPage(),
       ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => ProfilePage(),
+      ),
     ],
   );
 
