@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:ozel_ders/Components/Footer.dart';
+import 'package:ozel_ders/FirebaseController.dart';
+import 'Components/Drawer.dart';
 import 'HomePage.dart';
 
 class LoginSignupPage extends StatefulWidget {
@@ -11,19 +14,22 @@ class LoginSignupPage extends StatefulWidget {
 }
 
 class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProviderStateMixin {
-  bool _isLogin = true; // Giriş sayfasında mı yoksa kayıt sayfasında mı olduğumuzu belirler
+  bool _isLogin = true;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController(); // Yeni TextField için controller
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com', // eklenmeli
+    clientId: '619520758342-mc02si573tea3f48n429fmbkngnpd38c.apps.googleusercontent.com',
 
   );
 
   Future<void> _loginWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      /*final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // Kullanıcı Google Sign-In penceresini kapattı
         return;
@@ -35,8 +41,9 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);*/
+      await AuthService().signInWithGoogle();
       // Giriş başarılı, ana sayfaya yönlendir
       Navigator.pushReplacement(
         context,
@@ -49,21 +56,88 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
-
+  //title: Text(_isLogin ? 'Giriş Yap' : 'Kayıt Ol')
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isLogin ? 'Giriş Yap' : 'Kayıt Ol')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 600) {
-            // Small screen (e.g. mobile)
-            return _buildMobileLayout();
-          } else {
-            // Large screen (e.g. tablet, desktop)
-            return _buildDesktopLayout();
-          }
-        },
+      key: _scaffoldKey,
+      appBar: AppBar(
+        backgroundColor: Color(0xFF009899),
+        title: Image.asset('assets/header.png', height: MediaQuery
+            .of(context)
+            .size
+            .width < 600 ? 250 : 300),
+        centerTitle: MediaQuery
+            .of(context)
+            .size
+            .width < 600 ? true : false,
+        leading: MediaQuery
+            .of(context)
+            .size
+            .width < 600
+            ? IconButton(
+          icon: Icon(Icons.menu),
+          onPressed: () {
+            _scaffoldKey.currentState!.openDrawer();
+          },
+        )
+            : null,
+        actions: MediaQuery
+            .of(context)
+            .size
+            .width >= 600
+            ? [
+          TextButton(
+            onPressed: () {
+              context.go('/');
+            },
+            child: Text('Ana Sayfa', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.go('/categories'); // CategoriesPage'e yönlendirme
+            },
+            child: Text('Kategoriler', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.go('/courses'); // CategoriesPage'e yönlendirme
+            },
+            child: Text('Kurslar', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed:() {
+              context.go('/login');
+            },
+            child: Text('Giriş Yap / Kaydol',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ]
+            : null,),
+      drawer: MediaQuery.of(context).size.width < 600
+          ? DrawerMenu(isLoggedIn: false)
+          : null,
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          HeaderSection(),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 600) {
+                // Small screen (e.g. mobile)
+                return _buildMobileLayout();
+              } else {
+                // Large screen (e.g. tablet, desktop)
+                return _buildDesktopLayout();
+              }
+            },
+          ),
+          FooterSection(),
+        ],
       ),
     );
   }
@@ -149,7 +223,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     return [
       TextField(
         controller: _emailController,
-        decoration: const InputDecoration(labelText: 'Email'),
+        decoration: const InputDecoration(labelText: 'E-mail'),
       ),
       const SizedBox(height: 10),
       TextField(
@@ -174,7 +248,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       const SizedBox(height: 10),
       TextField(
         controller: _emailController,
-        decoration: const InputDecoration(labelText: 'email'),
+        decoration: const InputDecoration(labelText: 'E-mail'),
       ),
       const SizedBox(height: 10),
       TextField(
@@ -253,5 +327,27 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         SnackBar(content: Text(e.message ?? 'Kayıt hatası')),
       );
     }
+  }
+}
+
+class HeaderSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFF009899),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: 15,),
+            Text("WellDo'ya Giriş Yap", style: TextStyle(color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 25),),
+            SizedBox(height: 5,),
+
+          ],
+        ),
+      ),
+    );
   }
 }

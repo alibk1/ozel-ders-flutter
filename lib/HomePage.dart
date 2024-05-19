@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/Components/ContactForm.dart';
+import 'package:ozel_ders/Components/Drawer.dart';
 import 'package:ozel_ders/Components/Footer.dart';
+import 'package:ozel_ders/FirebaseController.dart';
 import 'package:ozel_ders/services/BBB.dart';
 
 class HomePage extends StatefulWidget {
@@ -12,23 +14,42 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  bool isLoggedIn = false; // Bu alan giriş yapma durumunu kontrol etmek için kullanılacak.
+  bool isLoggedIn = false;
+  bool isLoading = true;
 
   @override
   void initState() {
     // TODO: implement initState
-    BBBService().createMeeting("Bugranın ANNESİNİN AMCUĞU", "abk");
+    initData();
     super.initState();
   }
+
+  Future<void> initData() async
+  {
+    isLoggedIn = await AuthService().isUserSignedIn();
+    print(isLoggedIn);
+    isLoading = false;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
         backgroundColor: Color(0xFF009899),
-        title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 300 : 400),
-        centerTitle: MediaQuery.of(context).size.width < 600 ? true : false,
-        leading: MediaQuery.of(context).size.width < 600
+        title: Image.asset('assets/header.png', height: MediaQuery
+            .of(context)
+            .size
+            .width < 600 ? 250 : 300),
+        centerTitle: MediaQuery
+            .of(context)
+            .size
+            .width < 600 ? true : false,
+        leading: MediaQuery
+            .of(context)
+            .size
+            .width < 600
             ? IconButton(
           icon: Icon(Icons.menu),
           onPressed: () {
@@ -36,73 +57,58 @@ class _HomePageState extends State<HomePage> {
           },
         )
             : null,
-        actions: MediaQuery.of(context).size.width >= 600
+        actions: MediaQuery
+            .of(context)
+            .size
+            .width >= 600
             ? [
           TextButton(
-            onPressed: ()
-            {
-              context.go('/'); // CategoriesPage'e yönlendirme
-            },             child: Text('Ana Sayfa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              context.go('/');
+            },
+            child: Text('Ana Sayfa', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed: ()
-            {
+            onPressed: () {
               context.go('/categories'); // CategoriesPage'e yönlendirme
             },
-            child: Text('Kategoriler', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Kategoriler', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed: ()
-            {
+            onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: Text('Kurslar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Kurslar', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
-          TextButton(
+          isLoggedIn ? TextButton(
             onPressed: () {}, //
-            child: Text('Randevularım', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
+            child: Text('Randevularım', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+          ) : SizedBox.shrink(),
           TextButton(
-            onPressed: isLoggedIn ? () {} : () {context.go('/login');}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
-            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: isLoggedIn ?
+                () {
+              context.go('/profile');
+            }
+                :
+                () {
+              context.go('/login');
+            },
+            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
       ),
-      drawer: MediaQuery.of(context).size.width < 600
-          ? Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color(0xFF009899),
-              ),
-              child: Image.asset('assets/header.png', height: 200),
-            ),
-            ListTile(
-              title: Text('Ana Sayfa'),
-              onTap: () {}, // TODO: Ana Sayfa'ya git
-            ),
-            ListTile(
-              title: Text('Kategoriler'),
-              onTap: () {}, // TODO: Kategoriler sayfasına git
-            ),
-            ListTile(
-              title: Text('Kurslar'),
-              onTap: () {}, // TODO: Kurslar sayfasına git
-            ),
-            ListTile(
-              title: Text('Randevularım'),
-              onTap: () {}, // TODO: Randevularım sayfasına git
-            ),
-            ListTile(
-              title: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol'),
-              onTap: isLoggedIn ? () {} : () {}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
-            ),
-          ],
-        ),
-      )
+      drawer: MediaQuery
+          .of(context)
+          .size
+          .width < 600
+          ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: SingleChildScrollView(
         child: Column(

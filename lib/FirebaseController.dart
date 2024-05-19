@@ -45,6 +45,17 @@ class AuthService {
       return null;
     }
   }
+
+  Future<bool> isUserSignedIn() async {
+    try {
+      final User? user = _auth.currentUser;
+      return user != null;
+    } catch (e) {
+      print('Hata: $e');
+      return false;
+    }
+  }
+
 }
 
 
@@ -205,4 +216,37 @@ class FirestoreService {
       return {...data, 'UID': doc.id};
     }).toList();
   }
+
+  // Get specific document by UID from courses collection
+  Future<Map<String, dynamic>> getCourseByUID(String uid) async {
+    DocumentSnapshot doc = await _db.collection('courses').doc(uid).get();
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    data['uid'] = doc.id;
+    return data;
+  }
+
+  // Get specific document by UID from categories collection
+  Future<Map<String, dynamic>> getCategoryByUID(String uid) async {
+    DocumentSnapshot doc = await _db.collection('categories').doc(uid).get();
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    data['uid'] = doc.id;
+    return data;
+  }
+
+  // Get specific document by UID from teachers collection
+  Future<Map<String, dynamic>> getTeacherByUID(String uid) async {
+    DocumentSnapshot doc = await _db.collection('teachers').doc(uid).get();
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    data['uid'] = doc.id;
+    return data;
+  }
+
+  // Get specific document by UID from students collection
+  Future<Map<String, dynamic>> getStudentByUID(String uid) async {
+    DocumentSnapshot doc = await _db.collection('students').doc(uid).get();
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    data['uid'] = doc.id;
+    return data;
+  }
+
 }
