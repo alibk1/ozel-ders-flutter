@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -226,6 +227,18 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
+  Future<void> _addUserData(email,password,name) async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      CollectionReference users = FirebaseFirestore.instance.collection('Users');
+      await users.doc(user!.uid).set({
+        'displayName': name,
+        'email': email,
+        'photoURL': user!.photoURL,
+        "password":password,
+      });
+    }
+  }
 
   Future<void> _signup() async {
     try {
@@ -234,6 +247,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Kayıt başarılı, giriş ekranına yönlendir
+      _addUserData(_emailController.text.trim(),_passwordController.text.trim(),_nameController.text.trim());
       context.go("/profile");
 
     } on FirebaseAuthException catch (e) {
