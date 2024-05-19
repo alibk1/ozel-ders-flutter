@@ -61,6 +61,13 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
+  String _selectedRole = '';
+
+  void _selectRole(String role) {
+    setState(() {
+      _selectedRole = role;
+    });
+  }
   //title: Text(_isLogin ? 'Giriş Yap' : 'Kayıt Ol')
   @override
   Widget build(BuildContext context) {
@@ -263,12 +270,29 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       ),
       const SizedBox(height: 20),
       BirthdateInputWidget(dateController: _dateController),
+      const SizedBox(height: 20.0),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[
+          RoleButton(
+            role: 'Öğrenci',
+            isSelected: _selectedRole == 'Öğrenci',
+            onTap: () => _selectRole('Öğrenci'),
+          ),
+          RoleButton(
+            role: 'Öğretmen',
+            isSelected: _selectedRole == 'Öğretmen',
+            onTap: () => _selectRole('Öğretmen'),
+          ),
+        ],
+      ),
       const SizedBox(height: 20),
 
       ElevatedButton(
         onPressed: _signup,
         child: const Text('Kayıt Ol'),
       ),
+
     ];
   }
 
@@ -307,7 +331,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
-  Future<void> _addUserData(email,password,name,birthDate) async {
+  Future<void> _addUserData(email,password,name,birthDate,role) async {
     final User? user = FirebaseAuth.instance.currentUser;
 
 
@@ -315,14 +339,26 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
 
 
+      if(role=="Öğrenci"){
+        CollectionReference users = FirebaseFirestore.instance.collection('Users');
+        await users.doc(user!.uid).set({
+          'displayName': name,
+          'email': email,
+          'photoURL': user!.photoURL,
+          'birthDate': birthDate,
+        });
+      }
+      else{
+        CollectionReference users = FirebaseFirestore.instance.collection('teachers');
+        await users.doc(user!.uid).set({
+          'displayName': name,
+          'email': email,
+          'photoURL': user!.photoURL,
+          'birthDate': birthDate,
+        });
 
-      CollectionReference users = FirebaseFirestore.instance.collection('Users');
-      await users.doc(user!.uid).set({
-        'displayName': name,
-        'email': email,
-        'photoURL': user!.photoURL,
-        'birthDate': birthDate,
-      });
+      }
+
     }
   }
 
@@ -333,7 +369,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Kayıt başarılı, giriş ekranına yönlendir
-      _addUserData(_emailController.text.trim(),_passwordController.text.trim(),_nameController.text.trim(),_nameController.text);
+      _addUserData(_emailController.text.trim(),_passwordController.text.trim(),_nameController.text.trim(),_nameController.text,_selectedRole);
       context.go("/profile");
 
     } on FirebaseAuthException catch (e) {
@@ -397,7 +433,7 @@ class _BirthdateInputWidgetState extends State<BirthdateInputWidget> {
       controller: widget.dateController,
       readOnly: true,
       onTap: () => _selectDate(context),
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: 'Doğum Tarihinizi Seçin',
         border: OutlineInputBorder(),
       ),
@@ -415,7 +451,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Doğum Tarihi Girişi Örneği'),
+          title: const Text('Doğum Tarihi Girişi Örneği'),
         ),
         body: BirthdateInputExample(),
       ),
@@ -448,17 +484,17 @@ class _BirthdateInputExampleState extends State<BirthdateInputExample> {
         print('Doğum tarihi kaydedildi: $birthdateTimestamp');
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Doğum tarihi kaydedildi')),
+          const SnackBar(content: Text('Doğum tarihi kaydedildi')),
         );
       } catch (e) {
         print('Hata: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Geçersiz doğum tarihi formatı')),
+          const SnackBar(content: Text('Geçersiz doğum tarihi formatı')),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lütfen bir doğum tarihi seçin')),
+        const SnackBar(content: Text('Lütfen bir doğum tarihi seçin')),
       );
     }
   }
@@ -471,12 +507,53 @@ class _BirthdateInputExampleState extends State<BirthdateInputExample> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           BirthdateInputWidget(dateController: _dateController),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           ElevatedButton(
             onPressed: _saveBirthdate,
-            child: Text('Doğum Tarihini Kaydet'),
+            child: const Text('Doğum Tarihini Kaydet'),
           ),
         ],
+      ),
+    );
+  }
+
+}
+
+class RoleButton extends StatelessWidget {
+  final String role;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  RoleButton({required this.role, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12.0),
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.5),
+              spreadRadius: 2,
+              blurRadius: 10,
+            ),
+          ]
+              : [],
+        ),
+        child: Text(
+          role,
+          style: TextStyle(
+            fontSize: 18.0,
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }
