@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/FirebaseController.dart';
 import 'Components/CourseCard.dart';
+import 'Components/Drawer.dart';
 
 class CoursesPage extends StatefulWidget {
   final String category;
@@ -34,7 +37,14 @@ class _CoursesPageState extends State<CoursesPage> {
     super.initState();
     selectedCategory = widget.category.isEmpty ? 'Seçilmedi' : widget.category;
     selectedSubCategory = widget.subCategory.isEmpty ? 'Seçilmedi' : widget.subCategory;
+    initData();
+  }
+
+  Future<void> initData() async
+  {
+    isLoggedIn = await AuthService().isUserSignedIn();
     loadInitialData();
+    setState(() {});
   }
 
   Future<void> loadInitialData() async {
@@ -244,7 +254,7 @@ class _CoursesPageState extends State<CoursesPage> {
       key: _scaffoldKey,
       appBar: AppBar(
         backgroundColor: Color(0xFF009899),
-        title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 300 : 400),
+        title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 250 : 300),
         centerTitle: MediaQuery.of(context).size.width < 600 ? true : false,
         leading: MediaQuery.of(context).size.width < 600
             ? IconButton(
@@ -254,70 +264,58 @@ class _CoursesPageState extends State<CoursesPage> {
           },
         )
             : null,
-        actions: MediaQuery.of(context).size.width >= 600
+        actions: MediaQuery
+            .of(context)
+            .size
+            .width >= 600
             ? [
           TextButton(
-            onPressed: () {}, // TODO: Ana Sayfa'ya git
-            child: Text('Ana Sayfa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              context.go('/');
+            },
+            child: Text('Ana Sayfa', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
               context.go('/categories'); // CategoriesPage'e yönlendirme
-            }, // TODO: Kategoriler sayfasına git
-            child: Text('Kategoriler', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            },
+            child: Text('Kategoriler', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed: () {}, // TODO: Kurslar sayfasına git
-            child: Text('Kurslar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              context.go('/courses'); // CategoriesPage'e yönlendirme
+            },
+            child: Text('Kurslar', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
+          isLoggedIn ? TextButton(
+            onPressed: () {}, //
+            child: Text('Randevularım', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+          ) : SizedBox.shrink(),
           TextButton(
-            onPressed: () {}, // TODO: Randevularım sayfasına git
-            child: Text('Randevularım', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: isLoggedIn ? () {} : () {}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
-            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: isLoggedIn ?
+                () {
+              context.go('/profile');
+            }
+                :
+                () {
+              context.go('/login');
+            },
+            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
       ),
       drawer: MediaQuery.of(context).size.width < 600
-          ? Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color(0xFF009899),
-              ),
-              child: Image.asset('assets/header.png', height: 200),
-            ),
-            ListTile(
-              title: Text('Ana Sayfa'),
-              onTap: () {}, // TODO: Ana Sayfa'ya git
-            ),
-            ListTile(
-              title: Text('Kategoriler'),
-              onTap: () {}, // TODO: Kategoriler sayfasına git
-            ),
-            ListTile(
-              title: Text('Kurslar'),
-              onTap: () {}, // TODO: Kurslar sayfasına git
-            ),
-            ListTile(
-              title: Text('Randevularım'),
-              onTap: () {}, // TODO: Randevularım sayfasına git
-            ),
-            ListTile(
-              title: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol'),
-              onTap: isLoggedIn ? () {} : () {}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
-            ),
-          ],
-        ),
-      )
+          ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: LoadingAnimationWidget.dotsTriangle(color: Color(0xFF009899), size: 200))
           : Column(
         children: [
           Padding(
@@ -358,7 +356,27 @@ class _CoursesPageState extends State<CoursesPage> {
               },
             ),
           ),
+          FooterSection()
         ],
+      ),
+    );
+  }
+}
+
+class HeaderSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 200,
+      color: Color(0xFF009899),
+      child: Center(
+        child: Row(
+          children: [
+            Image.network('https://cdn-icons-png.flaticon.com/512/992/992257.png', height: 200),
+            SizedBox(width: 20,),
+            Text("Kategoriler", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 40),)
+          ],
+        ),
       ),
     );
   }

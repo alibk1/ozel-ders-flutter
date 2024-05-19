@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/CoursePage.dart';
 
 class CourseCard extends StatefulWidget {
@@ -58,25 +59,21 @@ class _CourseCardState extends State<CourseCard> {
               widget.course['name'],
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 25,
+                fontSize: 20,
                 color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
               ),
             ),
             onPressed: ()
             {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>CoursePage(course: widget.course, teacher: widget.author),
-                ),
-              );
+              context.go('/courses/' + widget.course["UID"]); // CategoriesPage'e yönlendirme
+
             },
           ),
           Text(
             widget.author["name"],
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 15,
               color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
             ),
           ),

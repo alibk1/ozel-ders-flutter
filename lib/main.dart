@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/CategoriesPage.dart';
+import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
 
@@ -41,6 +42,13 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/profile',
         builder: (context, state) => ProfilePage(),
+      ),
+      GoRoute(
+        path: '/courses/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return CoursePage(uid: uid);
+        },
       ),
     ],
   );

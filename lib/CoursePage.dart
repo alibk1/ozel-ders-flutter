@@ -2,14 +2,16 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/FirebaseController.dart';
 import 'package:ozel_ders/services/BBB.dart';
 
-class CoursePage extends StatefulWidget {
-  final Map<String, dynamic> course;
-  final Map<String, dynamic> teacher;
+import 'Components/Drawer.dart';
 
-  CoursePage({required this.course, required this.teacher});
+class CoursePage extends StatefulWidget {
+  final String uid;
+
+  CoursePage({required this.uid});
 
   @override
   _CoursePageState createState() => _CoursePageState();
@@ -18,8 +20,33 @@ class CoursePage extends StatefulWidget {
 class _CoursePageState extends State<CoursePage> {
   bool isDescExpanded = true;
   bool isTeacherExpanded = false;
+  bool isLoading = true; // Loading indicator için durum değişkeni
+  bool isLoggedIn = false;
   final PageController _pageController = PageController();
+  Map<String, dynamic> course = {};
+  Map<String, dynamic> teacher = {};
   int _currentPage = 0;
+
+  @override
+  void initState() {
+    initMenu();
+    super.initState();
+  }
+  Future<void> initMenu() async
+  {
+    isLoggedIn = await AuthService().isUserSignedIn();
+    print(isLoggedIn);
+    initData();
+    setState(() {});
+  }
+
+  Future<void> initData() async {
+    course = await FirestoreService().getCourseByUID(widget.uid);
+    teacher = await FirestoreService().getTeacherByUID(course["author"]);
+    setState(() {
+      isLoading = false; // Yüklenme işlemi tamamlandığında false yapıyoruz
+    });
+  }
 
   void _showDateTimePicker(BuildContext context) {
     showModalBottomSheet(
@@ -85,9 +112,7 @@ class _CoursePageState extends State<CoursePage> {
                           setModalState(() {
                             selectedTime = pickedTime!;
                           });
-                        }
-                        else
-                        {
+                        } else {
                           setModalState(() {
                             pickedTime = TimeOfDay(hour: pickedTime!.hour, minute: 0);
                             selectedTime = pickedTime!;
@@ -100,7 +125,7 @@ class _CoursePageState extends State<CoursePage> {
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () async {
-                      //TODO: RANDEVU OLUŞTURMA KODLARI
+                      // TODO: RANDEVU OLUŞTURMA KODLARI
                       Navigator.pop(context);
                     },
                     child: Text('Randevu Al'),
@@ -114,24 +139,14 @@ class _CoursePageState extends State<CoursePage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFF009899),
-        title: Image.asset('assets/header.png', height: MediaQuery
-            .of(context)
-            .size
-            .width < 600 ? 300 : 400),
-        centerTitle: MediaQuery
-            .of(context)
-            .size
-            .width < 600 ? true : false,
-        leading: MediaQuery
-            .of(context)
-            .size
-            .width < 600
+        title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 250 : 300),
+        centerTitle: MediaQuery.of(context).size.width < 600 ? true : false,
+        leading: MediaQuery.of(context).size.width < 600
             ? IconButton(
           icon: Icon(Icons.menu),
           onPressed: () {
@@ -145,75 +160,53 @@ class _CoursePageState extends State<CoursePage> {
             .width >= 600
             ? [
           TextButton(
-            onPressed: () {}, // TODO: Ana Sayfa'ya git
+            onPressed: () {
+              context.go('/');
+            },
             child: Text('Ana Sayfa', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
               context.go('/categories'); // CategoriesPage'e yönlendirme
-            }, // TODO: Kategoriler sayfasına git
+            },
             child: Text('Kategoriler', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed: () {}, // TODO: Kurslar sayfasına git
+            onPressed: () {
+              context.go('/courses'); // CategoriesPage'e yönlendirme
+            },
             child: Text('Kurslar', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
-          TextButton(
-            onPressed: () {}, // TODO: Randevularım sayfasına git
+          isLoggedIn ? TextButton(
+            onPressed: () {}, //
             child: Text('Randevularım', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
+          ) : SizedBox.shrink(),
           TextButton(
-            onPressed: () {},
-            // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
-            child: Text('Giriş Yap / Kaydol', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: isLoggedIn ?
+                () {
+              context.go('/profile');
+            }
+                :
+                () {
+              context.go('/login');
+            },
+            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
       ),
-      drawer: MediaQuery
-          .of(context)
-          .size
-          .width < 600
-          ? Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color(0xFF009899),
-              ),
-              child: Image.asset('assets/header.png', height: 200),
-            ),
-            ListTile(
-              title: Text('Ana Sayfa'),
-              onTap: () {}, // TODO: Ana Sayfa'ya git
-            ),
-            ListTile(
-              title: Text('Kategoriler'),
-              onTap: () {}, // TODO: Kategoriler sayfasına git
-            ),
-            ListTile(
-              title: Text('Kurslar'),
-              onTap: () {}, // TODO: Kurslar sayfasına git
-            ),
-            ListTile(
-              title: Text('Randevularım'),
-              onTap: () {}, // TODO: Randevularım sayfasına git
-            ),
-            ListTile(
-              title: Text('Giriş Yap / Kaydol'),
-              onTap: () {}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
-            ),
-          ],
-        ),
-      )
+      drawer: MediaQuery.of(context).size.width < 600
+          ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
-      body: SingleChildScrollView(
+      body: isLoading
+          ? Center(child: LoadingAnimationWidget.dotsTriangle(color: Color(0xFF009899), size: 200))
+          : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -226,7 +219,7 @@ class _CoursePageState extends State<CoursePage> {
                 children: [
                   SizedBox(height: 16),
                   Text(
-                    widget.course['name'],
+                    course['name'] ?? '',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -245,7 +238,7 @@ class _CoursePageState extends State<CoursePage> {
                         });
                       },
                     ),
-                    items: widget.course['photos'].map<Widget>((photoUrl) {
+                    items: course['photos']?.map<Widget>((photoUrl) {
                       return Builder(
                         builder: (BuildContext context) {
                           return Image.network(
@@ -255,17 +248,15 @@ class _CoursePageState extends State<CoursePage> {
                           );
                         },
                       );
-                    }).toList(),
+                    }).toList() ??
+                        [],
                   ),
                 ],
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: MediaQuery
-                  .of(context)
-                  .size
-                  .width >= 600
+              child: MediaQuery.of(context).size.width >= 600
                   ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -284,23 +275,17 @@ class _CoursePageState extends State<CoursePage> {
                               children: [
                                 Text(
                                   'Kurs Açıklaması',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white
-                                  ),
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
                               ],
                             ),
                             SizedBox(height: 8),
-                            Divider(thickness: 2, color: Colors.white,),
+                            Divider(thickness: 2, color: Colors.white),
                             SizedBox(height: 8),
-                            Text(widget.course['desc'],
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white
-                            ),),
+                            Text(
+                              course['desc'] ?? '',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
                           ],
                         ),
                       ),
@@ -319,18 +304,17 @@ class _CoursePageState extends State<CoursePage> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Color(0xFF009899),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
+                                    borderRadius: BorderRadius.circular(10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
                                     // Diğer shape özelliklerini de belirleyebilirsiniz
                                   ),
                                 ),
                                 onPressed: () {
                                   _showDateTimePicker(context);
                                 },
-                                child: Text('\n Bu Kursu Satın Al - ${widget
-                                    .course['hourlyPrice']} TL \n',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 20),),
+                                child: Text(
+                                  '\n Bu Kursu Satın Al - ${course['hourlyPrice']} TL \n',
+                                  style: TextStyle(color: Colors.white, fontSize: 20),
+                                ),
                               ),
                             ),
                           ],
@@ -344,30 +328,22 @@ class _CoursePageState extends State<CoursePage> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment
-                                        .center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       CircleAvatar(
                                         foregroundColor: Colors.white,
                                         radius: 60,
-                                        backgroundImage: NetworkImage(widget
-                                            .teacher['profilePictureUrl']),
+                                        backgroundImage: NetworkImage(teacher['profilePictureUrl'] ?? ''),
                                       ),
                                       SizedBox(height: 16),
                                       Text(
-                                        widget.teacher['name'],
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white
-                                        ),
+                                        teacher['name'] ?? '',
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                                       ),
                                       SizedBox(height: 4),
-                                      Text(widget.teacher['fieldOfStudy'],
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.white
-                                        ),
+                                      Text(
+                                        teacher['fieldOfStudy'] ?? '',
+                                        style: TextStyle(fontSize: 12, color: Colors.white),
                                       ),
                                     ],
                                   ),
@@ -388,18 +364,17 @@ class _CoursePageState extends State<CoursePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF009899),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
+                        borderRadius: BorderRadius.circular(10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
                         // Diğer shape özelliklerini de belirleyebilirsiniz
                       ),
                     ),
                     onPressed: () {
                       _showDateTimePicker(context);
                     },
-                    child: Text('Bu Kursu Satın Al - ${widget
-                        .course['hourlyPrice']} TL',
-                      style: TextStyle(
-                          color: Colors.white, fontSize: 16),),
+                    child: Text(
+                      'Bu Kursu Satın Al - ${course['hourlyPrice']} TL',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
                   ),
                   SizedBox(height: 16),
                   Card(
@@ -408,15 +383,15 @@ class _CoursePageState extends State<CoursePage> {
                       initiallyExpanded: true,
                       title: Text(
                         'Kurs Açıklaması',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold, color: Colors.white
-                        ),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Text(widget.course['desc'], style: TextStyle(color: Colors.white),),
+                          child: Text(
+                            course['desc'] ?? '',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
@@ -428,11 +403,7 @@ class _CoursePageState extends State<CoursePage> {
                       initiallyExpanded: false,
                       title: Text(
                         'Öğretmen Bilgileri',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white
-                        ),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       children: [
                         Padding(
@@ -442,20 +413,18 @@ class _CoursePageState extends State<CoursePage> {
                             children: [
                               CircleAvatar(
                                 radius: 50,
-                                backgroundImage: NetworkImage(
-                                    widget.teacher['profilePictureUrl']),
+                                backgroundImage: NetworkImage(teacher['profilePictureUrl'] ?? ''),
                               ),
                               SizedBox(height: 16),
                               Text(
-                                widget.teacher['name'],
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white
-                                ),
+                                teacher['name'] ?? '',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                               ),
                               SizedBox(height: 8),
-                              Text(widget.teacher['fieldOfStudy'],style: TextStyle(color: Colors.white),),
+                              Text(
+                                teacher['fieldOfStudy'] ?? '',
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ],
                           ),
                         ),
