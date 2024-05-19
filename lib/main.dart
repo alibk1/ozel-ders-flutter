@@ -1,7 +1,17 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ozel_ders/CategoriesPage.dart';
+import 'package:ozel_ders/CoursesPage.dart';
+import 'package:ozel_ders/HomePage.dart';
 
-void main() {
+import 'firebase_options.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MyApp());
 }
 
@@ -16,7 +26,11 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => CoursesPage(),
+        builder: (context, state) => CoursesPage(category: '', subCategory: '',),
+      ),
+      GoRoute(
+        path: '/categories',
+        builder: (context, state) => CategoriesPage(),
       ),
     ],
   );
@@ -29,7 +43,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+/*class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,18 +60,5 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
-class CoursesPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Courses Page'),
-      ),
-      body: Center(
-        child: Text('Welcome to Courses Page'),
-      ),
-    );
-  }
-}
