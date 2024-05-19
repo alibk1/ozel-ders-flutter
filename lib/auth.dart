@@ -20,7 +20,11 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController(); // Yeni TextField için controller
+  final TextEditingController _nameController = TextEditingController();
+
+  final TextEditingController _dateController = TextEditingController(); // Yeni TextField için controller
+
+  // Yeni TextField için controller
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: '619520758342-mc02si573tea3f48n429fmbkngnpd38c.apps.googleusercontent.com',
@@ -62,7 +66,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF009899),
+        backgroundColor: const Color(0xFF009899),
         title: Image.asset('assets/header.png', height: MediaQuery
             .of(context)
             .size
@@ -76,7 +80,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             .size
             .width < 600
             ? IconButton(
-          icon: Icon(Icons.menu),
+          icon: const Icon(Icons.menu),
           onPressed: () {
             _scaffoldKey.currentState!.openDrawer();
           },
@@ -91,28 +95,28 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             onPressed: () {
               context.go('/');
             },
-            child: Text('Ana Sayfa', style: TextStyle(
+            child: const Text('Ana Sayfa', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
               context.go('/categories'); // CategoriesPage'e yönlendirme
             },
-            child: Text('Kategoriler', style: TextStyle(
+            child: const Text('Kategoriler', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: Text('Kurslar', style: TextStyle(
+            child: const Text('Kurslar', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed:() {
               context.go('/login');
             },
-            child: Text('Giriş Yap / Kaydol',
+            child: const Text('Giriş Yap / Kaydol',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
@@ -257,6 +261,9 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         obscureText: true,
       ),
       const SizedBox(height: 20),
+      BirthdateInputWidget(dateController: _dateController),
+      const SizedBox(height: 20),
+
       ElevatedButton(
         onPressed: _signup,
         child: const Text('Kayıt Ol'),
@@ -272,14 +279,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         height: 24.0,
         width: 24.0,
       ),
-      label: Text('Google ile Giriş Yap'),
+      label: const Text('Google ile Giriş Yap'),
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.black, backgroundColor: Colors.white,
-        minimumSize: Size(double.infinity, 50), // Set the button to fill the width
+        minimumSize: const Size(double.infinity, 50), // Set the button to fill the width
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
-        side: BorderSide(color: Colors.grey),
+        side: const BorderSide(color: Colors.grey),
       ),
     );
   }
@@ -299,14 +306,22 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
-  Future<void> _addUserData(email,password,name) async {
+  Future<void> _addUserData(email,password,name,birthDate) async {
     final User? user = FirebaseAuth.instance.currentUser;
+
+
     if (user != null) {
+
+
+      DateTime birthdate = DateTime.parse(birthDate);
+      Timestamp birthdateTimestamp = Timestamp.fromDate(birthdate);
+
       CollectionReference users = FirebaseFirestore.instance.collection('Users');
       await users.doc(user!.uid).set({
         'displayName': name,
         'email': email,
         'photoURL': user!.photoURL,
+        "birthDate": birthdateTimestamp,
       });
     }
   }
@@ -318,7 +333,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Kayıt başarılı, giriş ekranına yönlendir
-      _addUserData(_emailController.text.trim(),_passwordController.text.trim(),_nameController.text.trim());
+      _addUserData(_emailController.text.trim(),_passwordController.text.trim(),_nameController.text.trim(),_nameController.text);
       context.go("/profile");
 
     } on FirebaseAuthException catch (e) {
@@ -334,8 +349,8 @@ class HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFF009899),
-      child: Center(
+      color: const Color(0xFF009899),
+      child: const Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -347,6 +362,44 @@ class HeaderSection extends StatelessWidget {
 
           ],
         ),
+      ),
+    );
+  }
+}
+class BirthdateInputWidget extends StatefulWidget {
+  final TextEditingController dateController;
+
+  BirthdateInputWidget({required this.dateController});
+
+  @override
+  _BirthdateInputWidgetState createState() => _BirthdateInputWidgetState();
+}
+
+class _BirthdateInputWidgetState extends State<BirthdateInputWidget> {
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        widget.dateController.text = "${picked.toLocal()}".split(' ')[0];
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: widget.dateController,
+      readOnly: true,
+      onTap: () => _selectDate(context),
+      decoration: InputDecoration(
+        labelText: 'Doğum Tarihinizi Seçin',
+        border: OutlineInputBorder(),
       ),
     );
   }
