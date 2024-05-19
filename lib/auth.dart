@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/FirebaseController.dart';
 import 'Components/Drawer.dart';
@@ -313,15 +314,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     if (user != null) {
 
 
-      DateTime birthdate = DateTime.parse(birthDate);
-      Timestamp birthdateTimestamp = Timestamp.fromDate(birthdate);
+
 
       CollectionReference users = FirebaseFirestore.instance.collection('Users');
       await users.doc(user!.uid).set({
         'displayName': name,
         'email': email,
         'photoURL': user!.photoURL,
-        "birthDate": birthdateTimestamp,
+        'birthDate': birthDate,
       });
     }
   }
@@ -386,7 +386,7 @@ class _BirthdateInputWidgetState extends State<BirthdateInputWidget> {
 
     if (picked != null) {
       setState(() {
-        widget.dateController.text = "${picked.toLocal()}".split(' ')[0];
+        widget.dateController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
@@ -400,6 +400,83 @@ class _BirthdateInputWidgetState extends State<BirthdateInputWidget> {
       decoration: InputDecoration(
         labelText: 'Doğum Tarihinizi Seçin',
         border: OutlineInputBorder(),
+      ),
+    );
+  }
+}
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Doğum Tarihi Girişi Örneği'),
+        ),
+        body: BirthdateInputExample(),
+      ),
+    );
+  }
+}
+
+class BirthdateInputExample extends StatefulWidget {
+  @override
+  _BirthdateInputExampleState createState() => _BirthdateInputExampleState();
+}
+
+class _BirthdateInputExampleState extends State<BirthdateInputExample> {
+  final TextEditingController _dateController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void _saveBirthdate() async {
+    final String birthdateString = _dateController.text;
+    if (birthdateString.isNotEmpty) {
+      try {
+        DateTime birthdate = DateFormat('yyyy-MM-dd').parse(birthdateString);
+        Timestamp birthdateTimestamp = Timestamp.fromDate(birthdate);
+
+
+        // Firestore'a kaydetme
+        await _firestore.collection('Users').doc('user_id').set({
+          'birthdate': birthdateTimestamp,
+        });
+
+        print('Doğum tarihi kaydedildi: $birthdateTimestamp');
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Doğum tarihi kaydedildi')),
+        );
+      } catch (e) {
+        print('Hata: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Geçersiz doğum tarihi formatı')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lütfen bir doğum tarihi seçin')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          BirthdateInputWidget(dateController: _dateController),
+          SizedBox(height: 16.0),
+          ElevatedButton(
+            onPressed: _saveBirthdate,
+            child: Text('Doğum Tarihini Kaydet'),
+          ),
+        ],
       ),
     );
   }
