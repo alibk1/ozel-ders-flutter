@@ -235,7 +235,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         'displayName': name,
         'email': email,
         'photoURL': user!.photoURL,
-        "password":password,
       });
     }
   }
