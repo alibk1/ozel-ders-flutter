@@ -5,6 +5,8 @@ import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
 
+import 'ProfilePage.dart';
+import 'auth.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -31,6 +33,14 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/categories',
         builder: (context, state) => CategoriesPage(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => LoginSignupPage(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => ProfilePage(),
       ),
     ],
   );

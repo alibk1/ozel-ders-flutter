@@ -63,7 +63,7 @@ class _HomePageState extends State<HomePage> {
             child: Text('Randevularım', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed: isLoggedIn ? () {} : () {}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
+            onPressed: isLoggedIn ? () {} : () {context.go('/login');}, // TODO: Giriş Yap / Kaydol veya Profilim sayfasına git
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ]
