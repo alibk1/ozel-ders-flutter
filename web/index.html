@@ -1,6 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script type="text/javascript">
+    window.flutterWebRenderer = "html";
+</script>s
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-analytics-compat.js"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAoEBxQyBErpVzHH8-jhyrSgRU5OLTnBrE",
+      authDomain: "ortakozelders.firebaseapp.com",
+      projectId: "ortakozelders",
+      storageBucket: "ortakozelders.appspot.com",
+      messagingSenderId: "619520758342",
+      appId: "1:619520758342:web:12c44b2582dbdcb9b67047",
+      measurementId: "G-MZLW5M94M2"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+  </script>
+
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
