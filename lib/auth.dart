@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_button/sign_button.dart';
 
@@ -217,10 +218,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Login başarılı, ana sayfaya yönlendir
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      context.go("/");
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
@@ -236,10 +234,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Kayıt başarılı, giriş ekranına yönlendir
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      context.go("/");
+
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
