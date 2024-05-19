@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_button/sign_button.dart';
 
 import 'HomePage.dart';
+import 'comment.dart';
 
 class LoginSignupPage extends StatefulWidget {
   @override
