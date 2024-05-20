@@ -333,22 +333,9 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   }
   Future<void> _addUserData(email,password,name,birthDate,role) async {
     final User? user = FirebaseAuth.instance.currentUser;
-
-
     if (user != null) {
 
-
-
-      if(role=="Öğrenci"){
-        CollectionReference users = FirebaseFirestore.instance.collection('Users');
-        await users.doc(user!.uid).set({
-          'displayName': name,
-          'email': email,
-          'photoURL': user!.photoURL,
-          'birthDate': birthDate,
-        });
-      }
-      else{
+      if(role=="Öğretmen"){
         CollectionReference users = FirebaseFirestore.instance.collection('teachers');
         await users.doc(user!.uid).set({
           'displayName': name,
@@ -358,9 +345,21 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         });
 
       }
+      else{
+        CollectionReference users = FirebaseFirestore.instance.collection('Users');
+        await users.doc(user!.uid).set({
+          'displayName': name,
+          'email': email,
+          'photoURL': user!.photoURL,
+          'birthDate': birthDate,
+        });
+
+
+      }
 
     }
   }
+
 
   Future<void> _signup() async {
     try {

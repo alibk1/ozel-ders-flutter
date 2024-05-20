@@ -149,16 +149,24 @@ class _CoursePageState extends State<CoursePage> {
                   ElevatedButton(
                     onPressed: () async {
                       // TODO: RANDEVU OLUŞTURMA KODLARI randevu datayı oluştur teacher ve user id leri burda kullan
-                      teacher = await FirestoreService().getTeacherByUID(course["author"]);
-                      User? userId = FirebaseAuth.instance.currentUser;
+                      User? user= FirebaseAuth.instance.currentUser;
 
+                      if(user !=null){
+                        teacher = await FirestoreService().getTeacherByUID(course["author"]);
 
-                      Map<String, dynamic> randevuData = {
-                        'date': DateTime.now(),
-                        'description': 'Örnek randevu açıklaması',
-                        // Diğer randevu bilgilerini buraya ekleyin
-                      };
-                      randevuOlustur(userId.toString(),teacher["name"], randevuData);
+                        Map<String, dynamic> randevuData = {
+                          'date': DateTime.now(),
+                          'description': 'Örnek randevu açıklaması',
+                          // Diğer randevu bilgilerini buraya ekleyin
+                        };
+                        randevuOlustur(user!.uid.toString(),teacher["name"], randevuData);
+                      }
+                      else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Lütfen Giriş Yapın.'))
+                        );
+                      }
+
 
                       Navigator.pop(context);
 
