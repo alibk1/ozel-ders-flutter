@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
           TextButton(
             onPressed: isLoggedIn ?
                 () {
-              context.go('/profile');
+              context.go('/profile/' + AuthService().userUID());
             }
                 :
                 () {

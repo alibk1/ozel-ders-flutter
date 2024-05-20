@@ -103,7 +103,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           TextButton(
             onPressed: isLoggedIn ?
                 () {
-              context.go('/profile');
+                  context.go('/profile/' + AuthService().userUID());
             }
                 :
                 () {

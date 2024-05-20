@@ -40,9 +40,11 @@ class MyApp extends StatelessWidget {
         builder: (context, state) => LoginSignupPage(),
       ),
       GoRoute(
-        path: '/profile',
-        builder: (context, state) => ProfilePage(),
-      ),
+        path: '/profile/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return ProfilePage(uid: uid);
+        },      ),
       GoRoute(
         path: '/courses/:uid',
         builder: (context, state) {

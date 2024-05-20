@@ -335,6 +335,13 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     final User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
 
+      if(role=="Öğrenci"){
+        await FirestoreService().createStudentDocument(user!.uid, email, name, 21, "Ankara", "");
+      }
+      else{
+        await FirestoreService().createTeacherDocument(user!.uid, email, name, 21, "Terapist", 3.5, "");
+    if (user != null) {
+
       if(role=="Öğretmen"){
         CollectionReference users = FirebaseFirestore.instance.collection('teachers');
         await users.doc(user!.uid).set({

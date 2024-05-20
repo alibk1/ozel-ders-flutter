@@ -56,6 +56,11 @@ class AuthService {
     }
   }
 
+  String userUID()
+  {
+    return _auth.currentUser!.uid;
+  }
+
 }
 
 
@@ -70,6 +75,7 @@ class FirestoreService {
       'age': age,
       'city': city,
       'profilePictureUrl': profilePictureUrl,
+      'desc': ''
     });
   }
 
@@ -82,6 +88,7 @@ class FirestoreService {
       'fieldOfStudy': fieldOfStudy,
       'diplomaGrade': diplomaGrade,
       'profilePictureUrl': profilePictureUrl,
+      'desc': ''
     });
   }
 
@@ -159,26 +166,33 @@ class FirestoreService {
   }
 
   Future<List<Map<String, dynamic>>> getCategories() async {
-    QuerySnapshot categoriesSnapshot = await _db.collection('categories1')
-        .get();
-    List<Map<String, dynamic>> categories = [];
-    for (var doc in categoriesSnapshot.docs) {
-      DocumentSnapshot categoryDoc = doc;
-      List<Map<String, dynamic>> subCategories = [];
-      QuerySnapshot subCategoriesSnapshot = await categoryDoc.reference
-          .collection('subCategories').get();
-      subCategories = subCategoriesSnapshot.docs.map((subDoc) =>
-      {
-        'uid': subDoc.id,
-        ...subDoc.data() as Map<String, dynamic>
-      }).toList();
-      categories.add({
-        'uid': doc.id,
-        ...doc.data() as Map<String, dynamic>,
-        'subCategories': subCategories,
-      });
+    try {
+      QuerySnapshot categoriesSnapshot = await _db.collection('categories1')
+          .get();
+      List<Map<String, dynamic>> categories = [];
+      for (var doc in categoriesSnapshot.docs) {
+        DocumentSnapshot categoryDoc = doc;
+        List<Map<String, dynamic>> subCategories = [];
+        QuerySnapshot subCategoriesSnapshot = await categoryDoc.reference
+            .collection('subCategories').get();
+        subCategories = subCategoriesSnapshot.docs.map((subDoc) =>
+        {
+          'uid': subDoc.id,
+          ...subDoc.data() as Map<String, dynamic>
+        }).toList();
+        categories.add({
+          'uid': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+          'subCategories': subCategories,
+        });
+      }
+      return categories;
     }
-    return categories;
+    catch(e)
+    {
+      print(e);
+      return[];
+    }
   }
 
   // Tüm öğrencileri alma
@@ -233,20 +247,46 @@ class FirestoreService {
     return data;
   }
 
+
   // Get specific document by UID from teachers collection
   Future<Map<String, dynamic>> getTeacherByUID(String uid) async {
     DocumentSnapshot doc = await _db.collection('teachers').doc(uid).get();
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    data['uid'] = doc.id;
-    return data;
+    if (doc.exists) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      data['uid'] = doc.id;
+      return data;
+    } else {
+      return {};
+    }
   }
 
   // Get specific document by UID from students collection
   Future<Map<String, dynamic>> getStudentByUID(String uid) async {
     DocumentSnapshot doc = await _db.collection('students').doc(uid).get();
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    data['uid'] = doc.id;
-    return data;
+    if (doc.exists) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      data['uid'] = doc.id;
+      return data;
+    } else {
+      return {};
+    }
   }
 
+  // Change user profile photo URL
+  Future<void> changeUserPhoto(String uid, String photoUrl, bool isTeacher) async {
+    String collection = isTeacher ? 'teachers' : 'students';
+    await _db.collection(collection).doc(uid).update({'profilePictureUrl': photoUrl});
+  }
+
+  // Change user description
+  Future<void> changeUserDesc(String uid, String desc, bool isTeacher) async {
+    String collection = isTeacher ? 'teachers' : 'students';
+    await _db.collection(collection).doc(uid).update({'desc': desc});
+  }
+
+  // Change user name
+  Future<void> changeUserName(String uid, String name, bool isTeacher) async {
+    String collection = isTeacher ? 'teachers' : 'students';
+    await _db.collection(collection).doc(uid).update({'name': name});
+  }
 }

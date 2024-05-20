@@ -232,7 +232,7 @@ class _CoursePageState extends State<CoursePage> {
           TextButton(
             onPressed: isLoggedIn ?
                 () {
-              context.go('/profile');
+                  context.go('/profile/' + AuthService().userUID());
             }
                 :
                 () {

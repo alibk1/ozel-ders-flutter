@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../FirebaseController.dart';
+
 class DrawerMenu extends StatefulWidget {
   final bool isLoggedIn;
   DrawerMenu({
@@ -50,7 +52,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
             title: Text(widget.isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol'),
             onTap: widget.isLoggedIn
                 ? () {
-              context.go('/profile');
+              context.go('/profile/' + AuthService().userUID());
             }
                 : () {
               context.go('/login');
