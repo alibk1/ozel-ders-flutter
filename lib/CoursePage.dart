@@ -157,6 +157,7 @@ class _CoursePageState extends State<CoursePage> {
                         Map<String, dynamic> randevuData = {
                           'date': DateTime.now(),
                           'description': 'Örnek randevu açıklaması',
+                          'url': "google.com",
                           // Diğer randevu bilgilerini buraya ekleyin
                         };
                         randevuOlustur(user!.uid.toString(),teacher["name"], randevuData);
