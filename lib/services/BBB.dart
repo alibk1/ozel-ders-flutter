@@ -48,15 +48,42 @@ class BBBService {
     var checksum = generateChecksum(apiCall, params, secret);
     var url = Uri.parse('$bbbUrl/$apiCall?${Uri(queryParameters: params).query}&checksum=$checksum');
     //url = "https://test-install.blindsidenetworks.com/bigbluebutton/api/create?allowStartStopRecording=true&attendeePW=ap&autoStartRecording=false&meetingID=random-3587986&moderatorPW=mp&name=random-3587986&record=false&voiceBridge=71493&welcome=%3Cbr%3EWelcome+to+%3Cb%3E%25%25CONFNAME%25%25%3C%2Fb%3E%21&checksum=42941ec4ed0fb44bdc3b6ee80bcbe4059470432e";
+    print(url.toString());
+
+
+    var response = await http.get(url);
+    //String a = _getJoinLink(meetingID,"b","",meetingName);
+    print("-----------");
+   // print(a);
+
 
     //var response = await http.get(Uri.parse(proxyUrl + Uri.encodeComponent(url)));
     //var response = await http.get(url);
-    html.window.open(url.toString(), 'hey');
+    //html.window.open(url.toString(), 'hey');
 
 
     print("GİRDİM BABBA 2");
 
 
+  }
+  String _getJoinLink(String meetingID, String fullName, String password, String meetingName) {
+    const apiCall = 'join';
+    final params = {
+      'name': meetingName,
+      'meetingID': meetingID,
+      'fullName': fullName,
+      'attendeePW': 'ap',
+      'moderatorPW': 'mp',
+      'welcome': 'Welcome to the meeting!',
+      'dialNumber': '',
+      'webVoice': '',
+      'record': 'true',
+      'duration': '60',
+      'meta_course': 'Math 101',
+    };
+    String joinQuery = 'join?meetingID=$meetingID';
+    String checksum = generateChecksum(joinQuery, params, apiCall);
+    return '$bbbUrl/$joinQuery&checksum=$checksum';
   }
 
   String generateJoinUrl(String meetingID, String userName, String userID, bool isModerator) {
