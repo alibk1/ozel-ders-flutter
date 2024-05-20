@@ -164,7 +164,7 @@ class _CoursePageState extends State<CoursePage> {
                       }
                       else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Lütfen Giriş Yapın.'))
+                            const SnackBar(content: Text('Lütfen Giriş Yapınız.'))
                         );
                       }
 
