@@ -47,6 +47,9 @@ dependencies:
   url_launcher: ^6.2.6
   carousel_slider: ^4.2.1
   loading_animation_widget: ^1.2.1
+  intl: ^0.19.0
+  file_picker: ^8.0.0+1
+  firebase_storage: ^11.6.9
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +78,7 @@ flutter:
     - assets/HEADER.png
     - assets/mantalk.jpg
     - assets/therapy.jpg
+    - assets/default_profile.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

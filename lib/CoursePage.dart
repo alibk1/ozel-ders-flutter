@@ -146,14 +146,6 @@ class _CoursePageState extends State<CoursePage> {
         backgroundColor: Color(0xFF009899),
         title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 250 : 300),
         centerTitle: MediaQuery.of(context).size.width < 600 ? true : false,
-        leading: MediaQuery.of(context).size.width < 600
-            ? IconButton(
-          icon: Icon(Icons.menu),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
-        )
-            : null,
         actions: MediaQuery
             .of(context)
             .size
@@ -188,7 +180,7 @@ class _CoursePageState extends State<CoursePage> {
           TextButton(
             onPressed: isLoggedIn ?
                 () {
-              context.go('/profile');
+                  context.go('/profile/' + AuthService().userUID());
             }
                 :
                 () {

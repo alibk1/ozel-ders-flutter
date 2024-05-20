@@ -298,8 +298,8 @@ class _CoursesPageState extends State<CoursesPage> {
           TextButton(
             onPressed: isLoggedIn ?
                 () {
-              context.go('/profile');
-            }
+                  context.go('/profile/' + AuthService().userUID());
+                }
                 :
                 () {
               context.go('/login');
