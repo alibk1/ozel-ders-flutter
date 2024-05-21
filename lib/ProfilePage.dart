@@ -530,7 +530,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                   Text(
-                    isTeacher ? 'Eğitimci' : 'Öğrenci',
+                    !isTeacher ? 'Eğitimci' : 'Öğrenci',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.white,
@@ -622,7 +622,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     children: [
                                       Column(
                                         children: [
-                                          isTeacher ? Text(
+                                          !isTeacher ? Text(
                                             'Aldığı Kurslar',
                                             style: TextStyle(
                                                 fontSize: 18,
@@ -797,7 +797,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     color: Color(0xFF663366),
                     child: ExpansionTile(
                       initiallyExpanded: false,
-                      title:                                          isTeacher ? Text(
+                      title: !isTeacher ? Text(
                         'Aldığı Kurslar',
                         style: TextStyle(
                             fontSize: 18,
