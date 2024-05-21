@@ -50,27 +50,6 @@ class _CoursePageState extends State<CoursePage> {
     });
   }
 
-  Future<void> randevuOlustur(String userId,String teacherId, Map<String, dynamic> randevuData) async {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    try {
-      await _firestore
-          .collection('Users')
-          .doc(userId)
-          .collection("Randevular")
-          .add(randevuData);
-      await _firestore
-          .collection('teachers')
-          .doc(teacherId)
-          .collection('Randevular')
-          .add(randevuData);
-
-
-      print('Randevu başarıyla oluşturuldu.');
-    } catch (e) {
-      print('Randevu oluşturulurken hata meydana geldi: $e');
-    }
-  }
-
   void _showDateTimePicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -148,29 +127,35 @@ class _CoursePageState extends State<CoursePage> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () async {
-                      // TODO: RANDEVU OLUŞTURMA KODLARI randevu datayı oluştur teacher ve user id leri burda kullan
-                      User? user= FirebaseAuth.instance.currentUser;
+                      // selectedDate ve selectedTime birleştirilmesi
+                      final DateTime selectedDateTime = DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day,
+                        selectedTime.hour,
+                        selectedTime.minute,
+                      );
 
-                      if(user !=null){
+                      // TODO: RANDEVU OLUŞTURMA KODLARI randevu datayı oluştur teacher ve user id leri burda kullan
+                      User? user = FirebaseAuth.instance.currentUser;
+
+                      if (user != null) {
                         teacher = await FirestoreService().getTeacherByUID(course["author"]);
 
-                        Map<String, dynamic> randevuData = {
-                          'date': DateTime.now(),
-                          'description': 'Örnek randevu açıklaması',
-                          'url': "google.com",
-                          // Diğer randevu bilgilerini buraya ekleyin
-                        };
-                        randevuOlustur(user!.uid.toString(),teacher["name"], randevuData);
-                      }
-                      else {
+                        await FirestoreService().createAppointment(
+                          course["author"],
+                          user.uid,
+                          course["uid"],
+                          "https://www.google.com",
+                          selectedDateTime, // selectedDate yerine selectedDateTime kullanılıyor
+                        );
+                      } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Lütfen Giriş Yapınız.'))
+                          const SnackBar(content: Text('Lütfen Giriş Yapınız.')),
                         );
                       }
 
-
                       Navigator.pop(context);
-
                     },
                     child: const Text('Randevu Al'),
                   ),

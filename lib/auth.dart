@@ -61,6 +61,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
+
   String _selectedRole = '';
 
   void _selectRole(String role) {
@@ -68,6 +69,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       _selectedRole = role;
     });
   }
+
   //title: Text(_isLogin ? 'Giriş Yap' : 'Kayıt Ol')
   @override
   Widget build(BuildContext context) {
@@ -121,7 +123,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed:() {
+            onPressed: () {
               context.go('/login');
             },
             child: const Text('Giriş Yap / Kaydol',
@@ -130,7 +132,10 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
           ),
         ]
             : null,),
-      drawer: MediaQuery.of(context).size.width < 600
+      drawer: MediaQuery
+          .of(context)
+          .size
+          .width < 600
           ? DrawerMenu(isLoggedIn: false)
           : null,
       body: Column(
@@ -174,10 +179,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
                 _isLogin = !_isLogin;
               });
             },
-            child: Text(_isLogin ? 'Hala kayıt olmadın mı? Kayıt Ol' : 'Zaten hesabın var mı? Giriş Yap'),
+            child: Text(_isLogin
+                ? 'Hala kayıt olmadın mı? Kayıt Ol'
+                : 'Zaten hesabın var mı? Giriş Yap'),
           ),
           const SizedBox(height: 10),
-         // _buildGoogleSignInButton(),
+          // _buildGoogleSignInButton(),
         ],
       ),
     );
@@ -210,7 +217,9 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
                   _isLogin = !_isLogin;
                 });
               },
-              child: Text(_isLogin ? 'Hala kayıt olmadın mı? Kayıt Ol' : 'Zaten hesabın var mı? Giriş Yap'),
+              child: Text(_isLogin
+                  ? 'Hala kayıt olmadın mı? Kayıt Ol'
+                  : 'Zaten hesabın var mı? Giriş Yap'),
             ),
             const SizedBox(height: 10),
             //_buildGoogleSignInButton(),
@@ -269,7 +278,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         obscureText: true,
       ),
       const SizedBox(height: 20),
-      BirthdateInputWidget(dateController: _dateController),
+      //BirthdateInputWidget(dateController: _dateController),
       const SizedBox(height: 20.0),
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -289,7 +298,10 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       const SizedBox(height: 20),
 
       ElevatedButton(
-        onPressed: _signup,
+        onPressed: () async
+        {
+          await _signup();
+        },
         child: const Text('Kayıt Ol'),
       ),
 
@@ -306,8 +318,10 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       ),
       label: const Text('Google ile Giriş Yap'),
       style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.black, backgroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 50), // Set the button to fill the width
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 50),
+        // Set the button to fill the width
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -323,7 +337,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         password: _passwordController.text.trim(),
       );
       // Login başarılı, ana sayfaya yönlendir
-      context.go("/profile");
+      context.go("/profile/" + userCredential.user!.uid);
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
@@ -331,53 +345,60 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
-  Future<void> _addUserData(email,password,name,birthDate,role) async {
+
+  Future<void> _addUserData(email, password, name, birthDate, role) async {
     final User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-
-      if(role=="Öğrenci"){
-        await FirestoreService().createStudentDocument(user!.uid, email, name, 21, "Ankara", "");
+      if (role == "Öğrenci") {
+        await FirestoreService().createStudentDocument(
+            user!.uid, email, name, 21, "Ankara", "");
       }
-      else{
-        await FirestoreService().createTeacherDocument(user!.uid, email, name, 21, "Terapist", 3.5, "");
-    if (user != null) {
-
-      if(role=="Öğretmen"){
-        CollectionReference users = FirebaseFirestore.instance.collection('teachers');
-        await users.doc(user!.uid).set({
-          'displayName': name,
-          'email': email,
-          'photoURL': user!.photoURL,
-          'birthDate': birthDate,
-        });
-
+      else {
+        await FirestoreService().createTeacherDocument(
+            user!.uid,
+            email,
+            name,
+            21,
+            "Terapist",
+            3.5,
+            "");
+        if (user != null) {
+          if (role == "Öğretmen") {
+            CollectionReference users = FirebaseFirestore.instance.collection(
+                'teachers');
+            await users.doc(user!.uid).set({
+              'displayName': name,
+              'email': email,
+              'photoURL': user!.photoURL,
+              'birthDate': birthDate,
+            });
+          }
+          else {
+            CollectionReference users = FirebaseFirestore.instance.collection(
+                'Users');
+            await users.doc(user!.uid).set({
+              'displayName': name,
+              'email': email,
+              'photoURL': user!.photoURL,
+              'birthDate': birthDate,
+            });
+          }
+        }
       }
-      else{
-        CollectionReference users = FirebaseFirestore.instance.collection('Users');
-        await users.doc(user!.uid).set({
-          'displayName': name,
-          'email': email,
-          'photoURL': user!.photoURL,
-          'birthDate': birthDate,
-        });
-
-
-      }
-
     }
   }
-
-
   Future<void> _signup() async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       // Kayıt başarılı, giriş ekranına yönlendir
-      _addUserData(_emailController.text.trim(),_passwordController.text.trim(),_nameController.text.trim(),_nameController.text,_selectedRole);
-      context.go("/profile");
-
+      _addUserData(
+          _emailController.text.trim(), _passwordController.text.trim(),
+          _nameController.text.trim(), _nameController.text, _selectedRole);
+      context.go("/profile/" + userCredential.user!.uid);
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
@@ -408,6 +429,7 @@ class HeaderSection extends StatelessWidget {
     );
   }
 }
+
 class BirthdateInputWidget extends StatefulWidget {
   final TextEditingController dateController;
 
@@ -445,10 +467,6 @@ class _BirthdateInputWidgetState extends State<BirthdateInputWidget> {
       ),
     );
   }
-}
-
-void main() {
-  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -522,7 +540,6 @@ class _BirthdateInputExampleState extends State<BirthdateInputExample> {
       ),
     );
   }
-
 }
 
 class RoleButton extends StatelessWidget {
