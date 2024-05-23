@@ -172,7 +172,7 @@ class _CoursePageState extends State<CoursePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF009899),
+        backgroundColor: const Color(0xFF183A37),
         title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 250 : 300),
         centerTitle: MediaQuery.of(context).size.width < 600 ? true : false,
         leading: MediaQuery.of(context).size.width < 600
@@ -207,13 +207,17 @@ class _CoursePageState extends State<CoursePage> {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
             child: const Text('Kurslar', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
-            onPressed: () {}, //
-            child: const Text('Randevularım', style: TextStyle(
+            onPressed: ()
+            {
+              context.go('/appointments/' + AuthService().userUID());
+
+            },
+            child: Text('Randevularım', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
-          ) : const SizedBox.shrink(),
+          ) : SizedBox.shrink(),
           TextButton(
             onPressed: isLoggedIn ?
                 () {
@@ -234,7 +238,7 @@ class _CoursePageState extends State<CoursePage> {
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
-          ? Center(child: LoadingAnimationWidget.dotsTriangle(color: const Color(0xFF009899), size: 200))
+          ? Center(child: LoadingAnimationWidget.dotsTriangle(color: const Color(0xFF183A37), size: 200))
           : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -242,7 +246,7 @@ class _CoursePageState extends State<CoursePage> {
             // Header
             Container(
               padding: const EdgeInsets.all(2.0),
-              color: const Color(0xFF009899),
+              color: const Color(0xFF183A37),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -293,7 +297,7 @@ class _CoursePageState extends State<CoursePage> {
                   Expanded(
                     flex: 4,
                     child: Card(
-                      color: const Color(0xFF40E0D0),
+                      color: const Color(0xFF183A37),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
@@ -331,14 +335,17 @@ class _CoursePageState extends State<CoursePage> {
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF009899),
+                                  backgroundColor: const Color(0xFF183A37),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
                                     // Diğer shape özelliklerini de belirleyebilirsiniz
                                   ),
                                 ),
                                 onPressed: () {
-                                  _showDateTimePicker(context);
+                                  if(isLoggedIn)
+                                    _showDateTimePicker(context);
+                                  else
+                                    context.go('/login');
                                 },
                                 child: Text(
                                   '\n Bu Kursu Satın Al - ${course['hourlyPrice']} TL \n',
@@ -353,7 +360,7 @@ class _CoursePageState extends State<CoursePage> {
                           children: [
                             Expanded(
                               child: Card(
-                                color: const Color(0xFF663366),
+                                color: const Color(0xFF432534),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
@@ -365,9 +372,15 @@ class _CoursePageState extends State<CoursePage> {
                                         backgroundImage: NetworkImage(teacher['profilePictureUrl'] ?? ''),
                                       ),
                                       const SizedBox(height: 16),
-                                      Text(
-                                        teacher['name'] ?? '',
-                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                      TextButton(
+                                        child: Text(
+                                          teacher['name'] ?? '',
+                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                        ),
+                                        onPressed: ()
+                                        {
+                                          context.go("/profile/" + teacher["uid"]);
+                                        },
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -391,7 +404,7 @@ class _CoursePageState extends State<CoursePage> {
                 children: [
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF009899),
+                      backgroundColor: const Color(0xFF183A37),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
                         // Diğer shape özelliklerini de belirleyebilirsiniz
@@ -407,7 +420,7 @@ class _CoursePageState extends State<CoursePage> {
                   ),
                   const SizedBox(height: 16),
                   Card(
-                    color: const Color(0xFF40E0D0),
+                    color: const Color(0xFF183A37),
                     child: ExpansionTile(
                       initiallyExpanded: true,
                       title: const Text(
@@ -427,7 +440,7 @@ class _CoursePageState extends State<CoursePage> {
                   ),
                   const SizedBox(height: 16),
                   Card(
-                    color: const Color(0xFF663366),
+                    color: const Color(0xFF432534),
                     child: ExpansionTile(
                       initiallyExpanded: false,
                       title: const Text(
@@ -466,6 +479,7 @@ class _CoursePageState extends State<CoursePage> {
           ],
         ),
       ),
+      backgroundColor: Color(0xFFEFD6AC),
     );
   }
 }

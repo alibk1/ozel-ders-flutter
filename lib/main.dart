@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ozel_ders/AppointmentsPage.dart';
 import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
@@ -32,6 +33,14 @@ class MyApp extends StatelessWidget {
         builder: (context, state) => CoursesPage(category: '', subCategory: '',),
       ),
       GoRoute(
+        path: '/courses/:category/:subcategory',
+        builder: (context, state) {
+          final category = state.pathParameters['category']!;
+          final subcategory = state.pathParameters['subcategory']!;
+          return  CoursesPage(category: category, subCategory: subcategory);
+        },
+      ),
+      GoRoute(
         path: '/categories',
         builder: (context, state) => CategoriesPage(),
       ),
@@ -44,6 +53,13 @@ class MyApp extends StatelessWidget {
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
           return ProfilePage(uid: uid);
+        },
+      ),
+      GoRoute(
+        path: '/appointments/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return AppointmentsPage(uid: uid);
         },
       ),
       GoRoute(
