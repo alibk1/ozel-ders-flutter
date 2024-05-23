@@ -32,10 +32,10 @@ class _CourseCardState extends State<CourseCard> {
         ),
         side: BorderSide(
           width: 3,
-          color: Color(int.parse("#D5FFE4".substring(1, 7), radix: 16) + 0xFF000000),
+          color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
         ),
       ),
-      color: Color(int.parse("#8BE8E5".substring(1, 7), radix: 16) + 0xFF000000),
+      color: Color(int.parse("#183A37".substring(1, 7), radix: 16) + 0xFF000000),
       child: Column(
         children: <Widget>[
           Expanded(
@@ -60,7 +60,7 @@ class _CourseCardState extends State<CourseCard> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
-                color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+                color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
               ),
             ),
             onPressed: ()
@@ -74,26 +74,34 @@ class _CourseCardState extends State<CourseCard> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
-              color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+              color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
             ),
           ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text(
-                "   ${widget.course['hourlyPrice']} TL",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+              Card(
+                color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(5), // Yuvarlak köşe
+                    topRight: Radius.circular(5), // Yuvarlak köşe
+                    bottomLeft: Radius.circular(5), // Sivri köşe
+                    bottomRight: Radius.circular(5),
+                  ),
+                  side: BorderSide(
+                    width: 3,
+                    color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.shopping_cart,
-                  color: Color(int.parse("#D5FFE4".substring(1, 7), radix: 16) + 0xFF000000),
+                child: Text(
+                  "   ${widget.course['hourlyPrice']} TL   ",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(int.parse("#183A37".substring(1, 7), radix: 16) + 0xFF000000),
+                  ),
                 ),
-                onPressed: () {},
               ),
             ],
           ),
@@ -109,7 +117,7 @@ class _CourseCardState extends State<CourseCard> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+                        color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
                       ),
                     ),
                     if (!isExpanded)
@@ -130,7 +138,7 @@ class _CourseCardState extends State<CourseCard> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+                              color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
                             ),
                           ),
                         ),
@@ -151,12 +159,12 @@ class _CourseCardState extends State<CourseCard> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+                          color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
                         ),
                       ),
                       Icon(
                         isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Color(int.parse("#6F61C0".substring(1, 7), radix: 16) + 0xFF000000),
+                        color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
                       ),
                     ],
                   ),

@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/Components/ContactForm.dart';
@@ -37,7 +38,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF009899),
+        backgroundColor: Color(0xFF183A37),
         title: Image.asset('assets/header.png', height: MediaQuery
             .of(context)
             .size
@@ -67,7 +68,7 @@ class _HomePageState extends State<HomePage> {
               context.go('/');
             },
             child: Text('Ana Sayfa', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
@@ -84,7 +85,11 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
-            onPressed: () {}, //
+            onPressed: ()
+            {
+              context.go('/appointments/' + AuthService().userUID());
+
+            },
             child: Text('Randevularım', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ) : SizedBox.shrink(),
@@ -120,6 +125,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+      backgroundColor: Color(0xFFEFD6AC),
     );
   }
 }
@@ -129,7 +135,7 @@ class HeaderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 200,
-      color: Color(0xFF009899),
+      color: Color(0xFF183A37),
       child: Center(
         child: Image.asset('assets/mantalk.jpg', height: 0),
       ),
@@ -149,16 +155,16 @@ class IntroductionSection extends StatelessWidget {
           SizedBox(height: 16),
           SectionContent(
             text:
-            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.',
-            imagePath: "assets/mantalk.jpg",
+            'Biz, online rehabilitasyon ve terapi hizmetleri sunan, alanında uzman bir ekibiz. Amacımız, bireylerin fiziksel ve mental sağlıklarını iyileştirmek için güvenilir, etkili ve kişiselleştirilmiş çözümler sunmaktır. Tecrübeli terapistlerden oluşan kadromuz, her bireyin ihtiyaçlarına özel yaklaşımlar geliştirerek, onların yaşam kalitesini artırmayı hedeflemektedir. Modern teknolojiyi kullanarak, her yerden erişilebilir hizmetler sunuyor ve danışanlarımızın en iyi sonuçları elde etmeleri için sürekli olarak kendimizi geliştiriyoruz.',
+            imagePaths: ["assets/mantalk.jpg", "assets/therapy.jpg"],
           ),
           SizedBox(height: 32),
           SectionTitle(title: 'Neler Sunuyoruz?'),
           SizedBox(height: 16),
           SectionContent(
             text:
-            'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-            imagePath: "assets/therapy.jpg",
+            'Geniş yelpazede online rehabilitasyon ve terapi hizmetleri sunuyoruz. Fiziksel terapi, konuşma terapisi, psikolojik danışmanlık ve mesleki rehabilitasyon gibi farklı alanlarda uzmanlaşmış ekibimizle, her bireyin ihtiyacına uygun çözümler üretiyoruz. Ayrıca, bireysel ve grup seansları, özel programlar ve danışan takibi gibi hizmetlerle, danışanlarımızın tedavi sürecini destekliyoruz. Modern teknolojik altyapımız sayesinde, kullanıcı dostu ve erişilebilir bir hizmet deneyimi sunuyor, her yerden kolayca erişim imkanı sağlıyoruz',
+            imagePaths: ["assets/therapy.jpg", "assets/mantalk.jpg"],
           ),
           SizedBox(height: 32),
           SectionTitle(title: 'Bizimle İletişime Geçin'),
@@ -189,27 +195,44 @@ class SectionTitle extends StatelessWidget {
 
 class SectionContent extends StatelessWidget {
   final String text;
-  final String imagePath;
+  final List<String> imagePaths;
 
-  SectionContent({required this.text, required this.imagePath});
+  SectionContent({required this.text, required this.imagePaths});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
+        Container(
+          width: MediaQuery.of(context).size.width / 3 * 2,
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+            ),
           ),
         ),
         SizedBox(height: 20,),
-        Image.asset(
-          imagePath,
-          width: MediaQuery.of(context).size.width < 600
-              ?  MediaQuery.of(context).size.width : MediaQuery.of(context).size.width * 7 / 10,
-
+        CarouselSlider(
+          options: CarouselOptions(
+            autoPlay: true,
+            aspectRatio: 23 / 9,
+            enlargeCenterPage: true,
+            enableInfiniteScroll: true,
+          ),
+          items: imagePaths.map<Widget>((photoUrl) {
+            return Builder(
+              builder: (BuildContext context) {
+                return Image.asset(
+                  photoUrl,
+                  fit: BoxFit.contain,
+                  scale: 0.6,
+                );
+              },
+            );
+          }).toList() ??
+              [],
         ),
       ],
     );

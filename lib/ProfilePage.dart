@@ -86,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (BuildContext context) {
           return Center(
             child: LoadingAnimationWidget.twistingDots(
-                leftDotColor: Color(0xFF009899),
+                leftDotColor: Color(0xFF183A37),
                 rightDotColor: Color(0xFF663366),
                 size: 100),
           );
@@ -124,7 +124,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-
   Future<void> _showChangeDescDialog(BuildContext context) async {
     TextEditingController descController =
     TextEditingController(text: userInfo['desc']);
@@ -138,11 +137,13 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Text('Açıklamayı Değiştir',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10,),
               TextField(
                 controller: descController,
                 maxLines: 5,
                 decoration: InputDecoration(hintText: 'Yeni Açıklama'),
               ),
+              SizedBox(height: 10,),
               ElevatedButton(
                 onPressed: () async {
                   await FirestoreService().changeUserDesc(
@@ -154,6 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
                 child: Text('Kaydet'),
               ),
+              SizedBox(height: 10,),
             ],
           ),
         );
@@ -174,10 +176,12 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Text('İsmi Değiştir',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10,),
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(hintText: 'Yeni İsim'),
               ),
+              SizedBox(height: 10,),
               ElevatedButton(
                 onPressed: () async {
                   await FirestoreService().changeUserName(
@@ -188,6 +192,38 @@ class _ProfilePageState extends State<ProfilePage> {
                   Navigator.pop(context);
                 },
                 child: Text('Kaydet'),
+              ),
+              SizedBox(height: 10,),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showLogOutDialog(BuildContext context) async {
+    TextEditingController nameController =
+    TextEditingController(text: userInfo['name']);
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Çıkış Yapmak İstiyor Musunuz?',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ElevatedButton(
+                onPressed: () async {
+                  bool a = await AuthService().signOut();
+                  if(a)
+                    context.go("/login");
+                  else
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),);
+                },
+                child: Text('Evet, Çıkış Yap'),
               ),
             ],
           ),
@@ -281,8 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     SizedBox(height: 8),
                     ElevatedButton(
-                      onPressed: () async
-                      {
+                      onPressed: () async {
                         final result = await FilePicker.platform.pickFiles(
                           type: FileType.image,
                           allowMultiple: true,
@@ -341,41 +376,52 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ElevatedButton(
                       onPressed: () async {
-                        if (nameController.text.isNotEmpty &&
-                            descController.text.isNotEmpty &&
-                            selectedCategory != null &&
-                            selectedSubCategory != null &&
-                            priceController.text.isNotEmpty &&
-                            photos.isNotEmpty) {
-                          final photoUrls = await Future.wait(photos.map((photo) async {
-                            final storageRef = FirebaseStorage.instance
-                                .ref()
-                                .child('course_photos')
-                                .child(widget.uid)
-                                .child(photo.name);
-                            final uploadTask = storageRef.putFile(File(photo.path!));
-                            final snapshot = await uploadTask.whenComplete(() => null);
-                            return await snapshot.ref.getDownloadURL();
-                          }).toList());
+                        try {
+                          if (nameController.text.isNotEmpty &&
+                              descController.text.isNotEmpty &&
+                              selectedCategory != null &&
+                              selectedSubCategory != null &&
+                              priceController.text.isNotEmpty &&
+                              photos.isNotEmpty) {
+                            final photoUrls = await Future.wait(
+                                photos.map((photo) async {
+                                  final storageRef = FirebaseStorage.instance
+                                      .ref()
+                                      .child('course_photos')
+                                      .child(widget.uid)
+                                      .child(photo.name);
+                                  final uploadTask = storageRef.putData(
+                                      photo.bytes!);
+                                  final snapshot = await uploadTask
+                                      .whenComplete(() => null);
+                                  return await snapshot.ref.getDownloadURL();
+                                }).toList());
 
-                          await FirestoreService().createCourse(
-                            nameController.text,
-                            descController.text,
-                            widget.uid,
-                            selectedCategory!,
-                            selectedSubCategory!,
-                            double.parse(priceController.text),
-                            photoUrls,
-                          );
+                            await FirestoreService().createCourse(
+                              nameController.text,
+                              descController.text,
+                              widget.uid,
+                              selectedCategory!,
+                              selectedSubCategory!,
+                              double.parse(priceController.text),
+                              photoUrls,
+                            );
 
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Kurs başarıyla oluşturuldu')),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
-                          );
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text('Kurs başarıyla oluşturuldu')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(
+                                  'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
+                            );
+                          }
+                        }
+                        catch(e)
+                        {
+                          print(e);
                         }
                       },
                       child: Text('Oluştur'),
@@ -389,11 +435,12 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF009899),
+        backgroundColor: Color(0xFF183A37),
         title: Image.asset('assets/header.png',
             height: MediaQuery
                 .of(context)
@@ -432,15 +479,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
-          isLoggedIn
-              ? TextButton(
-            onPressed: () {}, //
-            child: Text('Randevularım',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold)),
-          )
-              : SizedBox.shrink(),
+          isLoggedIn ? TextButton(
+            onPressed: ()
+            {
+              context.go('/appointments/' + AuthService().userUID());
+
+            },
+            child: Text('Randevularım', style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+          ) : SizedBox.shrink(),
           TextButton(
             onPressed: isLoggedIn
                 ? () {
@@ -451,7 +498,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+                    color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
@@ -465,7 +512,7 @@ class _ProfilePageState extends State<ProfilePage> {
       body: isLoading
           ? Center(
           child: LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF009899), size: 200))
+              color: Color(0xFF183A37), size: 200))
           : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -473,7 +520,7 @@ class _ProfilePageState extends State<ProfilePage> {
             // Header
             Container(
               padding: EdgeInsets.all(2.0),
-              color: Color(0xFF009899),
+              color: Color(0xFF183A37),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -507,6 +554,19 @@ class _ProfilePageState extends State<ProfilePage> {
                       : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      IconButton(
+                          tooltip: "İsmi Düzenle",
+                          onPressed: () {
+                            _showChangeNameDialog(context);
+                          },
+                          icon: Icon(
+                            Icons.edit_note,
+                            color: Colors.white,
+                          )
+                      ),
+                      SizedBox(
+                        width: 15,
+                      ),
                       Text(
                         userInfo['name'] ?? '',
                         style: TextStyle(
@@ -519,18 +579,19 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: 15,
                       ),
                       IconButton(
-                          tooltip: "İsmi Düzenle",
+                          tooltip: "Çıkış Yap",
                           onPressed: () {
-                            _showChangeNameDialog(context);
+                            _showLogOutDialog(context);
                           },
                           icon: Icon(
-                            Icons.edit_note,
-                            color: Colors.white,
-                          ))
+                            Icons.logout,
+                            color: Colors.red,
+                          )
+                      ),
                     ],
                   ),
                   Text(
-                    !isTeacher ? 'Eğitimci' : 'Öğrenci',
+                    isTeacher ? 'Eğitimci' : 'Öğrenci',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.white,
@@ -553,7 +614,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Expanded(
                     flex: 4,
                     child: Card(
-                      color: Color(0xFF40E0D0),
+                      color: Color(0xFF183A37),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
@@ -612,7 +673,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Expanded(
                               child: Card(
-                                color: Color(0xFF663366),
+                                color: Color(0xFF432534),
                                 child: Padding(
                                   padding:
                                   const EdgeInsets.all(16.0),
@@ -645,8 +706,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                     color:
                                                     Colors.white),
                                               ),
-                                              SizedBox(width: 10,),
-                                              IconButton(
+                                              if(isSelf) SizedBox(width: 10,),
+                                              if(isSelf) IconButton(
                                                   onPressed: ()
                                                   {
                                                     _showCreateCourseDialog(context);
@@ -749,7 +810,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   SizedBox(height: 16),
                   Card(
-                    color: Color(0xFF40E0D0),
+                    color: Color(0xFF183A37),
                     child: ExpansionTile(
                       initiallyExpanded: true,
                       title: !isSelf
@@ -794,7 +855,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(height: 16),
                   Card(
-                    color: Color(0xFF663366),
+                    color: Color(0xFF432534),
                     child: ExpansionTile(
                       initiallyExpanded: false,
                       title: !isTeacher ? Text(
@@ -891,6 +952,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
+      backgroundColor: Color(0xFFEFD6AC),
     );
   }
 }

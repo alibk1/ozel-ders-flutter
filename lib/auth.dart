@@ -76,7 +76,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF009899),
+        backgroundColor: const Color(0xFF183A37),
         title: Image.asset('assets/header.png', height: MediaQuery
             .of(context)
             .size
@@ -128,7 +128,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             },
             child: const Text('Giriş Yap / Kaydol',
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+                    color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
           ),
         ]
             : null,),
@@ -156,6 +156,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
           FooterSection(),
         ],
       ),
+      backgroundColor: Color(0xFFEFD6AC),
     );
   }
 
@@ -332,12 +333,9 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
   Future<void> _login() async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      User? user = await AuthService().signInWithEmail(_emailController.text, _passwordController.text);
       // Login başarılı, ana sayfaya yönlendir
-      context.go("/profile/" + userCredential.user!.uid);
+      context.go("/profile/" + user!.uid);
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
@@ -346,59 +344,15 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     }
   }
 
-  Future<void> _addUserData(email, password, name, birthDate, role) async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      if (role == "Öğrenci") {
-        await FirestoreService().createStudentDocument(
-            user!.uid, email, name, 21, "Ankara", "");
-      }
-      else {
-        await FirestoreService().createTeacherDocument(
-            user!.uid,
-            email,
-            name,
-            21,
-            "Terapist",
-            3.5,
-            "");
-        if (user != null) {
-          if (role == "Öğretmen") {
-            CollectionReference users = FirebaseFirestore.instance.collection(
-                'teachers');
-            await users.doc(user!.uid).set({
-              'displayName': name,
-              'email': email,
-              'photoURL': user!.photoURL,
-              'birthDate': birthDate,
-            });
-          }
-          else {
-            CollectionReference users = FirebaseFirestore.instance.collection(
-                'Users');
-            await users.doc(user!.uid).set({
-              'displayName': name,
-              'email': email,
-              'photoURL': user!.photoURL,
-              'birthDate': birthDate,
-            });
-          }
-        }
-      }
-    }
-  }
   Future<void> _signup() async {
     try {
-      UserCredential userCredential = await _auth
-          .createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      User? user = await AuthService().registerWithEmail(_emailController.text, _passwordController.text);
+      if(_selectedRole == "Öğretmen")
+        await FirestoreService().createTeacherDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ne Ararsan", 3.5, "");
+      else
+        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ankara", "");
       // Kayıt başarılı, giriş ekranına yönlendir
-      _addUserData(
-          _emailController.text.trim(), _passwordController.text.trim(),
-          _nameController.text.trim(), _nameController.text, _selectedRole);
-      context.go("/profile/" + userCredential.user!.uid);
+      context.go("/profile/" + user.uid);
     } on FirebaseAuthException catch (e) {
       // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
@@ -412,7 +366,7 @@ class HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF009899),
+      color: const Color(0xFF183A37),
       child: const Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

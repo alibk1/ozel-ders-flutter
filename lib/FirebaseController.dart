@@ -56,6 +56,19 @@ class AuthService {
     }
   }
 
+  Future<bool> signOut() async
+  {
+    try {
+      await _auth.signOut();
+      return true;
+    }
+    catch(e)
+    {
+      print(e);
+      return false;
+    }
+  }
+
   String userUID()
   {
     return _auth.currentUser!.uid;
@@ -75,7 +88,8 @@ class FirestoreService {
       'age': age,
       'city': city,
       'profilePictureUrl': profilePictureUrl,
-      'desc': ''
+      'desc': '',
+      'courses': []
     });
   }
 
@@ -88,22 +102,55 @@ class FirestoreService {
       'fieldOfStudy': fieldOfStudy,
       'diplomaGrade': diplomaGrade,
       'profilePictureUrl': profilePictureUrl,
-      'desc': ''
+      'desc': '',
+      'courses': []
+    });
+  }
+
+  Future<void> createMessage(String email, String name, String message) async {
+    await _db.collection('messages').add({
+      'email': email,
+      'name': name,
+      'message': message
     });
   }
 
   // Kurs oluşturma
   Future<void> createCourse(String name, String desc, String author, String category, String subCategory, double hourlyPrice, List<String> photos) async {
-    await _db.collection('courses').add({
-      'name': name,
-      'desc': desc,
-      'author': author,
-      'category': category,
-      'subCategory': subCategory,
-      'hourlyPrice': hourlyPrice,
-      'photos': photos,
-    });
+    try {
+      DocumentReference courseRef = await _db.collection('courses').add({
+        'name': name,
+        'desc': desc,
+        'author': author,
+        'category': category,
+        'subCategory': subCategory,
+        'hourlyPrice': hourlyPrice,
+        'photos': photos,
+      });
+
+      String courseId = courseRef.id;
+
+      DocumentReference teacherRef = _db.collection('teachers').doc(author);
+
+      await _db.runTransaction((transaction) async {
+        DocumentSnapshot teacherSnapshot = await transaction.get(teacherRef);
+        if (teacherSnapshot.exists) {
+          print(teacherSnapshot.id);
+          List<dynamic> courses = teacherSnapshot['courses'] ?? [];
+
+          if (!courses.contains(courseId)) {
+            courses.add(courseId);
+            transaction.update(teacherRef, {'courses': courses});
+          }
+        }
+      });
+    }
+    catch(e)
+    {
+      print(e);
+    }
   }
+
 
   // Kurs düzenleme
   Future<void> updateCourse(String courseId, String category, String subCategory, double hourlyPrice) async {
@@ -116,7 +163,39 @@ class FirestoreService {
 
   // Randevu oluşturma
   Future<void> createAppointment(String author, String student, String courseId, String meetingURL, DateTime date) async {
-    await _db.collection('appointments').add({
+    DocumentReference doc1 = await _db.collection('appointments').add({
+      'author': author,
+      'student': student,
+      'courseID': courseId,
+      'meetingURL': meetingURL,
+      'date': date,
+    });
+
+    await _db.collection('students').doc(student).collection("appointments").doc(doc1.id).set({
+      'author': author,
+      'student': student,
+      'courseID': courseId,
+      'meetingURL': meetingURL,
+      'date': date,
+    });
+
+
+    DocumentReference studentRef = _db.collection('students').doc(student);
+
+    await _db.runTransaction((transaction) async {
+      DocumentSnapshot teacherSnapshot = await transaction.get(studentRef);
+
+      if (teacherSnapshot.exists) {
+        List<dynamic> courses = teacherSnapshot['courses'] ?? [];
+
+        if (!courses.contains(courseId)) {
+          courses.add(courseId);
+          transaction.update(studentRef, {'courses': courses});
+        }
+      }
+    });
+
+    await _db.collection('teachers').doc(author).collection("appointments").doc(doc1.id).set({
       'author': author,
       'student': student,
       'courseID': courseId,
@@ -270,6 +349,28 @@ class FirestoreService {
     } else {
       return {};
     }
+  }
+
+  // Get specific document by UID from students collection
+  Future<Map<String, dynamic>> getAppointmentByUID(String uid) async {
+    DocumentSnapshot doc = await _db.collection('appointments').doc(uid).get();
+    if (doc.exists) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      data['uid'] = doc.id;
+      return data;
+    } else {
+      return {};
+    }
+  }
+
+  // Get specific document by UID from students collection
+  Future<List<Map<String, dynamic>>> getUserAppointments(String uid, bool isTeacher) async {
+    String collection = isTeacher ? "teachers" : "students";
+    QuerySnapshot query = await _db.collection(collection).doc(uid).collection("appointments").get();
+    return query.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'UID': doc.id};
+    }).toList();
   }
 
   // Change user profile photo URL

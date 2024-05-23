@@ -20,6 +20,7 @@ class _CoursesPageState extends State<CoursesPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   FirestoreService _firestore = FirestoreService();
+  List<Map<String, dynamic>> coursesHolder = [];
   List<Map<String, dynamic>> courses = [];
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> teachers = [];
@@ -35,8 +36,12 @@ class _CoursesPageState extends State<CoursesPage> {
   @override
   void initState() {
     super.initState();
-    selectedCategory = widget.category.isEmpty ? 'Seçilmedi' : widget.category;
-    selectedSubCategory = widget.subCategory.isEmpty ? 'Seçilmedi' : widget.subCategory;
+    selectedCategory =
+    widget.category.isEmpty || widget.category == '' ? 'Seçilmedi' : widget
+        .category;
+    selectedSubCategory =
+    widget.subCategory.isEmpty || widget.category == '' ? 'Seçilmedi' : widget
+        .subCategory;
     initData();
   }
 
@@ -50,23 +55,30 @@ class _CoursesPageState extends State<CoursesPage> {
   Future<void> loadInitialData() async {
     categories = await _firestore.getCategories();
     courses = await _firestore.getAllCourses();
+    coursesHolder = courses;
     teachers = await _firestore.getAllTeachers();
     filterCourses();
   }
 
   void filterCourses() {
     setState(() {
+      courses = coursesHolder;
       print(selectedCategory);
       List<Map<String, dynamic>> filteredCourses = courses.where((course) {
-        return (selectedCategory == 'Seçilmedi' || course['category'] == selectedCategory) &&
-            (selectedSubCategory == 'Seçilmedi' || course['subCategory'] == selectedSubCategory) &&
-            (course['hourlyPrice'] >= minPrice && course['hourlyPrice'] <= maxPrice);
+        return (selectedCategory == 'Seçilmedi' ||
+            course['category'] == selectedCategory) &&
+            (selectedSubCategory == 'Seçilmedi' ||
+                course['subCategory'] == selectedSubCategory) &&
+            (course['hourlyPrice'] >= minPrice &&
+                course['hourlyPrice'] <= maxPrice);
       }).toList();
 
       if (sortBy == 'price_asc') {
-        filteredCourses.sort((a, b) => a['hourlyPrice'].compareTo(b['hourlyPrice']));
+        filteredCourses.sort((a, b) =>
+            a['hourlyPrice'].compareTo(b['hourlyPrice']));
       } else if (sortBy == 'price_desc') {
-        filteredCourses.sort((a, b) => b['hourlyPrice'].compareTo(a['hourlyPrice']));
+        filteredCourses.sort((a, b) =>
+            b['hourlyPrice'].compareTo(a['hourlyPrice']));
       }
 
       courses = filteredCourses;
@@ -80,24 +92,6 @@ class _CoursesPageState extends State<CoursesPage> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            // DropDown listelerinde hata oluşmaması için kontrol ekliyoruz
-            final validCategories = categories.map((category) => category['UID']).toList();
-            validCategories.add('Seçilmedi');
-            if (selectedCategory != null && !validCategories.contains(selectedCategory)) {
-              selectedCategory = 'Seçilmedi';
-            }
-
-            final validSubCategories = selectedCategory != 'Seçilmedi'
-                ? categories
-                .firstWhere((category) => category['UID'] == selectedCategory)['subCategories']
-                .map((subCategory) => subCategory['UID'])
-                .toList()
-                : [];
-            validSubCategories.add('Seçilmedi');
-            if (selectedSubCategory != null && !validSubCategories.contains(selectedSubCategory)) {
-              selectedSubCategory = 'Seçilmedi';
-            }
-
             return Container(
               padding: EdgeInsets.all(16.0),
               height: 400,
@@ -112,11 +106,11 @@ class _CoursesPageState extends State<CoursesPage> {
                     value: selectedCategory,
                     hint: Text('Kategori Seç'),
                     onChanged: (String? newValue) {
-                      setModalState(() {
+                      setState(() {
                         selectedCategory = newValue!;
-                        selectedSubCategory = 'Seçilmedi'; // Alt kategoriyi sıfırla
+                        selectedSubCategory = 'Seçilmedi';
                       });
-                      setState(() {}); // Add this to update the UI
+                      setModalState(() {}); // Dropdown güncelleme
                     },
                     items: [
                       DropdownMenuItem<String>(
@@ -136,10 +130,10 @@ class _CoursesPageState extends State<CoursesPage> {
                       value: selectedSubCategory,
                       hint: Text('Alt Kategori Seç'),
                       onChanged: (String? newValue) {
-                        setModalState(() {
+                        setState(() {
                           selectedSubCategory = newValue!;
                         });
-                        setState(() {}); // Add this to update the UI
+                        setModalState(() {}); // Dropdown güncelleme
                       },
                       items: [
                         DropdownMenuItem<String>(
@@ -147,7 +141,8 @@ class _CoursesPageState extends State<CoursesPage> {
                           child: Text('Seçilmedi'),
                         ),
                         ...categories
-                            .firstWhere((category) => category['uid'] == selectedCategory)['subCategories']
+                            .firstWhere((category) =>
+                        category['uid'] == selectedCategory)['subCategories']
                             .map<DropdownMenuItem<String>>((subCategory) {
                           return DropdownMenuItem<String>(
                             value: subCategory['uid'],
@@ -171,10 +166,11 @@ class _CoursesPageState extends State<CoursesPage> {
                       '${maxPrice.round()} TL',
                     ),
                     onChanged: (RangeValues values) {
-                      setModalState(() {
+                      setState(() {
                         minPrice = values.start;
                         maxPrice = values.end;
                       });
+                      setModalState(() {}); // Slider güncelleme
                     },
                   ),
                   SizedBox(height: 16),
@@ -202,8 +198,9 @@ class _CoursesPageState extends State<CoursesPage> {
           builder: (BuildContext context, StateSetter setModalState) {
             return Container(
               padding: EdgeInsets.all(16.0),
-              height: 200,
+              height: 300,
               child: Column(
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   Text(
                     'Sıralama',
@@ -253,10 +250,19 @@ class _CoursesPageState extends State<CoursesPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF009899),
-        title: Image.asset('assets/header.png', height: MediaQuery.of(context).size.width < 600 ? 250 : 300),
-        centerTitle: MediaQuery.of(context).size.width < 600 ? true : false,
-        leading: MediaQuery.of(context).size.width < 600
+        backgroundColor: Color(0xFF183A37),
+        title: Image.asset('assets/header.png', height: MediaQuery
+            .of(context)
+            .size
+            .width < 600 ? 250 : 300),
+        centerTitle: MediaQuery
+            .of(context)
+            .size
+            .width < 600 ? true : false,
+        leading: MediaQuery
+            .of(context)
+            .size
+            .width < 600
             ? IconButton(
           icon: Icon(Icons.menu),
           onPressed: () {
@@ -288,18 +294,20 @@ class _CoursesPageState extends State<CoursesPage> {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
             child: Text('Kurslar', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
-            onPressed: () {}, //
+            onPressed: () {
+              context.go('/appointments/' + AuthService().userUID());
+            },
             child: Text('Randevularım', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ) : SizedBox.shrink(),
           TextButton(
             onPressed: isLoggedIn ?
                 () {
-                  context.go('/profile/' + AuthService().userUID());
-                }
+              context.go('/profile/' + AuthService().userUID());
+            }
                 :
                 () {
               context.go('/login');
@@ -311,11 +319,15 @@ class _CoursesPageState extends State<CoursesPage> {
         ]
             : null,
       ),
-      drawer: MediaQuery.of(context).size.width < 600
+      drawer: MediaQuery
+          .of(context)
+          .size
+          .width < 600
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
-          ? Center(child: LoadingAnimationWidget.dotsTriangle(color: Color(0xFF009899), size: 200))
+          ? Center(child: LoadingAnimationWidget.dotsTriangle(
+          color: Color(0xFF183A37), size: 200))
           : Column(
         children: [
           Padding(
@@ -324,16 +336,50 @@ class _CoursesPageState extends State<CoursesPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(5), // Yuvarlak köşe
+                        topRight: Radius.circular(5), // Yuvarlak köşe
+                        bottomLeft: Radius.circular(5), // Sivri köşe
+                        bottomRight: Radius.circular(5),
+                      ),
+                      side: BorderSide(
+                        width: 2,
+                        color: Color(int.parse(
+                            "#04151F".substring(1, 7), radix: 16) + 0xFF000000),
+                      ),
+                    ),
+                    backgroundColor: Color(0xFF183A37),
+                  ),
                   onPressed: () {
                     _showFilterModal(context);
                   },
-                  child: Text('Filtreleme'),
+                  child: Text(
+                    'Filtreleme', style: TextStyle(color: Color(0xFFEFD6AC), fontSize: 20),),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(5), // Yuvarlak köşe
+                        topRight: Radius.circular(5), // Yuvarlak köşe
+                        bottomLeft: Radius.circular(5), // Sivri köşe
+                        bottomRight: Radius.circular(5),
+                      ),
+                      side: BorderSide(
+                        width: 2,
+                        color: Color(
+                            int.parse("#04151F".substring(1, 7), radix: 16) +
+                                0xFF000000),
+                      ),
+                    ),
+                    backgroundColor: Color(0xFF183A37),
+                  ),
                   onPressed: () {
                     _showSortModal(context);
                   },
-                  child: Text('Sıralama'),
+                  child: Text('Sıralama', style: TextStyle(color: Color(0xFFEFD6AC), fontSize: 20),),
                 ),
               ],
             ),
@@ -341,7 +387,10 @@ class _CoursesPageState extends State<CoursesPage> {
           Expanded(
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: MediaQuery.of(context).size.width >= 600 ? 4 : 2,
+                crossAxisCount: MediaQuery
+                    .of(context)
+                    .size
+                    .width >= 600 ? 4 : 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 childAspectRatio: 0.75,
@@ -351,7 +400,8 @@ class _CoursesPageState extends State<CoursesPage> {
                 final course = courses[index];
                 return CourseCard(
                   course: course,
-                  author: teachers.firstWhere((element) => element["UID"] == course["author"]),
+                  author: teachers.firstWhere((element) =>
+                  element["UID"] == course["author"]),
                 );
               },
             ),
@@ -359,6 +409,7 @@ class _CoursesPageState extends State<CoursesPage> {
           FooterSection()
         ],
       ),
+      backgroundColor: Color(0xFFEFD6AC),
     );
   }
 }
@@ -368,7 +419,7 @@ class HeaderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 200,
-      color: Color(0xFF009899),
+      color: Color(0xFF183A37),
       child: Center(
         child: Row(
           children: [

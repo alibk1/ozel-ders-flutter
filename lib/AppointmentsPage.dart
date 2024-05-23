@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/FirebaseController.dart';
 
 import 'Components/Drawer.dart';
 
-class CategoriesPage extends StatefulWidget {
+class AppointmentsPage extends StatefulWidget {
+  final String uid;
+  AppointmentsPage({required this.uid});
+
   @override
-  _CategoriesPageState createState() => _CategoriesPageState();
+  _AppointmentsPageState createState() => _AppointmentsPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
+class _AppointmentsPageState extends State<AppointmentsPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   FirestoreService _firestore = FirestoreService();
-  List<Map<String, dynamic>> categories = [];
-  List<Map<String, dynamic>> subCategories = [];
-  String selectedCategory = "";
+  List<Map<String, dynamic>> userAppointments = [];
+  Map<String, dynamic> userInfo = {};
   bool isLoading = true;
   bool showSubCategories = false;
   bool isLoggedIn = false;
+  bool isTeacher = true;
 
   @override
   void initState() {
@@ -31,35 +35,30 @@ class _CategoriesPageState extends State<CategoriesPage> {
   Future<void> initData() async
   {
     isLoggedIn = await AuthService().isUserSignedIn();
+    if (isLoggedIn) {
+      String currentUser = AuthService().userUID();
+      if (currentUser == widget.uid) {
+        userInfo = await FirestoreService().getTeacherByUID(widget.uid);
 
-    getCategories();
+        if (userInfo.isNotEmpty) {
+          isTeacher = true;
+        } else {
+          userInfo = await FirestoreService().getStudentByUID(widget.uid);
+          isTeacher = false;
+        }
+        userAppointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+      }
+      else
+      {
+        context.go('/');
+      }
+    }
+    else
+    {
+      context.go('/');
+    }
+    isLoading = false;
     setState(() {});
-  }
-
-  Future<void> getCategories() async {
-    categories = await _firestore.getCategories();
-    setState(() {
-      isLoading = false;
-      showSubCategories = false;
-    });
-  }
-
-
-  void onCategoryTap(Map<String, dynamic> category) async {
-    // Alt kategorileri Firestore'dan alıyoruz (getSubCategories metodunu burada çağırın)
-    // Bu örnekte getSubCategories metodunun geriye List<Map<String, dynamic>> döndüğünü varsayıyorum
-    selectedCategory = category['uid'];
-    subCategories = category['subCategories'];
-    setState(() {
-      showSubCategories = true;
-    });
-  }
-
-  void onCategoryBackTap() {
-    selectedCategory = "";
-    setState(() {
-      showSubCategories = false;
-    });
   }
 
   @override
@@ -104,7 +103,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
               context.go('/categories'); // CategoriesPage'e yönlendirme
             },
             child: Text('Kategoriler', style: TextStyle(
-                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
@@ -114,11 +113,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
-            onPressed: () {
+            onPressed: ()
+            {
               context.go('/appointments/' + AuthService().userUID());
+
             },
             child: Text('Randevularım', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
           ) : SizedBox.shrink(),
           TextButton(
             onPressed: isLoggedIn ?
@@ -149,8 +150,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           LoadingAnimationWidget.dotsTriangle(
               color: Color(0xFF183A37), size: 200),
         ],
-      )
-      )
+      ))
           : Center(
         child: Column(
           children: [
@@ -160,9 +160,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: AnimatedSwitcher(
                   duration: Duration(milliseconds: 750),
-                  child: showSubCategories
-                      ? buildSubCategoriesGrid()
-                      : buildCategoriesGrid(),
+                  child: buildAppointmentsGrid(),
                 ),
               ),
             ),
@@ -175,7 +173,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 
 
-  Widget buildCategoriesGrid() {
+  Widget buildAppointmentsGrid() {
     return GridView.builder(
       key: ValueKey('categoriesGrid'),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -187,94 +185,10 @@ class _CategoriesPageState extends State<CategoriesPage> {
         mainAxisSpacing: 50,
         childAspectRatio: 1.5,
       ),
-      itemCount: categories.length,
+      itemCount: userAppointments.length,
       itemBuilder: (context, index) {
-        final category = categories[index];
-        return GestureDetector(
-          onTap: () => onCategoryTap(category),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Color(0xFF183A37),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    category['name'],
-                    style: TextStyle(fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildSubCategoriesGrid() {
-    return GridView.builder(
-      key: ValueKey('subCategoriesGrid'),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery
-            .of(context)
-            .size
-            .width >= 600 ? 4 : 2,
-        crossAxisSpacing: 50,
-        mainAxisSpacing: 50,
-        childAspectRatio: 1.5,
-      ),
-      itemCount: subCategories.length,
-      itemBuilder: (context, index) {
-        final subCategory = subCategories[index];
-        return GestureDetector(
-          onTap: () {
-            context.go('/courses/' + selectedCategory + '/' + subCategory["uid"]);
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Color(0xFF183A37),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    subCategory['name'],
-                    style: TextStyle(fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        final appointment = userAppointments[index];
+        return AppointmentCard(appointmentUID: appointment["UID"]);
       },
     );
   }
@@ -290,9 +204,10 @@ class HeaderSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(height: 55,),
-            Text("Kategoriler", style: TextStyle(color: Colors.white,
+            Text("Randevular", style: TextStyle(color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 20),),
+
           ],
         ),
       ),
