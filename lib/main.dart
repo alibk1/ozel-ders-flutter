@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
+import 'package:ozel_ders/TeamProfilePage.dart';
 
 import 'ProfilePage.dart';
 import 'auth.dart';
@@ -16,6 +19,19 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  /*Platform.isAndroid
+      ? await Firebase.initializeApp(
+      options: FirebaseOptions(
+          apiKey: "AIzaSyAoEBxQyBErpVzHH8-jhyrSgRU5OLTnBrE",
+          authDomain: "ortakozelders.firebaseapp.com",
+          projectId: "ortakozelders",
+          storageBucket: "ortakozelders.appspot.com",
+          messagingSenderId: "619520758342",
+          appId: "1:619520758342:web:12c44b2582dbdcb9b67047",
+          measurementId: "G-MZLW5M94M2"
+      )
+  )
+      :*/
   runApp(MyApp());
 }
 
@@ -46,13 +62,27 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => LoginSignupPage(),
+        builder: (context, state) => LoginSignupPage(reference: "",),
+      ),
+      GoRoute(
+        path: '/newuser/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return LoginSignupPage(reference: uid);
+        },
       ),
       GoRoute(
         path: '/profile/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
           return ProfilePage(uid: uid);
+        },
+      ),
+      GoRoute(
+        path: '/team/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return TeamProfilePage(uid: uid);
         },
       ),
       GoRoute(

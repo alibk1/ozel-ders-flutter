@@ -10,6 +10,10 @@ import 'Components/Drawer.dart';
 import 'HomePage.dart';
 
 class LoginSignupPage extends StatefulWidget {
+  final String reference;
+
+  LoginSignupPage({required this.reference});
+
   @override
   _LoginSignupPageState createState() => _LoginSignupPageState();
 }
@@ -21,6 +25,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _referenceController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
 
   final TextEditingController _dateController = TextEditingController(); // Yeni TextField için controller
@@ -31,6 +36,18 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     clientId: '619520758342-mc02si573tea3f48n429fmbkngnpd38c.apps.googleusercontent.com',
 
   );
+
+  @override
+  void initState() {
+    _referenceController.text = widget.reference;
+    if(widget.reference != ""){
+      _isLogin = false;
+      setState(() {
+
+      });
+    }
+    super.initState();
+  }
 
   Future<void> _loginWithGoogle() async {
     try {
@@ -49,20 +66,19 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
       final UserCredential userCredential = await _auth.signInWithCredential(credential);*/
       await AuthService().signInWithGoogle();
-      // Giriş başarılı, ana sayfaya yönlendir
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
     } on FirebaseAuthException catch (e) {
-      // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Google ile giriş hatası')),
       );
     }
   }
 
-  String _selectedRole = '';
+
+  String _selectedRole = 'Öğrenci';
 
   void _selectRole(String role) {
     setState(() {
@@ -278,6 +294,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         decoration: const InputDecoration(labelText: 'Şifre'),
         obscureText: true,
       ),
+      if(_selectedRole != "Kurum")...[
+        TextField(
+          controller: _referenceController,
+          decoration: const InputDecoration(labelText: 'Referans Kodu (Opsiyonel)'),
+        ),
+      ],
       const SizedBox(height: 20),
       //BirthdateInputWidget(dateController: _dateController),
       const SizedBox(height: 20.0),
@@ -293,6 +315,11 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             role: 'Öğretmen',
             isSelected: _selectedRole == 'Öğretmen',
             onTap: () => _selectRole('Öğretmen'),
+          ),
+          RoleButton(
+            role: 'Kurum',
+            isSelected: _selectedRole == 'Kurum',
+            onTap: () => _selectRole('Kurum'),
           ),
         ],
       ),
@@ -347,10 +374,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   Future<void> _signup() async {
     try {
       User? user = await AuthService().registerWithEmail(_emailController.text, _passwordController.text);
-      if(_selectedRole == "Öğretmen")
-        await FirestoreService().createTeacherDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ne Ararsan", 3.5, "");
-      else
-        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ankara", "");
+      if(_selectedRole == "Öğretmen") {
+        await FirestoreService().createTeacherDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ne Ararsan", 3.5, "", _referenceController.text);
+      }
+      if(_selectedRole == "Kurum") {
+        await FirestoreService().createTeamDocument(user!.uid, _emailController.text, _nameController.text, "Ankara", "", 10);
+      } else {
+        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ankara", "", _referenceController.text);
+      }
       // Kayıt başarılı, giriş ekranına yönlendir
       context.go("/profile/" + user.uid);
     } on FirebaseAuthException catch (e) {

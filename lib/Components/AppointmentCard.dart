@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/FirebaseController.dart';
-import 'dart:html' as html;
+//import 'dart:html' as html;
 
 import 'package:ozel_ders/services/BBB.dart';
 
@@ -110,7 +110,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  BBBService().createAndJoinMeeting("AAAAAAA", "meeting");
+                  //BBBService().createAndJoinMeeting("AAAAAAA", "meeting");
                   //html.window.open(appData["meetingURL"], "Redirecting...");
                 },
                 child: Text('Randevuya Git', style: TextStyle(fontSize: 16, color: Color(0xFF000000)

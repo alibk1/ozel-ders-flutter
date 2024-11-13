@@ -1,57 +1,29 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
-import 'package:ozel_ders/Components/Footer.dart';
-import 'package:ozel_ders/Components/NotificationIconButton.dart';
 import 'package:ozel_ders/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-
 import 'Components/Drawer.dart';
 
-class ProfilePage extends StatefulWidget {
+class TeamProfilePage extends StatefulWidget {
   final String uid;
 
-  ProfilePage({required this.uid});
+  TeamProfilePage({required this.uid});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  _TeamProfilePageState createState() => _TeamProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  bool isTeacher = false;
+class _TeamProfilePageState extends State<TeamProfilePage> {
   bool isLoading = true;
-  Map<String, dynamic> userInfo = {};
+  Map<String, dynamic> teamInfo = {};
   bool isLoggedIn = false;
   bool isSelf = false;
-  bool isCurrentTeam = false;
-  String teamUidIfCurrent = "";
-  String teamNameIfCurrent = "";
   List<Map<String, dynamic>> categories = [];
-  List<Map<String, dynamic>> notifications = [];
 
-  @override
-  void didUpdateWidget(covariant ProfilePage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.uid != widget.uid) {
-      setState(() {
-        isTeacher = false;
-        isLoading = true;
-        userInfo = {};
-        isLoggedIn = false;
-        isSelf = false;
-        isCurrentTeam = false;
-        categories = [];
-      });
-      initMenu();
-      initData();
-    }
-  }
 
   @override
   void initState() {
@@ -63,13 +35,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> initMenu() async {
     isLoggedIn = await AuthService().isUserSignedIn();
     if (isLoggedIn) {
-      String currentUID = AuthService().userUID();
-      var teamCheck = await FirestoreService().getTeamByUID(currentUID);
-      if (teamCheck.isNotEmpty) {
-        isCurrentTeam = true;
-        teamUidIfCurrent = teamCheck["uid"];
-        teamNameIfCurrent = teamCheck["name"];
-      }
       if (widget.uid == AuthService().userUID()) {
         isSelf = true;
       }
@@ -78,22 +43,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> initData() async {
-    var teamCheck = await FirestoreService().getTeamByUID(widget.uid);
-    if (teamCheck.isNotEmpty) {
-      String uid = teamCheck["uid"];
-      context.go("/team/$uid");
-    }
-    userInfo = await FirestoreService().getTeacherByUID(widget.uid);
-
-    if (userInfo.isNotEmpty) {
-      isTeacher = true;
-      notifications = await FirestoreService().getNotificationsForTeacher(widget.uid);
-    } else {
-      userInfo = await FirestoreService().getStudentByUID(widget.uid);
-      notifications = await FirestoreService().getNotificationsForStudent(widget.uid);
-      isTeacher = false;
-    }
-    print(notifications);
+    teamInfo = await FirestoreService().getTeamByUID(widget.uid);
+    print(teamInfo);
     categories = await FirestoreService().getCategories();
     setState(() {
       isLoading = false;
@@ -118,8 +69,8 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (BuildContext context) {
           return Center(
             child: LoadingAnimationWidget.twistingDots(
-                leftDotColor: Color(0xFF183A37),
-                rightDotColor: Color(0xFF663366),
+                leftDotColor: const Color(0xFF183A37),
+                rightDotColor: const Color(0xFF663366),
                 size: 100),
           );
         },
@@ -137,9 +88,9 @@ class _ProfilePageState extends State<ProfilePage> {
         final downloadUrl = await snapshot.ref.getDownloadURL();
 
         await FirestoreService()
-            .changeUserPhoto(widget.uid, downloadUrl, isTeacher);
+            .changeTeamPhoto(widget.uid, downloadUrl);
         setState(() {
-          userInfo['profilePictureUrl'] = downloadUrl;
+          teamInfo['profilePictureUrl'] = downloadUrl;
         });
 
         // Close the loading dialog
@@ -148,8 +99,9 @@ class _ProfilePageState extends State<ProfilePage> {
         // Close the loading dialog
         Navigator.of(context).pop();
 
+        print('Error uploading profile picture: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profil fotoğrafı yüklenirken hata oluştu')),
+          const SnackBar(content: Text('Profil fotoğrafı yüklenirken hata oluştu')),
         );
       }
     }
@@ -157,7 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _showChangeDescDialog(BuildContext context) async {
     TextEditingController descController =
-    TextEditingController(text: userInfo['desc']);
+    TextEditingController(text: teamInfo['desc']);
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -166,27 +118,27 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Açıklamayı Değiştir',
+              const Text('Açıklamayı Değiştir',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10,),
+              const SizedBox(height: 10,),
               TextField(
                 controller: descController,
                 maxLines: 5,
-                decoration: InputDecoration(hintText: 'Yeni Açıklama'),
+                decoration: const InputDecoration(hintText: 'Yeni Açıklama'),
               ),
-              SizedBox(height: 10,),
+              const SizedBox(height: 10,),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeUserDesc(
-                      widget.uid, descController.text, isTeacher);
+                  await FirestoreService().changeTeamDesc(
+                      widget.uid, descController.text);
                   setState(() {
-                    userInfo['desc'] = descController.text;
+                    teamInfo['desc'] = descController.text;
                   });
                   Navigator.pop(context);
                 },
-                child: Text('Kaydet'),
+                child: const Text('Kaydet'),
               ),
-              SizedBox(height: 10,),
+              const SizedBox(height: 10,),
             ],
           ),
         );
@@ -196,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _showChangeNameDialog(BuildContext context) async {
     TextEditingController nameController =
-    TextEditingController(text: userInfo['name']);
+    TextEditingController(text: teamInfo['name']);
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -205,26 +157,26 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('İsmi Değiştir',
+              const Text('İsmi Değiştir',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10,),
+              const SizedBox(height: 10,),
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(hintText: 'Yeni İsim'),
+                decoration: const InputDecoration(hintText: 'Yeni İsim'),
               ),
-              SizedBox(height: 10,),
+              const SizedBox(height: 10,),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeUserName(
-                      widget.uid, nameController.text, isTeacher);
+                  await FirestoreService().changeTeamName(
+                      widget.uid, nameController.text);
                   setState(() {
-                    userInfo['name'] = nameController.text;
+                    teamInfo['name'] = nameController.text;
                   });
                   Navigator.pop(context);
                 },
-                child: Text('Kaydet'),
+                child: const Text('Kaydet'),
               ),
-              SizedBox(height: 10,),
+              const SizedBox(height: 10,),
             ],
           ),
         );
@@ -241,49 +193,18 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Çıkış Yapmak İstiyor Musunuz?',
+              const Text('Çıkış Yapmak İstiyor Musunuz?',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ElevatedButton(
                 onPressed: () async {
                   bool a = await AuthService().signOut();
-                  if (a)
+                  if(a)
                     context.go("/login");
                   else
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),);
+                      const SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),);
                 },
-                child: Text('Evet, Çıkış Yap'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-
-  Future<void> _showOurEmployeeDialog(BuildContext context) async {
-    String type = isTeacher ? "Eğitimci" : "Öğrenci";
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Bu $type Sizin Ekibinizden Mi?',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              ElevatedButton(
-                onPressed: () async {
-                  if(isTeacher){
-                    await FirestoreService().sendRFromTeamToTeacher(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
-                  }
-                  else{
-                    await FirestoreService().sendRFromTeamToStudent(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
-                  }
-                },
-                child: Text('Evet, Katılma İsteği Gönder'),
+                child: const Text('Evet, Çıkış Yap'),
               ),
             ],
           ),
@@ -303,10 +224,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     void updateSubCategories() {
       if (selectedCategory != null) {
-        final category = categories.firstWhere((category) =>
-        category['uid'] == selectedCategory);
-        subCategories =
-        List<Map<String, dynamic>>.from(category['subCategories']);
+        final category = categories.firstWhere((category) => category['uid'] == selectedCategory);
+        subCategories = List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
         subCategories = [];
       }
@@ -321,10 +240,7 @@ class _ProfilePageState extends State<ProfilePage> {
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery
-                    .of(context)
-                    .viewInsets
-                    .bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
                 left: 16.0,
                 right: 16.0,
                 top: 16.0,
@@ -333,28 +249,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Yeni Kurs Oluştur', style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Text('Yeni Kurs Oluştur', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     TextField(
                       controller: nameController,
-                      decoration: InputDecoration(hintText: 'Kurs Adı'),
+                      decoration: const InputDecoration(hintText: 'Kurs Adı'),
                     ),
                     TextField(
                       controller: descController,
                       maxLines: 5,
-                      decoration: InputDecoration(hintText: 'Kurs Açıklaması'),
+                      decoration: const InputDecoration(hintText: 'Kurs Açıklaması'),
                     ),
                     DropdownButton<String>(
                       value: selectedCategory,
-                      hint: Text('Kategori Seç'),
+                      hint: const Text('Kategori Seç'),
                       onChanged: (String? newValue) {
                         setModalState(() {
                           selectedCategory = newValue;
                           updateSubCategories();
                         });
                       },
-                      items: categories.map<DropdownMenuItem<String>>((
-                          category) {
+                      items: categories.map<DropdownMenuItem<String>>((category) {
                         return DropdownMenuItem<String>(
                           value: category['uid'],
                           child: Text(category['name']),
@@ -364,14 +278,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (selectedCategory != null)
                       DropdownButton<String>(
                         value: selectedSubCategory,
-                        hint: Text('Alt Kategori Seç'),
+                        hint: const Text('Alt Kategori Seç'),
                         onChanged: (String? newValue) {
                           setModalState(() {
                             selectedSubCategory = newValue;
                           });
                         },
-                        items: subCategories.map<DropdownMenuItem<String>>((
-                            subCategory) {
+                        items: subCategories.map<DropdownMenuItem<String>>((subCategory) {
                           return DropdownMenuItem<String>(
                             value: subCategory['uid'],
                             child: Text(subCategory['name']),
@@ -381,9 +294,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(hintText: 'Saatlik Ücret'),
+                      decoration: const InputDecoration(hintText: 'Saatlik Ücret'),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         final result = await FilePicker.platform.pickFiles(
@@ -394,8 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         if (result != null) {
                           if (result.files.length > 4) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(
-                                  'En fazla 4 fotoğraf seçebilirsiniz')),
+                              const SnackBar(content: Text('En fazla 4 fotoğraf seçebilirsiniz')),
                             );
                           } else {
                             setModalState(() {
@@ -429,8 +341,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     top: 8.0,
                                     right: 8.0,
                                     child: IconButton(
-                                      icon: Icon(
-                                          Icons.delete, color: Colors.red),
+                                      icon: const Icon(Icons.delete, color: Colors.red),
                                       onPressed: () {
                                         setModalState(() {
                                           photos.remove(file);
@@ -479,19 +390,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
+                              const SnackBar(
                                   content: Text('Kurs başarıyla oluşturuldu')),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(
+                              const SnackBar(content: Text(
                                   'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
                             );
                           }
                         }
-                        catch (e) {}
+                        catch(e)
+                        {
+                          print(e);
+                        }
                       },
-                      child: Text('Oluştur'),
+                      child: const Text('Oluştur'),
                     ),
                   ],
                 ),
@@ -507,7 +421,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF183A37),
+        backgroundColor: const Color(0xFF183A37),
         title: Image.asset('assets/header.png',
             height: MediaQuery
                 .of(context)
@@ -526,45 +440,50 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () {
               context.go('/');
             },
-            child: Text('Ana Sayfa',
+            child: const Text('Ana Sayfa',
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+                    color: Colors.white, fontWeight: FontWeight.bold)
+            ),
           ),
           TextButton(
             onPressed: () {
-              context.go('/categories'); // CategoriesPage'e yönlendirme
+              context.go('/categories');
             },
-            child: Text('Kategoriler',
+            child: const Text('Kategoriler',
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+                    color: Colors.white, fontWeight: FontWeight.bold)
+            ),
           ),
           TextButton(
             onPressed: () {
               context.go('/courses');
             },
-            child: Text('Kurslar',
+            child: const Text('Kurslar',
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+                    color: Colors.white, fontWeight: FontWeight.bold)
+            ),
           ),
           isLoggedIn ? TextButton(
-            onPressed: () {
-              context.go('/appointments/' + AuthService().userUID());
+            onPressed: ()
+            {
+              context.go('/appointments/${AuthService().userUID()}');
+
             },
-            child: Text('Randevularım', style: TextStyle(
+            child: const Text('Randevularım', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
-          ) : SizedBox.shrink(),
+          ) : const SizedBox.shrink(),
           TextButton(
             onPressed: isLoggedIn
                 ? () {
-              print("anan");
               context.go('/profile/' + AuthService().userUID());
             }
                 : () {
               context.go('/login');
             },
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
-                style: TextStyle(
-                    color: isSelf ? Color(0xFFC44900) : Colors.white, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Color(0xFFC44900), fontWeight: FontWeight.bold)
+            ),
           ),
         ]
             : null,
@@ -578,69 +497,47 @@ class _ProfilePageState extends State<ProfilePage> {
       body: isLoading
           ? Center(
           child: LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF183A37), size: 200))
+              color: const Color(0xFF183A37), size: 200))
           : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header
             Container(
-              padding: EdgeInsets.all(2.0),
-              color: Color(0xFF183A37),
+              padding: const EdgeInsets.all(2.0),
+              color: const Color(0xFF183A37),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: userInfo['profilePictureUrl'] != null
-                        ? NetworkImage(userInfo['profilePictureUrl'])
-                        : AssetImage('assets/default_profile.png')
+                    backgroundImage: teamInfo['profilePictureUrl'] != null
+                        ? NetworkImage(teamInfo['profilePictureUrl'])
+                        : const AssetImage('assets/default_profile.png')
                     as ImageProvider,
+                    onBackgroundImageError: (exception, stackTrace) {
+                      print('Resim yüklenirken hata oluştu: $exception');
+                    },
                   ),
-                  if (isSelf) SizedBox(height: 4),
+                  if (isSelf) const SizedBox(height: 4),
                   if (isSelf) TextButton(
                       onPressed: () {
                         _showChangePhotoDialog(context);
                       },
-                      child: Text("Profil Fotoğrafını Değiştir",
+                      child: const Text("Profil Fotoğrafını Değiştir",
                         style: TextStyle(
                             color: Colors.white, fontStyle: FontStyle.italic),)
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 16),
                   !isSelf
-                      ? !isCurrentTeam ? Text(
-                    userInfo['name'] ?? '',
-                    style: TextStyle(
+                      ? Text(
+                    teamInfo['name'] ?? '',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
-                  ) : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        userInfo['name'] ?? '',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          _showOurEmployeeDialog(context);
-                        },
-                        child: Text(
-                          "Bu Kişi Benim Ekibimden",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
-                    ],
                   )
                       : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -650,23 +547,23 @@ class _ProfilePageState extends State<ProfilePage> {
                           onPressed: () {
                             _showChangeNameDialog(context);
                           },
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.edit_note,
                             color: Colors.white,
                           )
                       ),
-                      SizedBox(
+                      const SizedBox(
                         width: 15,
                       ),
                       Text(
-                        userInfo['name'] ?? '',
-                        style: TextStyle(
+                        teamInfo['name'] ?? '',
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(
+                      const SizedBox(
                         width: 15,
                       ),
                       IconButton(
@@ -674,31 +571,21 @@ class _ProfilePageState extends State<ProfilePage> {
                           onPressed: () {
                             _showLogOutDialog(context);
                           },
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.logout,
                             color: Colors.red,
                           )
                       ),
                     ],
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isSelf) SizedBox(height: 4),
-                      if (isSelf) NotificationIconButtonWithBadge(
-                          userType: isTeacher ? UserType.teacher : UserType.student,
-                          userUID: widget.uid),
-                      Text(
-                        isTeacher ? 'Eğitimci' : 'Öğrenci',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'Eğitim Merkezi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                    ),
                   ),
-                  SizedBox(height: 10,),
+                  const SizedBox(height: 10,),
                 ],
               ),
             ),
@@ -715,7 +602,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Expanded(
                     flex: 4,
                     child: Card(
-                      color: Color(0xFF183A37),
+                      color: const Color(0xFF183A37),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
@@ -726,7 +613,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               mainAxisAlignment:
                               MainAxisAlignment.center,
                               children: [
-                                Text(
+                                const Text(
                                   'Hakkında',
                                   style: TextStyle(
                                       fontSize: 20,
@@ -734,7 +621,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       color: Colors.white),
                                 ),
                                 if (isSelf)
-                                  SizedBox(
+                                  const SizedBox(
                                     width: 20,
                                   ),
                                 if (isSelf)
@@ -744,17 +631,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                         _showChangeDescDialog(
                                             context);
                                       },
-                                      icon: Icon(Icons.edit_note,
+                                      icon: const Icon(Icons.edit_note,
                                           color: Colors.white))
                               ],
                             ),
-                            SizedBox(height: 8),
-                            Divider(
+                            const SizedBox(height: 8),
+                            const Divider(
                                 thickness: 2, color: Colors.white),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              userInfo['desc'] ?? '',
-                              style: TextStyle(
+                              teamInfo['desc'] ?? '',
+                              style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white),
@@ -764,7 +651,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   // Right side
                   Expanded(
                     flex: 2,
@@ -774,7 +661,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Expanded(
                               child: Card(
-                                color: Color(0xFF432534),
+                                color: const Color(0xFF432534),
                                 child: Padding(
                                   padding:
                                   const EdgeInsets.all(16.0),
@@ -784,22 +671,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                     children: [
                                       Column(
                                         children: [
-                                          !isTeacher ? Text(
-                                            'Aldığı Kurslar',
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight:
-                                                FontWeight
-                                                    .bold,
-                                                color:
-                                                Colors.white),
-                                          )
-                                              : Row(
-                                            mainAxisAlignment: MainAxisAlignment
-                                                .center,
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Text(
-                                                'Verdiği Kurslar',
+                                              const Text(
+                                                'Eğitmenleri',
                                                 style: TextStyle(
                                                     fontSize: 18,
                                                     fontWeight:
@@ -808,14 +684,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                                     color:
                                                     Colors.white),
                                               ),
-                                              if(isSelf) SizedBox(width: 10,),
+                                              if(isSelf) const SizedBox(width: 10,),
                                               if(isSelf) IconButton(
-                                                onPressed: () {
-                                                  _showCreateCourseDialog(
-                                                      context);
+                                                onPressed: ()
+                                                {
+                                                  _showCreateCourseDialog(context);
                                                 },
-                                                icon: Icon(Icons.add_circle,
-                                                  color: Colors.white,),
+                                                icon: const Icon(Icons.add_circle, color: Colors.white,),
                                               ),
                                             ],
                                           ),
@@ -826,7 +701,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                               enableInfiniteScroll: false,
                                               scrollDirection: Axis.vertical,
                                             ),
-                                            items: userInfo['courses']?.map<
+                                            items: teamInfo['courses']?.map<
                                                 Widget>((courseId) {
                                               return FutureBuilder<
                                                   Map<String, dynamic>>(
@@ -839,7 +714,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   if (snapshot
                                                       .connectionState ==
                                                       ConnectionState.waiting) {
-                                                    return Center(
+                                                    return const Center(
                                                         child: CircularProgressIndicator());
                                                   } else
                                                   if (snapshot.hasError) {
@@ -848,7 +723,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                             .error}'));
                                                   } else if (!snapshot
                                                       .hasData) {
-                                                    return Center(child: Text(
+                                                    return const Center(child: Text(
                                                         'Veri yok'));
                                                   } else {
                                                     final courseData = snapshot
@@ -867,7 +742,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                             .connectionState ==
                                                             ConnectionState
                                                                 .waiting) {
-                                                          return Center(
+                                                          return const Center(
                                                               child: CircularProgressIndicator());
                                                         } else
                                                         if (snapshot.hasError) {
@@ -877,7 +752,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                                       .error}'));
                                                         } else
                                                         if (!snapshot.hasData) {
-                                                          return Center(
+                                                          return const Center(
                                                               child: Text(
                                                                   'Veri yok'));
                                                         } else {
@@ -911,13 +786,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Card(
-                    color: Color(0xFF183A37),
+                    color: const Color(0xFF183A37),
                     child: ExpansionTile(
                       initiallyExpanded: true,
                       title: !isSelf
-                          ? Text(
+                          ? const Text(
                         'Hakkında',
                         style: TextStyle(
                             fontSize: 20,
@@ -926,12 +801,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       )
                           : Row(
                         children: [
-                          Text('Hakkında',
+                          const Text('Hakkında',
                               style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
-                          SizedBox(
+                          const SizedBox(
                             width: 20,
                           ),
                           IconButton(
@@ -939,7 +814,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               onPressed: () {
                                 _showChangeDescDialog(context);
                               },
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.edit_note,
                                 color: Colors.white,
                               ))
@@ -949,32 +824,22 @@ class _ProfilePageState extends State<ProfilePage> {
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            userInfo['desc'] ?? '',
-                            style: TextStyle(color: Colors.white),
+                            teamInfo['desc'] ?? '',
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Card(
-                    color: Color(0xFF432534),
+                    color: const Color(0xFF432534),
                     child: ExpansionTile(
                       initiallyExpanded: false,
-                      title: !isTeacher ? Text(
-                        'Aldığı Kurslar',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight:
-                            FontWeight
-                                .bold,
-                            color:
-                            Colors.white),
-                      )
-                          : Row(
+                      title: Row(
                         children: [
-                          Text(
-                            'Verdiği Kurslar',
+                          const Text(
+                            'Eğitmenleri',
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight:
@@ -983,12 +848,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 color:
                                 Colors.white),
                           ),
-                          SizedBox(width: 10,),
+                          const SizedBox(width: 10,),
                           IconButton(
-                            onPressed: () {
+                            onPressed: ()
+                            {
                               _showCreateCourseDialog(context);
                             },
-                            icon: Icon(Icons.add_circle, color: Colors.white,),
+                            icon: const Icon(Icons.add_circle, color: Colors.white,),
                           ),
                         ],
                       ),
@@ -1000,7 +866,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             enableInfiniteScroll: false,
                             scrollDirection: Axis.vertical,
                           ),
-                          items: userInfo['courses']?.map<Widget>((courseId) {
+                          items: teamInfo['courses']?.map<Widget>((courseId) {
                             return FutureBuilder<Map<String, dynamic>>(
                               future: FirestoreService().getCourseByUID(
                                   courseId),
@@ -1008,13 +874,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Map<String, dynamic>> snapshot) {
                                 if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
-                                  return Center(
+                                  return const Center(
                                       child: CircularProgressIndicator());
                                 } else if (snapshot.hasError) {
                                   return Center(
                                       child: Text('Hata: ${snapshot.error}'));
                                 } else if (!snapshot.hasData) {
-                                  return Center(child: Text('Veri yok'));
+                                  return const Center(child: Text('Veri yok'));
                                 } else {
                                   final courseData = snapshot.data!;
                                   return FutureBuilder<Map<String, dynamic>>(
@@ -1025,13 +891,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                             Map<String, dynamic>> snapshot) {
                                       if (snapshot.connectionState ==
                                           ConnectionState.waiting) {
-                                        return Center(
+                                        return const Center(
                                             child: CircularProgressIndicator());
                                       } else if (snapshot.hasError) {
                                         return Center(child: Text(
                                             'Hata: ${snapshot.error}'));
                                       } else if (!snapshot.hasData) {
-                                        return Center(child: Text('Veri yok'));
+                                        return const Center(child: Text('Veri yok'));
                                       } else {
                                         final authorData = snapshot.data!;
                                         return CourseCard(course: courseData,
@@ -1054,7 +920,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
-      backgroundColor: Color(0xFFEFD6AC),
+      backgroundColor: const Color(0xFFEFD6AC),
     );
   }
 }
+
+
+///TODO : BU SAYFAYI DÜZENLE

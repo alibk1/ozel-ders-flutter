@@ -1,11 +1,11 @@
-import 'package:crypto/crypto.dart';
+/*import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:html' as html;
 
 
 class BBBService {
-  final String bbbUrl = 'http://157.245.37.177/bigbluebutton/api';
-  final String secret = 'mjTANi6qBNRmiVf62V5lSiBxXZatkhSbYi5OPGfmJw';
+  final String bbbUrl = 'http://104.248.163.172/bigbluebutton/api';
+  final String secret = 'x46fdZ0qsusL1oxsFo12n71SMkvyWjC0ZyEOBC3u3rA';
 
   String generateChecksum(String apiCall, Map<String, String> params, String secret) {
     var paramsString = Uri(queryParameters: params).query;
@@ -31,7 +31,6 @@ class BBBService {
       'duration': '60',
       'meta_course': 'Math 101',
     };
-    print("GİRDİM BABBA");
 
     var checksum = generateChecksum(apiCall, params, secret);
     var checksum1 = generateChecksum(apiCall, params, secret);
@@ -40,7 +39,8 @@ class BBBService {
     print(url);
     print(url1);
     html.window.open(url.toString(), 'hey');
-    print("GİRDİM BABBA 2");
 
   }
 }
+
+ */

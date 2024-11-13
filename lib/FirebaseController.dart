@@ -81,7 +81,7 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   // Öğrenci dökümanı oluşturma
-  Future<void> createStudentDocument(String uid, String email, String name, int age, String city, String profilePictureUrl) async {
+  Future<void> createStudentDocument(String uid, String email, String name, int age, String city, String profilePictureUrl, String reference) async {
     await _db.collection('students').doc(uid).set({
       'email': email,
       'name': name,
@@ -89,12 +89,13 @@ class FirestoreService {
       'city': city,
       'profilePictureUrl': profilePictureUrl,
       'desc': '',
+      'reference': reference,
       'courses': []
     });
   }
 
   // Öğretmen dökümanı oluşturma
-  Future<void> createTeacherDocument(String uid, String email, String name, int age, String fieldOfStudy, double diplomaGrade, String profilePictureUrl) async {
+  Future<void> createTeacherDocument(String uid, String email, String name, int age, String fieldOfStudy, double diplomaGrade, String profilePictureUrl, String reference) async {
     await _db.collection('teachers').doc(uid).set({
       'email': email,
       'name': name,
@@ -103,7 +104,20 @@ class FirestoreService {
       'diplomaGrade': diplomaGrade,
       'profilePictureUrl': profilePictureUrl,
       'desc': '',
+      "reference": reference,
       'courses': []
+    });
+  }
+
+  Future<void> createTeamDocument(String uid, String email, String name, String address, String profilePictureUrl, double discountPercent) async {
+    await _db.collection('teams').doc(uid).set({
+      'email': email,
+      'name': name,
+      'fieldOfStudy': address,
+      'profilePictureUrl': profilePictureUrl,
+      'desc': '',
+      'discountPercent': discountPercent,
+      'teachers': []
     });
   }
 
@@ -238,10 +252,10 @@ class FirestoreService {
 
     for (String subCategoryName in newSubCategories) {
       DocumentReference docRef = await categoryRef.collection('subCategories').add({'name': subCategoryName});
-      subCategoryIds.add(docRef.id); // Eklenen dökümanın ID'sini listeye ekle
+      subCategoryIds.add(docRef.id);
     }
 
-    return subCategoryIds; // Eklenen tüm alt kategorilerin ID'lerini içeren listeyi döndür
+    return subCategoryIds;
   }
 
   Future<List<Map<String, dynamic>>> getCategories() async {
@@ -301,6 +315,14 @@ class FirestoreService {
     }).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getAllTeams() async {
+    QuerySnapshot snapshot = await _db.collection('teams').get();
+    return snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'UID': doc.id};
+    }).toList();
+  }
+
   // Tüm randevuları alma
   Future<List<Map<String, dynamic>>> getAllAppointments() async {
     QuerySnapshot snapshot = await _db.collection('appointments').get();
@@ -316,6 +338,18 @@ class FirestoreService {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     data['uid'] = doc.id;
     return data;
+  }
+
+  // Get specific document by UID from courses collection
+  Future<Map<String, dynamic>> getTeamByUID(String uid) async {
+    DocumentSnapshot doc = await _db.collection('teams').doc(uid).get();
+    if(doc.exists) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      data['uid'] = doc.id;
+      return data;
+    }
+    else return Map<String, dynamic>.fromIterable(Iterable.empty());
+
   }
 
   // Get specific document by UID from categories collection
@@ -389,5 +423,209 @@ class FirestoreService {
   Future<void> changeUserName(String uid, String name, bool isTeacher) async {
     String collection = isTeacher ? 'teachers' : 'students';
     await _db.collection(collection).doc(uid).update({'name': name});
+  }
+
+  Future<void> changeTeamPhoto(String uid, String photoUrl) async {
+    String collection = "teams";
+    await _db.collection(collection).doc(uid).update({'profilePictureUrl': photoUrl});
+  }
+
+  // Change team description
+  Future<void> changeTeamDesc(String uid, String desc) async {
+    String collection = "teams";
+    await _db.collection(collection).doc(uid).update({'desc': desc});
+  }
+
+  // Change team name
+  Future<void> changeTeamName(String uid, String name) async {
+    String collection = "teams";
+    await _db.collection(collection).doc(uid).update({'name': name});
+  }
+
+  Future<void> sendRFromTeamToTeacher(String teacherUID, String teamUID, String teamName) async {
+    String collection = "teachers";
+    String collection2 = "notifications";
+    await _db.collection(collection).doc(teacherUID).collection(collection2).doc("Request" + teamUID).set({
+      "teamUID" : teamUID,
+      "notType" : "Invite",
+      "message" : "$teamName onların eğitmeni olman için sana bir istek gönderdi. Kabul edebilir veya yoksayabilirsin. Bu bildirim daha sonra kabul edebilmen için saklanacak.",
+      "isAccepted" : false,
+      "hasRead" : false,
+    });
+  }
+
+  Future<void> sendRFromTeamToStudent(String studentUID, String teamUID, String teamName) async {
+    String collection = "students";
+    String collection2 = "notifications";
+    await _db.collection(collection).doc(studentUID).collection(collection2).doc("Request" + teamUID).set({
+      "teamUID" : teamUID,
+      "notType" : "Invite",
+      "message" : "$teamName onların öğrencisi olman için sana bir istek gönderdi. Kabul edebilir veya yoksayabilirsin. Bu bildirim daha sonra kabul edebilmen için saklanacak.",
+      "isAccepted" : false,
+      "hasRead" : false,
+    });
+  }
+
+  Future<void> acceptRequestForTeacher(String teacherUID, String teamUID) async {
+    String collection = "teachers";
+    String notificationsCollection = "notifications";
+    try {
+      await _db
+          .collection(collection)
+          .doc(teacherUID)
+          .collection(notificationsCollection)
+          .doc("Request" + teamUID)
+          .update({
+        "isAccepted": true,
+      });
+      print("Teacher request accepted successfully.");
+    } catch (e) {
+      print("Error accepting teacher request: $e");
+    }
+  }
+
+  Future<void> acceptRequestForStudent(String studentUID, String teamUID) async {
+    String collection = "students";
+    String notificationsCollection = "notifications";
+    try {
+      await _db
+          .collection(collection)
+          .doc(studentUID)
+          .collection(notificationsCollection)
+          .doc("Request" + teamUID)
+          .update({
+        "isAccepted": true,
+      });
+      print("Student request accepted successfully.");
+    } catch (e) {
+      print("Error accepting student request: $e");
+    }
+  }
+
+  Future<void> markRequestAsReadForTeacher(String teacherUID, String teamUID) async {
+    String collection = "teachers";
+    String notificationsCollection = "notifications";
+    try {
+      await _db
+          .collection(collection)
+          .doc(teacherUID)
+          .collection(notificationsCollection)
+          .doc("Request" + teamUID)
+          .update({
+        "hasRead": true,
+      });
+      print("Teacher request marked as read successfully.");
+    } catch (e) {
+      print("Error marking teacher request as read: $e");
+    }
+  }
+
+  Future<void> markRequestAsReadForStudent(String studentUID, String teamUID) async {
+    String collection = "students";
+    String notificationsCollection = "notifications";
+    try {
+      await _db
+          .collection(collection)
+          .doc(studentUID)
+          .collection(notificationsCollection)
+          .doc("Request" + teamUID)
+          .update({
+        "hasRead": true,
+      });
+      print("Student request marked as read successfully.");
+    } catch (e) {
+      print("Error marking student request as read: $e");
+    }
+  }
+
+  /// Belirtilen öğretmenin bildirimlerini alır.
+  Future<List<Map<String, dynamic>>> getNotificationsForTeacher(String teacherUID) async {
+    try {
+      QuerySnapshot snapshot = await _db
+          .collection('teachers')
+          .doc(teacherUID)
+          .collection('notifications')
+          .get();
+
+      return snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      print('Error fetching notifications for teacher: $e');
+      return [];
+    }
+  }
+
+  /// Belirtilen öğrencinin bildirimlerini alır.
+  Future<List<Map<String, dynamic>>> getNotificationsForStudent(String studentUID) async {
+    try {
+      QuerySnapshot snapshot = await _db
+          .collection('students')
+          .doc(studentUID)
+          .collection('notifications')
+          .get();
+
+      return snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      print('Error fetching notifications for student: $e');
+      return [];
+    }
+  }
+
+  /// Belirtilen takımın bildirimlerini alır.
+  Future<List<Map<String, dynamic>>> getNotificationsForTeam(String teamUID) async {
+    try {
+      QuerySnapshot snapshot = await _db
+          .collection('teams')
+          .doc(teamUID)
+          .collection('notifications')
+          .get();
+
+      return snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      print('Error fetching notifications for team: $e');
+      return [];
+    }
+  }
+
+  Future<bool> updateReference(String uid, String newReference) async {
+    try {
+      // Öncelikle 'teachers' koleksiyonunda UID'yi kontrol et
+      DocumentReference teacherRef = _db.collection('teachers').doc(uid);
+      DocumentSnapshot teacherSnap = await teacherRef.get();
+
+      if (teacherSnap.exists) {
+        await teacherRef.update({'reference': newReference});
+        print('Reference updated for teacher with UID: $uid');
+        return true;
+      }
+
+      // Eğer 'teachers' koleksiyonunda bulunamazsa, 'students' koleksiyonunda kontrol et
+      DocumentReference studentRef = _db.collection('students').doc(uid);
+      DocumentSnapshot studentSnap = await studentRef.get();
+
+      if (studentSnap.exists) {
+        await studentRef.update({'reference': newReference});
+        print('Reference updated for student with UID: $uid');
+        return true;
+      }
+
+      // UID ne 'teachers' ne de 'students' koleksiyonunda bulunamazsa
+      print('UID not found in both teachers and students collections: $uid');
+      return false;
+    } catch (e) {
+      print('Error updating reference for UID $uid: $e');
+      return false;
+    }
   }
 }
