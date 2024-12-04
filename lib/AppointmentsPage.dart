@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -47,6 +48,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
           isTeacher = false;
         }
         userAppointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+        sortUserAppointments();
       }
       else
       {
@@ -61,114 +63,139 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     setState(() {});
   }
 
+  void sortUserAppointments() {
+    userAppointments.sort((a, b) {
+      Timestamp dateA = a['date'] as Timestamp;
+      Timestamp dateB = b['date'] as Timestamp;
+
+      // En yeni olan en başa gelecek şekilde sıralama
+      return dateB.compareTo(dateA);
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF183A37),
-        title: Image.asset('assets/header.png', height: MediaQuery
-            .of(context)
-            .size
-            .width < 600 ? 250 : 300),
-        centerTitle: MediaQuery
-            .of(context)
-            .size
-            .width < 600 ? true : false,
-        leading: MediaQuery
-            .of(context)
-            .size
-            .width < 600
+        backgroundColor: Color(0xFF222831),
+        title: Image.asset(
+          'assets/vitament1.png',
+          height: MediaQuery.of(context).size.width < 800 ? 60 : 80,
+        ),
+        centerTitle: MediaQuery.of(context).size.width < 800 ? true : false,
+        leading: MediaQuery.of(context).size.width < 800
             ? IconButton(
-          icon: Icon(Icons.menu),
+          icon: Icon(Icons.menu, color: Colors.white),
           onPressed: () {
             _scaffoldKey.currentState!.openDrawer();
           },
         )
             : null,
-        actions: MediaQuery
-            .of(context)
-            .size
-            .width >= 600
+        actions: MediaQuery.of(context).size.width >= 800
             ? [
           TextButton(
             onPressed: () {
               context.go('/');
             },
-            child: Text('Ana Sayfa', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Ana Sayfa',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
-              context.go('/categories'); // CategoriesPage'e yönlendirme
+              context.go('/categories');
             },
-            child: Text('Kategoriler', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Kategoriler',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
-              context.go('/courses'); // CategoriesPage'e yönlendirme
+              context.go('/courses');
             },
-            child: Text('Kurslar', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Kurslar',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
-          isLoggedIn ? TextButton(
-            onPressed: ()
-            {
+          isLoggedIn
+              ? TextButton(
+            onPressed: () {
               context.go('/appointments/' + AuthService().userUID());
-
             },
-            child: Text('Randevularım', style: TextStyle(
-                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
-          ) : SizedBox.shrink(),
+            child: Text('Randevularım',
+                style: TextStyle(
+                    color: Color(0xFF76ABAE),
+                    fontWeight: FontWeight.bold)),
+          )
+              : SizedBox.shrink(),
           TextButton(
-            onPressed: isLoggedIn ?
-                () {
+            onPressed: isLoggedIn
+                ? () {
               context.go('/profile/' + AuthService().userUID());
             }
-                :
-                () {
+                : () {
               context.go('/login');
             },
-            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
+            child: Text(
+                isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
       ),
-      drawer: MediaQuery
-          .of(context)
-          .size
-          .width < 600
+      drawer: MediaQuery.of(context).size.width < 800
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
-          ? Center(child: Column(
-        children: [
-          HeaderSection(),
-          LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF183A37), size: 200),
-        ],
-      ))
-          : Center(
+          ? Center(
         child: Column(
           children: [
             HeaderSection(),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: AnimatedSwitcher(
-                  duration: Duration(milliseconds: 750),
-                  child: buildAppointmentsGrid(),
-                ),
-              ),
-            ),
-            FooterSection(),
+            LoadingAnimationWidget.dotsTriangle(
+                color: Color(0xFF222831), size: 200),
           ],
         ),
+      )
+          : Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              "assets/therapy-main.jpg",
+              fit: BoxFit.cover,
+              colorBlendMode: BlendMode.darken,
+            ),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                    BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        HeaderSection(),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: AnimatedSwitcher(
+                            duration: Duration(milliseconds: 750),
+                            child: buildAppointmentsGrid(),
+                          ),
+                        ),
+                        FooterSection(),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
-      backgroundColor: Color(0xFFEFD6AC),
+      backgroundColor: Color(0xFFEEEEEE),
     );
   }
 
@@ -176,29 +203,32 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   Widget buildAppointmentsGrid() {
     return GridView.builder(
       key: ValueKey('categoriesGrid'),
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery
-            .of(context)
-            .size
-            .width >= 600 ? 4 : 2,
+        crossAxisCount: MediaQuery.of(context).size.width >= 800 ? 4 : 2,
         crossAxisSpacing: 50,
         mainAxisSpacing: 50,
-        childAspectRatio: 1.5,
+        childAspectRatio: MediaQuery.of(context).size.width >= 800 ? 1.5 : 0.75,
       ),
       itemCount: userAppointments.length,
       itemBuilder: (context, index) {
         final appointment = userAppointments[index];
-        return AppointmentCard(appointmentUID: appointment["UID"]);
+        return AppointmentCard(
+          appointmentUID: appointment["UID"],
+          isTeacher: isTeacher,
+        );
       },
     );
   }
+
 }
 
 class HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFF183A37),
+      color: Color(0xFF222831),
       child: Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

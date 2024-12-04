@@ -46,6 +46,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
       });
     }
+
     super.initState();
   }
 
@@ -92,21 +93,21 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF183A37),
-        title: Image.asset('assets/header.png', height: MediaQuery
+        backgroundColor: const Color(0xFF222831),
+        title: Image.asset('assets/vitament1.png', height: MediaQuery
             .of(context)
             .size
-            .width < 600 ? 250 : 300),
+            .width < 800 ? 60 : 80),
         centerTitle: MediaQuery
             .of(context)
             .size
-            .width < 600 ? true : false,
+            .width < 800 ? true : false,
         leading: MediaQuery
             .of(context)
             .size
-            .width < 600
+            .width < 800
             ? IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () {
             _scaffoldKey.currentState!.openDrawer();
           },
@@ -115,7 +116,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         actions: MediaQuery
             .of(context)
             .size
-            .width >= 600
+            .width >= 800
             ? [
           TextButton(
             onPressed: () {
@@ -144,65 +145,91 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             },
             child: const Text('Giriş Yap / Kaydol',
                 style: TextStyle(
-                    color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
+                    color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)),
           ),
         ]
             : null,),
       drawer: MediaQuery
           .of(context)
           .size
-          .width < 600
+          .width < 800
           ? DrawerMenu(isLoggedIn: false)
           : null,
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          HeaderSection(),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 600) {
-                // Small screen (e.g. mobile)
-                return _buildMobileLayout();
-              } else {
-                // Large screen (e.g. tablet, desktop)
-                return _buildDesktopLayout();
-              }
-            },
-          ),
-          FooterSection(),
-        ],
+      body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                "assets/therapy-login.jpg", // Buraya arkaplan resmini ekle
+                fit: BoxFit.cover,
+                colorBlendMode: BlendMode.darken,
+                color: Colors.grey[500],
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    HeaderSection(),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 800) {
+                          // Small screen (e.g. mobile)
+                          return _buildMobileLayout();
+                        } else {
+                          // Large screen (e.g. tablet, desktop)
+                          return _buildDesktopLayout();
+                        }
+                      },
+                    ),
+                    FooterSection(),
+                  ],
+                ),
+              ),
+            ),
+          ]
       ),
-      backgroundColor: Color(0xFFEFD6AC),
+      backgroundColor: Color(0xFFEEEEEE),
     );
   }
 
   Widget _buildMobileLayout() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            child: _buildForm(),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _isLogin = !_isLogin;
-              });
-            },
-            child: Text(_isLogin
-                ? 'Hala kayıt olmadın mı? Kayıt Ol'
-                : 'Zaten hesabın var mı? Giriş Yap'),
-          ),
-          const SizedBox(height: 10),
-          // _buildGoogleSignInButton(),
-        ],
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Color(0xFF222831),
+          border: Border.all(color: Color(0xFF76ABAE), width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: _buildForm(),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isLogin = !_isLogin;
+                });
+              },
+              child: Text(_isLogin
+                  ? 'Hala kayıt olmadın mı? Kayıt Ol'
+                  : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
+            ),
+            const SizedBox(height: 10),
+            // _buildGoogleSignInButton(),
+          ],
+        ),
       ),
     );
   }
@@ -213,7 +240,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         width: 400,
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue),
+          color: Color(0xFF222831),
+          border: Border.all(color: Color(0xFF76ABAE), width: 2),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -236,7 +264,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
               },
               child: Text(_isLogin
                   ? 'Hala kayıt olmadın mı? Kayıt Ol'
-                  : 'Zaten hesabın var mı? Giriş Yap'),
+                  : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
             ),
             const SizedBox(height: 10),
             //_buildGoogleSignInButton(),
@@ -259,45 +287,135 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
   List<Widget> _buildLoginFields() {
     return [
-      TextField(
+      TextFormField(
+        cursorColor: Colors.white,
         controller: _emailController,
-        decoration: const InputDecoration(labelText: 'E-mail'),
+        style: TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          labelText: 'E-mail',
+          labelStyle: const TextStyle(color: Colors.white),
+          border: OutlineInputBorder(
+            borderSide: const BorderSide(width: 4, color: Colors.white),
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ),
       ),
       const SizedBox(height: 10),
-      TextField(
+      TextFormField(
         controller: _passwordController,
-        decoration: const InputDecoration(labelText: 'Şifre'),
+        style: TextStyle(color: Colors.white),
+        cursorColor: Colors.white,
+        decoration: InputDecoration(
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          border: OutlineInputBorder(
+            borderSide: const BorderSide(width: 4, color: Colors.white),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          labelText: 'Şifre',
+          labelStyle: const TextStyle(color: Colors.white),
+        ),
         obscureText: true,
       ),
       const SizedBox(height: 20),
       ElevatedButton(
         onPressed: _login,
-        child: const Text('Giriş Yap'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF222831),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(3), // Köşeleri 3 birim yuvarlat
+            side: const BorderSide(color: Color(0xFFEEEEEE), width: 2), // 2 birim border
+          ),
+        ),
+        child: const Text('Giriş Yap', style: TextStyle(color: Colors.white),),
       ),
     ];
   }
 
   List<Widget> _buildSignupFields() {
     return [
-      TextField(
+      TextFormField(
         controller: _nameController,
-        decoration: const InputDecoration(labelText: 'Adınız'),
+        style: TextStyle(color: Colors.white),
+        cursorColor: Colors.white,
+        decoration: InputDecoration(
+            labelText: 'Adınız',
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          border: OutlineInputBorder(
+            borderSide: const BorderSide(width: 4, color: Colors.white),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          labelStyle: const TextStyle(color: Colors.white),
+
+        ),
       ),
       const SizedBox(height: 10),
-      TextField(
+      TextFormField(
         controller: _emailController,
-        decoration: const InputDecoration(labelText: 'E-mail'),
+        style: TextStyle(color: Colors.white),
+        cursorColor: Colors.white,
+        decoration: InputDecoration(
+            labelText: 'E-mail',
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          border: OutlineInputBorder(
+            borderSide: const BorderSide(width: 4, color: Colors.white),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          labelStyle: const TextStyle(color: Colors.white),
+
+        ),
       ),
       const SizedBox(height: 10),
-      TextField(
+      TextFormField(
         controller: _passwordController,
-        decoration: const InputDecoration(labelText: 'Şifre'),
+        style: TextStyle(color: Colors.white),
+        cursorColor: Colors.white,
+        decoration: InputDecoration(
+            labelText: 'Şifre',
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          border: OutlineInputBorder(
+            borderSide: const BorderSide(width: 4, color: Colors.white),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          labelStyle: const TextStyle(color: Colors.white),
+
+        ),
         obscureText: true,
       ),
       if(_selectedRole != "Kurum")...[
-        TextField(
+        SizedBox(height: 10,),
+        TextFormField(
           controller: _referenceController,
-          decoration: const InputDecoration(labelText: 'Referans Kodu (Opsiyonel)'),
+          style: TextStyle(color: Colors.white),
+          cursorColor: Colors.white,
+          decoration: InputDecoration(
+              labelText: 'Referans Kodu (Opsiyonel)',
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            border: OutlineInputBorder(
+              borderSide: const BorderSide(width: 4, color: Colors.white),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            labelStyle: const TextStyle(color: Colors.white),
+
+          ),
         ),
       ],
       const SizedBox(height: 20),
@@ -397,13 +515,13 @@ class HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF183A37),
+      color: const Color(0xFF222831),
       child: const Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(height: 15,),
-            Text("WellDo'ya Giriş Yap", style: TextStyle(color: Colors.white,
+            Text("Vitament'e Giriş Yap", style: TextStyle(color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 25),),
             SizedBox(height: 5,),
@@ -460,6 +578,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 100,
           title: const Text('Doğum Tarihi Girişi Örneği'),
         ),
         body: BirthdateInputExample(),
@@ -542,7 +661,7 @@ class RoleButton extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.grey[200],
+          color: isSelected ? Color(0xFF76ABAE) : Colors.grey[200],
           borderRadius: BorderRadius.circular(12.0),
           boxShadow: isSelected
               ? [

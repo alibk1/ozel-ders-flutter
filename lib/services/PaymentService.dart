@@ -62,6 +62,7 @@ class _PaymentFormState extends State<PaymentForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 100,
         title: Text('Kredi Kartı ile Ödeme'),
       ),
       body: Padding(

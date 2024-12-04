@@ -34,6 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String teamNameIfCurrent = "";
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> notifications = [];
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void didUpdateWidget(covariant ProfilePage oldWidget) {
@@ -111,14 +112,14 @@ class _ProfilePageState extends State<ProfilePage> {
       final fileBytes = result.files.single.bytes!;
       final fileName = result.files.single.name;
 
-      // Show loading dialog
+      // Yükleniyor animasyonu
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
           return Center(
             child: LoadingAnimationWidget.twistingDots(
-                leftDotColor: Color(0xFF183A37),
+                leftDotColor: Color(0xFF222831),
                 rightDotColor: Color(0xFF663366),
                 size: 100),
           );
@@ -142,10 +143,10 @@ class _ProfilePageState extends State<ProfilePage> {
           userInfo['profilePictureUrl'] = downloadUrl;
         });
 
-        // Close the loading dialog
+        // Yükleniyor animasyonunu kapat
         Navigator.of(context).pop();
       } catch (e) {
-        // Close the loading dialog
+        // Yükleniyor animasyonunu kapat
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,21 +161,43 @@ class _ProfilePageState extends State<ProfilePage> {
     TextEditingController(text: userInfo['desc']);
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+          ),
+          child: Wrap(
             children: [
               Text('Açıklamayı Değiştir',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10,),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 10),
               TextField(
                 controller: descController,
                 maxLines: 5,
-                decoration: InputDecoration(hintText: 'Yeni Açıklama'),
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Yeni Açıklama',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: Color(0xFF393E46),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
                   await FirestoreService().changeUserDesc(
@@ -185,8 +208,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   Navigator.pop(context);
                 },
                 child: Text('Kaydet'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF76ABAE),
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(height: 10),
             ],
           ),
         );
@@ -199,32 +227,59 @@ class _ProfilePageState extends State<ProfilePage> {
     TextEditingController(text: userInfo['name']);
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+          ),
+          child: Wrap(
             children: [
               Text('İsmi Değiştir',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10,),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 10),
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(hintText: 'Yeni İsim'),
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Yeni İsim',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: Color(0xFF393E46),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeUserName(
-                      widget.uid, nameController.text, isTeacher);
+                  await FirestoreService()
+                      .changeUserName(widget.uid, nameController.text, isTeacher);
                   setState(() {
                     userInfo['name'] = nameController.text;
                   });
                   Navigator.pop(context);
                 },
                 child: Text('Kaydet'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF76ABAE),
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
-              SizedBox(height: 10,),
+              SizedBox(height: 10),
             ],
           ),
         );
@@ -235,14 +290,22 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _showLogOutDialog(BuildContext context) async {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.all(16.0),
+          child: Wrap(
             children: [
               Text('Çıkış Yapmak İstiyor Musunuz?',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   bool a = await AuthService().signOut();
@@ -250,9 +313,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     context.go("/login");
                   else
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),);
+                      SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),
+                    );
                 },
                 child: Text('Evet, Çıkış Yap'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
             ],
           ),
@@ -261,29 +330,46 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-
   Future<void> _showOurEmployeeDialog(BuildContext context) async {
     String type = isTeacher ? "Eğitimci" : "Öğrenci";
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.all(16.0),
+          child: Wrap(
             children: [
               Text('Bu $type Sizin Ekibinizden Mi?',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  if(isTeacher){
-                    await FirestoreService().sendRFromTeamToTeacher(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
+                  if (isTeacher) {
+                    await FirestoreService().sendRFromTeamToTeacher(
+                        widget.uid, teamUidIfCurrent, teamNameIfCurrent);
+                  } else {
+                    await FirestoreService().sendRFromTeamToStudent(
+                        widget.uid, teamUidIfCurrent, teamNameIfCurrent);
                   }
-                  else{
-                    await FirestoreService().sendRFromTeamToStudent(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
-                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Katılma isteği gönderildi')),
+                  );
                 },
                 child: Text('Evet, Katılma İsteği Gönder'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF76ABAE),
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
             ],
           ),
@@ -303,8 +389,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     void updateSubCategories() {
       if (selectedCategory != null) {
-        final category = categories.firstWhere((category) =>
-        category['uid'] == selectedCategory);
+        final category = categories.firstWhere(
+                (category) => category['uid'] == selectedCategory);
         subCategories =
         List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
@@ -315,16 +401,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
       isScrollControlled: true,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
+            return Container(
+              decoration: BoxDecoration(
+                color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
               padding: EdgeInsets.only(
-                bottom: MediaQuery
-                    .of(context)
-                    .viewInsets
-                    .bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
                 left: 16.0,
                 right: 16.0,
                 top: 16.0,
@@ -333,55 +421,111 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Yeni Kurs Oluştur', style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Yeni Kurs Oluştur',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    SizedBox(height: 16),
                     TextField(
                       controller: nameController,
-                      decoration: InputDecoration(hintText: 'Kurs Adı'),
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Kurs Adı',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       controller: descController,
                       maxLines: 5,
-                      decoration: InputDecoration(hintText: 'Kurs Açıklaması'),
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Kurs Açıklaması',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                    DropdownButton<String>(
+                    SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: Color(0xFF393E46),
                       value: selectedCategory,
-                      hint: Text('Kategori Seç'),
+                      hint: Text('Kategori Seç',
+                          style: TextStyle(color: Colors.white70)),
+                      iconEnabledColor: Colors.white70,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       onChanged: (String? newValue) {
                         setModalState(() {
                           selectedCategory = newValue;
                           updateSubCategories();
                         });
                       },
-                      items: categories.map<DropdownMenuItem<String>>((
-                          category) {
+                      items: categories.map<DropdownMenuItem<String>>((category) {
                         return DropdownMenuItem<String>(
                           value: category['uid'],
-                          child: Text(category['name']),
+                          child: Text(category['name'],
+                              style: TextStyle(color: Colors.white)),
                         );
                       }).toList(),
                     ),
+                    SizedBox(height: 8),
                     if (selectedCategory != null)
-                      DropdownButton<String>(
+                      DropdownButtonFormField<String>(
+                        dropdownColor: Color(0xFF393E46),
                         value: selectedSubCategory,
-                        hint: Text('Alt Kategori Seç'),
+                        hint: Text('Alt Kategori Seç',
+                            style: TextStyle(color: Colors.white70)),
+                        iconEnabledColor: Colors.white70,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Color(0xFF393E46),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onChanged: (String? newValue) {
                           setModalState(() {
                             selectedSubCategory = newValue;
                           });
                         },
-                        items: subCategories.map<DropdownMenuItem<String>>((
-                            subCategory) {
+                        items: subCategories
+                            .map<DropdownMenuItem<String>>((subCategory) {
                           return DropdownMenuItem<String>(
                             value: subCategory['uid'],
-                            child: Text(subCategory['name']),
+                            child: Text(subCategory['name'],
+                                style: TextStyle(color: Colors.white)),
                           );
                         }).toList(),
                       ),
+                    SizedBox(height: 8),
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(hintText: 'Saatlik Ücret'),
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Saatlik Ücret',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
                     SizedBox(height: 8),
                     ElevatedButton(
@@ -394,8 +538,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         if (result != null) {
                           if (result.files.length > 4) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(
-                                  'En fazla 4 fotoğraf seçebilirsiniz')),
+                              SnackBar(
+                                  content: Text(
+                                      'En fazla 4 fotoğraf seçebilirsiniz')),
                             );
                           } else {
                             setModalState(() {
@@ -405,45 +550,47 @@ class _ProfilePageState extends State<ProfilePage> {
                         }
                       },
                       child: Text('Fotoğrafları Seç (${photos.length})'),
-                    ),
-                    if (photos.isNotEmpty)
-                      Column(
-                        children: [
-                          CarouselSlider(
-                            options: CarouselOptions(
-                              aspectRatio: 2.0,
-                              enlargeCenterPage: true,
-                              enableInfiniteScroll: false,
-                              scrollDirection: Axis.horizontal,
-                            ),
-                            items: photos.map((file) {
-                              return Stack(
-                                key: UniqueKey(),
-                                children: [
-                                  Image.memory(
-                                    file.bytes!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
-                                  Positioned(
-                                    top: 8.0,
-                                    right: 8.0,
-                                    child: IconButton(
-                                      icon: Icon(
-                                          Icons.delete, color: Colors.red),
-                                      onPressed: () {
-                                        setModalState(() {
-                                          photos.remove(file);
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ],
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF76ABAE),
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 50),
                       ),
+                    ),
+                    SizedBox(height: 8),
+                    if (photos.isNotEmpty)
+                      CarouselSlider(
+                        options: CarouselOptions(
+                          aspectRatio: 2.0,
+                          enlargeCenterPage: true,
+                          enableInfiniteScroll: false,
+                          scrollDirection: Axis.horizontal,
+                        ),
+                        items: photos.map((file) {
+                          return Stack(
+                            key: UniqueKey(),
+                            children: [
+                              Image.memory(
+                                file.bytes!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                              Positioned(
+                                top: 8.0,
+                                right: 8.0,
+                                child: IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      photos.remove(file);
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         try {
@@ -453,6 +600,20 @@ class _ProfilePageState extends State<ProfilePage> {
                               selectedSubCategory != null &&
                               priceController.text.isNotEmpty &&
                               photos.isNotEmpty) {
+                            // Yükleniyor animasyonu
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext context) {
+                                return Center(
+                                  child: LoadingAnimationWidget.twistingDots(
+                                      leftDotColor: Color(0xFF222831),
+                                      rightDotColor: Color(0xFF663366),
+                                      size: 100),
+                                );
+                              },
+                            );
+
                             final photoUrls = await Future.wait(
                                 photos.map((photo) async {
                                   final storageRef = FirebaseStorage.instance
@@ -460,10 +621,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                       .child('course_photos')
                                       .child(widget.uid)
                                       .child(photo.name);
-                                  final uploadTask = storageRef.putData(
-                                      photo.bytes!);
-                                  final snapshot = await uploadTask
-                                      .whenComplete(() => null);
+                                  final uploadTask = storageRef.putData(photo.bytes!);
+                                  final snapshot =
+                                  await uploadTask.whenComplete(() => null);
                                   return await snapshot.ref.getDownloadURL();
                                 }).toList());
 
@@ -477,22 +637,34 @@ class _ProfilePageState extends State<ProfilePage> {
                               photoUrls,
                             );
 
-                            Navigator.pop(context);
+                            Navigator.pop(context); // Yükleniyor animasyonunu kapat
+                            Navigator.pop(context); // Modal'ı kapat
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Kurs başarıyla oluşturuldu')),
+                              SnackBar(content: Text('Kurs başarıyla oluşturuldu')),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(
-                                  'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
+                              SnackBar(
+                                  content: Text(
+                                      'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
                             );
                           }
+                        } catch (e) {
+                          Navigator.pop(context); // Yükleniyor animasyonunu kapat
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('Kurs oluşturulurken bir hata oluştu')),
+                          );
                         }
-                        catch (e) {}
                       },
                       child: Text('Oluştur'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF76ABAE),
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 50),
+                      ),
                     ),
+                    SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -506,21 +678,33 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF183A37),
-        title: Image.asset('assets/header.png',
+        backgroundColor: Color(0xFF222831),
+        title: Image.asset('assets/vitament1.png',
             height: MediaQuery
                 .of(context)
                 .size
-                .width < 600 ? 250 : 300),
+                .width < 800 ? 60 : 80),
         centerTitle: MediaQuery
             .of(context)
             .size
-            .width < 600 ? true : false,
+            .width < 800 ? true : false,
+        leading: MediaQuery
+            .of(context)
+            .size
+            .width < 800
+            ? IconButton(
+          icon: Icon(Icons.menu, color: Colors.white),
+          onPressed: () {
+            _scaffoldKey.currentState!.openDrawer();
+          },
+        )
+            : null,
         actions: MediaQuery
             .of(context)
             .size
-            .width >= 600
+            .width >= 800
             ? [
           TextButton(
             onPressed: () {
@@ -564,7 +748,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
                 style: TextStyle(
-                    color: isSelf ? Color(0xFFC44900) : Colors.white, fontWeight: FontWeight.bold)),
+                    color: isSelf ? Color(0xFF76ABAE) : Colors.white, fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
@@ -572,13 +756,13 @@ class _ProfilePageState extends State<ProfilePage> {
       drawer: MediaQuery
           .of(context)
           .size
-          .width < 600
+          .width < 800
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
           ? Center(
           child: LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF183A37), size: 200))
+              color: Color(0xFF222831), size: 200))
           : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -586,7 +770,7 @@ class _ProfilePageState extends State<ProfilePage> {
             // Header
             Container(
               padding: EdgeInsets.all(2.0),
-              color: Color(0xFF183A37),
+              color: Color(0xFF222831),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -707,7 +891,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: MediaQuery
                   .of(context)
                   .size
-                  .width >= 600
+                  .width >= 800
                   ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -715,7 +899,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Expanded(
                     flex: 4,
                     child: Card(
-                      color: Color(0xFF183A37),
+                      color: Color(0xFF222831),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
@@ -774,7 +958,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Expanded(
                               child: Card(
-                                color: Color(0xFF432534),
+                                color: Color(0xFF50727B),
                                 child: Padding(
                                   padding:
                                   const EdgeInsets.all(16.0),
@@ -913,7 +1097,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   SizedBox(height: 16),
                   Card(
-                    color: Color(0xFF183A37),
+                    color: Color(0xFF222831),
                     child: ExpansionTile(
                       initiallyExpanded: true,
                       title: !isSelf
@@ -958,7 +1142,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(height: 16),
                   Card(
-                    color: Color(0xFF432534),
+                    color: Color(0xFF50727B),
                     child: ExpansionTile(
                       initiallyExpanded: false,
                       title: !isTeacher ? Text(
@@ -1054,7 +1238,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
-      backgroundColor: Color(0xFFEFD6AC),
+      backgroundColor: Color(0xFFEEEEEE),
     );
   }
 }

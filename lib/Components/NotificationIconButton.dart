@@ -1,7 +1,9 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cool_alert_two/cool_alert_two.dart';
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:intl/intl.dart';
 import 'package:ozel_ders/FirebaseController.dart';
 
 // Kullanıcının öğrenci mi öğretmen mi olduğunu belirtmek için enum
@@ -13,7 +15,7 @@ Future<String> getTitle(String type) async {
     case 'Invite':
       return "Yeni Davet";
     case 'Meeting':
-      return "Yeni Toplantı";
+      return "Yeni Randevu";
     case 'Comment':
       return "Yeni Yorum";
     default:
@@ -88,21 +90,194 @@ Future<void> handleInvite(BuildContext context, Map<String, dynamic> notificatio
 }
 
 Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notification) async {
-  showDialog(
+  DateFormat dateFormatter = DateFormat("dd/MM/yyyy - HH:mm");
+  var app = await FirestoreService().getAppointmentByUID(notification["appointmentUID"]);
+  List<dynamic> timestamps = app["selectedDates"];
+
+  // Tarihlerin doğru şekilde alındığından emin olun
+  if (timestamps.length < 3) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.error,
+      animType: AnimType.bottomSlide,
+      title: 'Hata',
+      desc: "Seçilen tarih sayısı yeterli değil!",
+      btnOkOnPress: () {},
+    ).show();
+    return;
+  }
+
+  // Tarihleri formatlama
+  String dateStr1 = timestamps[0].toDate().toString();
+  String dateStr2 = timestamps[1].toDate().toString();
+  String dateStr3 = timestamps[2].toDate().toString();
+
+  String selectedDate = ''; // Başlangıçta hiçbir tarih seçili değil
+
+  AwesomeDialog(
     context: context,
-    useRootNavigator: true, // Dialog'un en üstte görünmesini sağlar
-    builder: (_) => AlertDialog(
-      title: const Text('Görüşme'),
-      content: Text(notification["message"]),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Kapat'),
-        ),
-      ],
+    dialogType: DialogType.noHeader,
+    animType: AnimType.bottomSlide,
+    title: 'Yeni Randevu Talebi',
+    desc: notification["message"],
+    // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+    body: StatefulBuilder(
+      builder: (BuildContext context, StateSetter setModalState) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 10),
+            Text(
+              notification["message"],
+              style: TextStyle(fontSize: 16),
+            ),            SizedBox(height: 10),
+            Text(
+              "Aşağıdaki Tarihlerden Birini Seçebilirsiniz",
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 10),
+            // İlk Tarih Seçeneği
+            ListTile(
+              tileColor: Color(0xFF222831),
+              leading: Icon(Icons.calendar_today, color: Color(0xFF76ABAE)),
+              title: Text(
+                'Tarih ve Saat',
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+              subtitle: Text(
+                dateFormatter.format(DateTime.parse(dateStr1)),
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+              trailing: Radio<String>(
+                value: dateStr1,
+                groupValue: selectedDate,
+                onChanged: (String? value) {
+                  setModalState(() {
+                    selectedDate = value ?? '';
+                  });
+                },
+              ),
+            ),
+            // İkinci Tarih Seçeneği
+            ListTile(
+              tileColor: Color(0xFF222831),
+              leading: Icon(Icons.calendar_today, color: Color(0xFF76ABAE)),
+              title: Text(
+                'Tarih ve Saat',
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+              subtitle: Text(
+                dateFormatter.format(DateTime.parse(dateStr2)),
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+              trailing: Radio<String>(
+                value: dateStr2,
+                groupValue: selectedDate,
+                onChanged: (String? value) {
+                  setModalState(() {
+                    selectedDate = value ?? '';
+                  });
+                },
+              ),
+            ),
+            // Üçüncü Tarih Seçeneği
+            ListTile(
+              tileColor: Color(0xFF222831),
+              leading: Icon(Icons.calendar_today, color: Color(0xFF76ABAE)),
+              title: Text(
+                'Tarih ve Saat',
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+              subtitle: Text(
+                dateFormatter.format(DateTime.parse(dateStr3)),
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+              trailing: Radio<String>(
+                value: dateStr3,
+                groupValue: selectedDate,
+                onChanged: (String? value) {
+                  setModalState(() {
+                    selectedDate = value ?? '';
+                  });
+                },
+              ),
+            ),
+          ],
+        );
+      },
     ),
-  );
+    // Dialog'un altındaki butonlar
+    btnOkText: "Seç",
+    btnCancelText: "İptal",
+    btnOkOnPress: () async {
+      if (selectedDate.isNotEmpty) {
+        // Yükleniyor dialog'unu göster
+        AwesomeDialog(
+          context: context,
+          dialogType: DialogType.noHeader,
+          animType: AnimType.bottomSlide,
+          body: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text(
+                  'Randevu kaydediliyor...',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          dismissOnTouchOutside: false,
+          dismissOnBackKeyPress: false,
+        ).show();
+
+        // Async işlemi gerçekleştir
+        bool success = await FirestoreService().acceptAppointmentRequest(notification["teacherUID"], notification["studentUID"], notification["appointmentUID"], DateTime.parse(selectedDate));
+
+        // Yükleniyor dialog'unu kapat
+        Navigator.of(context, rootNavigator: true).pop();
+
+        // İşlem sonucuna göre dialog göster
+        if (success) {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.success,
+            animType: AnimType.bottomSlide,
+            title: 'Başarılı!',
+            desc: "Randevu başarıyla kaydedildi.",
+            btnOkText: "Tamam",
+            btnOkOnPress: () {},
+          ).show();
+        } else {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.error,
+            animType: AnimType.bottomSlide,
+            title: 'Bir Sorun Oluştu',
+            desc: "Randevu kaydedilirken bir sorun oluştu!",
+            btnOkText: "Tamam",
+            btnOkOnPress: () {},
+          ).show();
+        }
+      } else {
+        // Hiçbir tarih seçilmemişse uyarı göster
+        AwesomeDialog(
+          context: context,
+          dialogType: DialogType.warning,
+          animType: AnimType.bottomSlide,
+          title: 'Uyarı',
+          desc: "Lütfen bir tarih seçin.",
+          btnOkText: "Tamam",
+          btnOkOnPress: () {},
+        ).show();
+      }
+    },
+    btnCancelOnPress: () {},
+  ).show();
 }
+
 
 Future<void> handleComment(BuildContext context, Map<String, dynamic> notification) async {
   showDialog(
@@ -180,11 +355,18 @@ class _NotificationIconButtonWithBadgeState extends State<NotificationIconButton
     });
 
     // Firestore'da güncelleme yap
-    String teamUID = notification['teamUID'];
-    if (widget.userType == UserType.teacher) {
-      _firestoreService.markRequestAsReadForTeacher(widget.userUID, teamUID);
-    } else {
-      _firestoreService.markRequestAsReadForStudent(widget.userUID, teamUID);
+    String notType = notification['notType'];
+    if(notType == "Invite") {
+      String teamUID = notification['teamUID'] ?? notification["id"];
+      if (widget.userType == UserType.teacher) {
+        _firestoreService.markRequestAsReadForTeacher(widget.userUID, teamUID);
+      } else {
+        _firestoreService.markRequestAsReadForStudent(widget.userUID, teamUID);
+      }
+    }
+    else if(notType == "Meeting"){
+      _firestoreService.markAppointmentAsReadForTeacher(widget.userUID, notification["id"]);
+
     }
   }
 

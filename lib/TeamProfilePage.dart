@@ -23,6 +23,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   bool isLoggedIn = false;
   bool isSelf = false;
   List<Map<String, dynamic>> categories = [];
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
 
   @override
@@ -62,15 +63,15 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       final fileBytes = result.files.single.bytes!;
       final fileName = result.files.single.name;
 
-      // Show loading dialog
+      // Yükleniyor animasyonu
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
           return Center(
             child: LoadingAnimationWidget.twistingDots(
-                leftDotColor: const Color(0xFF183A37),
-                rightDotColor: const Color(0xFF663366),
+                leftDotColor: Color(0xFF222831),
+                rightDotColor: Color(0xFF663366),
                 size: 100),
           );
         },
@@ -87,21 +88,19 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         final snapshot = await uploadTask.whenComplete(() => null);
         final downloadUrl = await snapshot.ref.getDownloadURL();
 
-        await FirestoreService()
-            .changeTeamPhoto(widget.uid, downloadUrl);
+        await FirestoreService().changeTeamPhoto(widget.uid, downloadUrl);
         setState(() {
           teamInfo['profilePictureUrl'] = downloadUrl;
         });
 
-        // Close the loading dialog
+        // Yükleniyor animasyonunu kapat
         Navigator.of(context).pop();
       } catch (e) {
-        // Close the loading dialog
+        // Yükleniyor animasyonunu kapat
         Navigator.of(context).pop();
 
-        print('Error uploading profile picture: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil fotoğrafı yüklenirken hata oluştu')),
+          SnackBar(content: Text('Profil fotoğrafı yüklenirken hata oluştu')),
         );
       }
     }
@@ -112,33 +111,60 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     TextEditingController(text: teamInfo['desc']);
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+          ),
+          child: Wrap(
             children: [
-              const Text('Açıklamayı Değiştir',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10,),
+              Text('Açıklamayı Değiştir',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 10),
               TextField(
                 controller: descController,
                 maxLines: 5,
-                decoration: const InputDecoration(hintText: 'Yeni Açıklama'),
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Yeni Açıklama',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: Color(0xFF393E46),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-              const SizedBox(height: 10,),
+              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeTeamDesc(
-                      widget.uid, descController.text);
+                  await FirestoreService()
+                      .changeTeamDesc(widget.uid, descController.text);
                   setState(() {
                     teamInfo['desc'] = descController.text;
                   });
                   Navigator.pop(context);
                 },
-                child: const Text('Kaydet'),
+                child: Text('Kaydet'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF76ABAE),
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
-              const SizedBox(height: 10,),
+              SizedBox(height: 10),
             ],
           ),
         );
@@ -151,32 +177,59 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     TextEditingController(text: teamInfo['name']);
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+          ),
+          child: Wrap(
             children: [
-              const Text('İsmi Değiştir',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10,),
+              Text('İsmi Değiştir',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 10),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(hintText: 'Yeni İsim'),
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Yeni İsim',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: Color(0xFF393E46),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-              const SizedBox(height: 10,),
+              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeTeamName(
-                      widget.uid, nameController.text);
+                  await FirestoreService()
+                      .changeTeamName(widget.uid, nameController.text);
                   setState(() {
                     teamInfo['name'] = nameController.text;
                   });
                   Navigator.pop(context);
                 },
-                child: const Text('Kaydet'),
+                child: Text('Kaydet'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF76ABAE),
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
-              const SizedBox(height: 10,),
+              SizedBox(height: 10),
             ],
           ),
         );
@@ -187,24 +240,38 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   Future<void> _showLogOutDialog(BuildContext context) async {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.all(16.0),
+          child: Wrap(
             children: [
-              const Text('Çıkış Yapmak İstiyor Musunuz?',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('Çıkış Yapmak İstiyor Musunuz?',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   bool a = await AuthService().signOut();
-                  if(a)
+                  if (a)
                     context.go("/login");
                   else
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),);
+                      SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),
+                    );
                 },
-                child: const Text('Evet, Çıkış Yap'),
+                child: Text('Evet, Çıkış Yap'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
             ],
           ),
@@ -224,8 +291,10 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
 
     void updateSubCategories() {
       if (selectedCategory != null) {
-        final category = categories.firstWhere((category) => category['uid'] == selectedCategory);
-        subCategories = List<Map<String, dynamic>>.from(category['subCategories']);
+        final category = categories.firstWhere(
+                (category) => category['uid'] == selectedCategory);
+        subCategories =
+        List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
         subCategories = [];
       }
@@ -234,13 +303,18 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
       isScrollControlled: true,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
+            return Container(
+              decoration: BoxDecoration(
+                color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
                 left: 16.0,
                 right: 16.0,
                 top: 16.0,
@@ -249,19 +323,54 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Yeni Kurs Oluştur', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Yeni Kurs Oluştur',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    SizedBox(height: 16),
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(hintText: 'Kurs Adı'),
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Kurs Adı',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       controller: descController,
                       maxLines: 5,
-                      decoration: const InputDecoration(hintText: 'Kurs Açıklaması'),
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Kurs Açıklaması',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                    DropdownButton<String>(
+                    SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: Color(0xFF393E46),
                       value: selectedCategory,
-                      hint: const Text('Kategori Seç'),
+                      hint: Text('Kategori Seç',
+                          style: TextStyle(color: Colors.white70)),
+                      iconEnabledColor: Colors.white70,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       onChanged: (String? newValue) {
                         setModalState(() {
                           selectedCategory = newValue;
@@ -271,32 +380,56 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                       items: categories.map<DropdownMenuItem<String>>((category) {
                         return DropdownMenuItem<String>(
                           value: category['uid'],
-                          child: Text(category['name']),
+                          child: Text(category['name'],
+                              style: TextStyle(color: Colors.white)),
                         );
                       }).toList(),
                     ),
+                    SizedBox(height: 8),
                     if (selectedCategory != null)
-                      DropdownButton<String>(
+                      DropdownButtonFormField<String>(
+                        dropdownColor: Color(0xFF393E46),
                         value: selectedSubCategory,
-                        hint: const Text('Alt Kategori Seç'),
+                        hint: Text('Alt Kategori Seç',
+                            style: TextStyle(color: Colors.white70)),
+                        iconEnabledColor: Colors.white70,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Color(0xFF393E46),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onChanged: (String? newValue) {
                           setModalState(() {
                             selectedSubCategory = newValue;
                           });
                         },
-                        items: subCategories.map<DropdownMenuItem<String>>((subCategory) {
+                        items: subCategories
+                            .map<DropdownMenuItem<String>>((subCategory) {
                           return DropdownMenuItem<String>(
                             value: subCategory['uid'],
-                            child: Text(subCategory['name']),
+                            child: Text(subCategory['name'],
+                                style: TextStyle(color: Colors.white)),
                           );
                         }).toList(),
                       ),
+                    SizedBox(height: 8),
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(hintText: 'Saatlik Ücret'),
+                      style: TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Saatlik Ücret',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Color(0xFF393E46),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         final result = await FilePicker.platform.pickFiles(
@@ -307,7 +440,9 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                         if (result != null) {
                           if (result.files.length > 4) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('En fazla 4 fotoğraf seçebilirsiniz')),
+                              SnackBar(
+                                  content:
+                                  Text('En fazla 4 fotoğraf seçebilirsiniz')),
                             );
                           } else {
                             setModalState(() {
@@ -317,44 +452,47 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                         }
                       },
                       child: Text('Fotoğrafları Seç (${photos.length})'),
-                    ),
-                    if (photos.isNotEmpty)
-                      Column(
-                        children: [
-                          CarouselSlider(
-                            options: CarouselOptions(
-                              aspectRatio: 2.0,
-                              enlargeCenterPage: true,
-                              enableInfiniteScroll: false,
-                              scrollDirection: Axis.horizontal,
-                            ),
-                            items: photos.map((file) {
-                              return Stack(
-                                key: UniqueKey(),
-                                children: [
-                                  Image.memory(
-                                    file.bytes!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
-                                  Positioned(
-                                    top: 8.0,
-                                    right: 8.0,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () {
-                                        setModalState(() {
-                                          photos.remove(file);
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ],
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF76ABAE),
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 50),
                       ),
+                    ),
+                    SizedBox(height: 8),
+                    if (photos.isNotEmpty)
+                      CarouselSlider(
+                        options: CarouselOptions(
+                          aspectRatio: 2.0,
+                          enlargeCenterPage: true,
+                          enableInfiniteScroll: false,
+                          scrollDirection: Axis.horizontal,
+                        ),
+                        items: photos.map((file) {
+                          return Stack(
+                            key: UniqueKey(),
+                            children: [
+                              Image.memory(
+                                file.bytes!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                              Positioned(
+                                top: 8.0,
+                                right: 8.0,
+                                child: IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      photos.remove(file);
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         try {
@@ -364,6 +502,20 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                               selectedSubCategory != null &&
                               priceController.text.isNotEmpty &&
                               photos.isNotEmpty) {
+                            // Yükleniyor animasyonu
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext context) {
+                                return Center(
+                                  child: LoadingAnimationWidget.twistingDots(
+                                      leftDotColor: Color(0xFF222831),
+                                      rightDotColor: Color(0xFF663366),
+                                      size: 100),
+                                );
+                              },
+                            );
+
                             final photoUrls = await Future.wait(
                                 photos.map((photo) async {
                                   final storageRef = FirebaseStorage.instance
@@ -371,10 +523,9 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                                       .child('course_photos')
                                       .child(widget.uid)
                                       .child(photo.name);
-                                  final uploadTask = storageRef.putData(
-                                      photo.bytes!);
-                                  final snapshot = await uploadTask
-                                      .whenComplete(() => null);
+                                  final uploadTask = storageRef.putData(photo.bytes!);
+                                  final snapshot =
+                                  await uploadTask.whenComplete(() => null);
                                   return await snapshot.ref.getDownloadURL();
                                 }).toList());
 
@@ -388,25 +539,34 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                               photoUrls,
                             );
 
-                            Navigator.pop(context);
+                            Navigator.pop(context); // Yükleniyor animasyonunu kapat
+                            Navigator.pop(context); // Modal'ı kapat
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Kurs başarıyla oluşturuldu')),
+                              SnackBar(content: Text('Kurs başarıyla oluşturuldu')),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text(
-                                  'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
+                              SnackBar(
+                                  content: Text(
+                                      'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
                             );
                           }
-                        }
-                        catch(e)
-                        {
-                          print(e);
+                        } catch (e) {
+                          Navigator.pop(context); // Yükleniyor animasyonunu kapat
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('Kurs oluşturulurken bir hata oluştu')),
+                          );
                         }
                       },
-                      child: const Text('Oluştur'),
+                      child: Text('Oluştur'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF76ABAE),
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 50),
+                      ),
                     ),
+                    SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -420,21 +580,33 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF183A37),
-        title: Image.asset('assets/header.png',
+        backgroundColor: const Color(0xFF222831),
+        title: Image.asset('assets/vitament1.png',
             height: MediaQuery
                 .of(context)
                 .size
-                .width < 600 ? 250 : 300),
+                .width < 800 ? 60 : 80),
         centerTitle: MediaQuery
             .of(context)
             .size
-            .width < 600 ? true : false,
+            .width < 800 ? true : false,
+        leading: MediaQuery
+            .of(context)
+            .size
+            .width < 800
+            ? IconButton(
+          icon: Icon(Icons.menu, color: Colors.white),
+          onPressed: () {
+            _scaffoldKey.currentState!.openDrawer();
+          },
+        )
+            : null,
         actions: MediaQuery
             .of(context)
             .size
-            .width >= 600
+            .width >= 800
             ? [
           TextButton(
             onPressed: () {
@@ -482,7 +654,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
             },
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
                 style: const TextStyle(
-                    color: Color(0xFFC44900), fontWeight: FontWeight.bold)
+                    color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)
             ),
           ),
         ]
@@ -491,13 +663,13 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       drawer: MediaQuery
           .of(context)
           .size
-          .width < 600
+          .width < 800
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
           ? Center(
           child: LoadingAnimationWidget.dotsTriangle(
-              color: const Color(0xFF183A37), size: 200))
+              color: const Color(0xFF222831), size: 200))
           : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -505,7 +677,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
             // Header
             Container(
               padding: const EdgeInsets.all(2.0),
-              color: const Color(0xFF183A37),
+              color: const Color(0xFF222831),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -594,7 +766,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
               child: MediaQuery
                   .of(context)
                   .size
-                  .width >= 600
+                  .width >= 800
                   ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -602,7 +774,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                   Expanded(
                     flex: 4,
                     child: Card(
-                      color: const Color(0xFF183A37),
+                      color: const Color(0xFF222831),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
@@ -661,7 +833,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                           children: [
                             Expanded(
                               child: Card(
-                                color: const Color(0xFF432534),
+                                color: const Color(0xFF50727B),
                                 child: Padding(
                                   padding:
                                   const EdgeInsets.all(16.0),
@@ -788,7 +960,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                 children: [
                   const SizedBox(height: 16),
                   Card(
-                    color: const Color(0xFF183A37),
+                    color: const Color(0xFF222831),
                     child: ExpansionTile(
                       initiallyExpanded: true,
                       title: !isSelf
@@ -833,7 +1005,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                   ),
                   const SizedBox(height: 16),
                   Card(
-                    color: const Color(0xFF432534),
+                    color: const Color(0xFF50727B),
                     child: ExpansionTile(
                       initiallyExpanded: false,
                       title: Row(
@@ -920,7 +1092,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
           ],
         ),
       ),
-      backgroundColor: const Color(0xFFEFD6AC),
+      backgroundColor: const Color(0xFFEEEEEE),
     );
   }
 }

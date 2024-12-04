@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  static Map<String, dynamic> userDetails = {};
   // Eposta ile kayıt oluşturma
   Future<User?> registerWithEmail(String email, String password) async {
     try {
@@ -71,9 +71,18 @@ class AuthService {
 
   String userUID()
   {
-    return _auth.currentUser!.uid;
+    return _auth.currentUser!.uid ?? "";
   }
 
+  // Kullanıcının görüntüleme adını alma
+  String userDisplayName() {
+    return _auth.currentUser?.displayName ?? 'Kullanıcı';
+  }
+
+  // Kullanıcının e-posta adresini alma
+  String userEmail() {
+    return _auth.currentUser?.email ?? '';
+  }
 }
 
 
@@ -176,21 +185,25 @@ class FirestoreService {
   }
 
   // Randevu oluşturma
-  Future<void> createAppointment(String author, String student, String courseId, String meetingURL, DateTime date) async {
+  Future<String> createAppointment(String author, String student, String courseId, String meetingURL, List<DateTime> selectedDates) async {
     DocumentReference doc1 = await _db.collection('appointments').add({
       'author': author,
       'student': student,
       'courseID': courseId,
+      'date': DateTime.now().add(Duration(days: -1)),
       'meetingURL': meetingURL,
-      'date': date,
+      'selectedDates': selectedDates,
+      'isAccepted' : false,
     });
 
     await _db.collection('students').doc(student).collection("appointments").doc(doc1.id).set({
       'author': author,
       'student': student,
       'courseID': courseId,
+      'date': DateTime.now().add(Duration(days: -1)),
       'meetingURL': meetingURL,
-      'date': date,
+      'selectedDates': selectedDates,
+      'isAccepted' : false,
     });
 
 
@@ -213,9 +226,12 @@ class FirestoreService {
       'author': author,
       'student': student,
       'courseID': courseId,
+      'date': DateTime.now().add(Duration(days: -1)),
       'meetingURL': meetingURL,
-      'date': date,
+      'selectedDates': selectedDates,
+      'isAccepted' : false,
     });
+    return doc1.id;
   }
 
   // Randevu düzenleme
@@ -227,9 +243,35 @@ class FirestoreService {
   }
 
 
-  Future<void> createCategory(String name, List<String> subCategories) async {
+  // Randevu düzenleme
+  Future<void> acceptAppointment(String appointmentId, String teacherId, String studentId, DateTime selectedDate) async {
+    await _db.collection('appointments').doc(appointmentId).update({
+      'isAccepted' : true,
+      'date' : selectedDate
+    });
+
+    await _db.collection('teachers').doc(teacherId).collection("appointments").doc(appointmentId).update({
+      'isAccepted' : true,
+      'date' : selectedDate
+    });
+
+    await _db.collection('students').doc(studentId).collection("appointments").doc(appointmentId).update({
+      'isAccepted' : true,
+      'date' : selectedDate
+    });
+  }
+
+  // Randevu düzenleme
+  Future<void> updateAppointmentUrl(String appointmentId, String meetingURL) async {
+    await _db.collection('appointments').doc(appointmentId).update({
+      'meetingURL': meetingURL,
+    });
+  }
+
+
+  Future<void> createCategory(String name, List<String> subCategories, String imageUrl) async {
     DocumentReference categoryRef = await _db.collection('categories1')
-        .add({'name': name});
+        .add({'name': name, 'imageUrl' : imageUrl});
     for (String subCategoryName in subCategories) {
       await categoryRef.collection('subCategories').add(
           {'name': subCategoryName, });
@@ -625,6 +667,86 @@ class FirestoreService {
       return false;
     } catch (e) {
       print('Error updating reference for UID $uid: $e');
+      return false;
+    }
+  }
+
+
+  Future<void> sendAppointmentToTeacher(String appointmentUID, String teacherUID, String studentUID,String studentName) async {
+    String collection = "teachers";
+    String collection2 = "notifications";
+    await _db.collection(collection).doc(teacherUID).collection(collection2).doc(appointmentUID).set({
+      "appointmentUID" : appointmentUID,
+      "notType" : "Meeting",
+      "teacherUID": teacherUID,
+      "studentUID": studentUID,
+      "message" : "$studentName sizden yeni bir randevu talep ediyor.",
+      "isAccepted" : false,
+      "hasRead" : false,
+    });
+  }
+
+  Future<void> markAppointmentAsReadForTeacher(String teacherUID, String appointmentUID) async {
+    String collection = "teachers";
+    String notificationsCollection = "notifications";
+    try {
+      await _db
+          .collection(collection)
+          .doc(teacherUID)
+          .collection(notificationsCollection)
+          .doc(appointmentUID)
+          .update({
+        "hasRead": true,
+      });
+      print("Teacher request marked as read successfully.");
+    } catch (e) {
+      print("Error marking teacher request as read: $e");
+    }
+  }
+
+  Future<bool> acceptAppointmentRequest(String teacherUID, String studentUID, String appointmentUID, DateTime selectedDate) async {
+    String collection1 = "teachers";
+    String collection2 = "students";
+    String notificationsCollection = "notifications";
+    String appointmentsCollection = "appointments";
+    try {
+      await _db
+          .collection(collection1)
+          .doc(teacherUID)
+          .collection(notificationsCollection)
+          .doc(appointmentUID)
+          .update({
+        "isAccepted": true,
+      });
+      await _db
+          .collection(collection1)
+          .doc(teacherUID)
+          .collection(appointmentsCollection)
+          .doc(appointmentUID)
+          .update({
+        "isAccepted": true,
+        "date" : selectedDate
+      });
+      await _db
+          .collection(collection2)
+          .doc(studentUID)
+          .collection(appointmentsCollection)
+          .doc(appointmentUID)
+          .update({
+        "isAccepted": true,
+        "date" : selectedDate
+      });
+      await _db
+          .collection(appointmentsCollection)
+          .doc(appointmentUID)
+          .update({
+        "isAccepted": true,
+        "date" : selectedDate
+      });
+      print("Teacher request marked as read successfully.");
+      return true;
+    } catch (e) {
+      print("Error marking teacher request as read: $e");
       return false;
     }
   }

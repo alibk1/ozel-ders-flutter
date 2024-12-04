@@ -22,6 +22,7 @@ class _CourseCardState extends State<CourseCard> {
 
   @override
   Widget build(BuildContext context) {
+    bool isMobile = MediaQuery.of(context).size.width < 800;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -32,10 +33,10 @@ class _CourseCardState extends State<CourseCard> {
         ),
         side: BorderSide(
           width: 3,
-          color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+          color: Color(int.parse("#31363F".substring(1, 7), radix: 16) + 0xFF000000),
         ),
       ),
-      color: Color(int.parse("#183A37".substring(1, 7), radix: 16) + 0xFF000000),
+      color: Color(int.parse("#222831".substring(1, 7), radix: 16) + 0xFF000000),
       child: Column(
         children: <Widget>[
           Expanded(
@@ -59,29 +60,28 @@ class _CourseCardState extends State<CourseCard> {
               widget.course['name'],
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                fontSize: isMobile ? 15 : 20,
+                color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
               ),
             ),
             onPressed: ()
             {
-              context.go('/courses/' + widget.course["UID"]); // CategoriesPage'e yönlendirme
-
+              context.go('/courses/' + widget.course["UID"]);
             },
           ),
           Text(
             widget.author["name"],
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 15,
-              color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+              fontSize: isMobile ? 12 : 15,
+              color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
             ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Card(
-                color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(5), // Yuvarlak köşe
@@ -90,8 +90,8 @@ class _CourseCardState extends State<CourseCard> {
                     bottomRight: Radius.circular(5),
                   ),
                   side: BorderSide(
-                    width: 3,
-                    color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                    width: 1,
+                    color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
                   ),
                 ),
                 child: Text(
@@ -99,13 +99,13 @@ class _CourseCardState extends State<CourseCard> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Color(int.parse("#183A37".substring(1, 7), radix: 16) + 0xFF000000),
+                    color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
                   ),
                 ),
               ),
             ],
           ),
-          Padding(
+          if(!isMobile) Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: <Widget>[
@@ -117,7 +117,7 @@ class _CourseCardState extends State<CourseCard> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                        color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
                       ),
                     ),
                     if (!isExpanded)
@@ -138,7 +138,7 @@ class _CourseCardState extends State<CourseCard> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                              color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
                             ),
                           ),
                         ),
@@ -159,12 +159,12 @@ class _CourseCardState extends State<CourseCard> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                          color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
                         ),
                       ),
                       Icon(
                         isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Color(int.parse("#EFD6AC".substring(1, 7), radix: 16) + 0xFF000000),
+                        color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
                       ),
                     ],
                   ),
