@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/PaymentService.dart';
 
 import 'Components/Drawer.dart';
 
@@ -18,6 +19,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> subCategories = [];
   String selectedCategory = "";
+  String selectedCategoryImage = "";
   bool isLoading = true;
   bool showSubCategories = false;
   bool isLoggedIn = false;
@@ -49,6 +51,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
     // Alt kategorileri Firestore'dan alıyoruz (getSubCategories metodunu burada çağırın)
     // Bu örnekte getSubCategories metodunun geriye List<Map<String, dynamic>> döndüğünü varsayıyorum
     selectedCategory = category['uid'];
+    selectedCategoryImage = category["imageUrl"];
     subCategories = category['subCategories'];
     setState(() {
       showSubCategories = true;
@@ -67,21 +70,21 @@ class _CategoriesPageState extends State<CategoriesPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF183A37),
-        title: Image.asset('assets/header.png', height: MediaQuery
+        backgroundColor: Color(0xFF222831),
+        title: Image.asset('assets/vitament1.png', height: MediaQuery
             .of(context)
             .size
-            .width < 600 ? 250 : 300),
+            .width < 800 ? 60 : 80),
         centerTitle: MediaQuery
             .of(context)
             .size
-            .width < 600 ? true : false,
+            .width < 800 ? true : false,
         leading: MediaQuery
             .of(context)
             .size
-            .width < 600
+            .width < 800
             ? IconButton(
-          icon: Icon(Icons.menu),
+          icon: Icon(Icons.menu, color: Colors.white),
           onPressed: () {
             _scaffoldKey.currentState!.openDrawer();
           },
@@ -90,7 +93,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         actions: MediaQuery
             .of(context)
             .size
-            .width >= 600
+            .width >= 800
             ? [
           TextButton(
             onPressed: () {
@@ -104,7 +107,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
               context.go('/categories'); // CategoriesPage'e yönlendirme
             },
             child: Text('Kategoriler', style: TextStyle(
-                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
+                color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
@@ -139,7 +142,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       drawer: MediaQuery
           .of(context)
           .size
-          .width < 600
+          .width < 800
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
@@ -147,30 +150,43 @@ class _CategoriesPageState extends State<CategoriesPage> {
         children: [
           HeaderSection(),
           LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF183A37), size: 200),
+              color: Color(0xFF222831), size: 200),
         ],
       )
       )
-          : Center(
-        child: Column(
+          : Stack(
           children: [
-            HeaderSection(),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: AnimatedSwitcher(
-                  duration: Duration(milliseconds: 750),
-                  child: showSubCategories
-                      ? buildSubCategoriesGrid()
-                      : buildCategoriesGrid(),
+            Positioned.fill(
+              child: Image.asset(
+                "assets/therapy-main.jpg", // Buraya arkaplan resmini ekle
+                fit: BoxFit.cover,
+                colorBlendMode: BlendMode.darken,
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: Column(
+                  children: [
+                    HeaderSection(),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: AnimatedSwitcher(
+                          duration: Duration(milliseconds: 750),
+                          child: showSubCategories
+                              ? buildSubCategoriesGrid()
+                              : buildCategoriesGrid(),
+                        ),
+                      ),
+                    ),
+                    FooterSection(),
+                  ],
                 ),
               ),
             ),
-            FooterSection(),
-          ],
-        ),
+          ]
       ),
-      backgroundColor: Color(0xFFEFD6AC),
+      backgroundColor: Color(0xFFEEEEEE),
     );
   }
 
@@ -182,7 +198,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         crossAxisCount: MediaQuery
             .of(context)
             .size
-            .width >= 600 ? 4 : 2,
+            .width >= 800 ? 4 : 2,
         crossAxisSpacing: 50,
         mainAxisSpacing: 50,
         childAspectRatio: 1.5,
@@ -194,7 +210,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           onTap: () => onCategoryTap(category),
           child: Container(
             decoration: BoxDecoration(
-              color: Color(0xFF183A37),
+              color: Color(0xFF222831),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -204,21 +220,45 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    category['name'],
-                    style: TextStyle(fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                    textAlign: TextAlign.center,
+            child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                      child: Image.network(category["imageUrl"], // Buraya arkaplan resmini ekle
+                        fit: BoxFit.cover,
+                        colorBlendMode: BlendMode.darken,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  SafeArea(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            category['name'],
+                            style: TextStyle(fontSize: MediaQuery
+                                .of(context)
+                                .size
+                                .width < 800 ? 20 : 40,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]
             ),
           ),
         );
@@ -227,64 +267,104 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 
   Widget buildSubCategoriesGrid() {
-    return GridView.builder(
-      key: ValueKey('subCategoriesGrid'),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery
-            .of(context)
-            .size
-            .width >= 600 ? 4 : 2,
-        crossAxisSpacing: 50,
-        mainAxisSpacing: 50,
-        childAspectRatio: 1.5,
-      ),
-      itemCount: subCategories.length,
-      itemBuilder: (context, index) {
-        final subCategory = subCategories[index];
-        return GestureDetector(
-          onTap: () {
-            context.go('/courses/' + selectedCategory + '/' + subCategory["uid"]);
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Color(0xFF183A37),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(onPressed: onCategoryBackTap, child: Icon(Icons.arrow_circle_left_outlined, color: Color(0xFF222831),size: 50,)),
+          ],
+        ),
+        SizedBox(height: 10,),
+        Expanded(
+          child: GridView.builder(
+            key: ValueKey('subCategoriesGrid'),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery
+                  .of(context)
+                  .size
+                  .width >= 800 ? 4 : 2,
+              crossAxisSpacing: 50,
+              mainAxisSpacing: 50,
+              childAspectRatio: 1.5,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    subCategory['name'],
-                    style: TextStyle(fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                    textAlign: TextAlign.center,
+            itemCount: subCategories.length,
+            itemBuilder: (context, index) {
+              final subCategory = subCategories[index];
+              return GestureDetector(
+                onTap: () {
+                  context.go(
+                      '/courses/' + selectedCategory + '/' + subCategory["uid"]);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Color(0xFF222831),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              topRight: Radius.circular(16),
+                              bottomLeft: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
+                            ),
+                            child: Image.network(selectedCategoryImage, // Buraya arkaplan resmini ekle
+                              fit: BoxFit.cover,
+                              colorBlendMode: BlendMode.overlay,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                        SafeArea(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  subCategory['name'],
+                                  style: TextStyle(fontSize: MediaQuery
+                                      .of(context)
+                                      .size
+                                      .width < 800 ? 15 : 30,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ]
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
 
 class HeaderSection extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFF183A37),
+      color: Color(0xFF222831),
       child: Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

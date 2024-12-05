@@ -1,11 +1,11 @@
 {
-    "name": "ozel_ders",
-    "short_name": "ozel_ders",
+    "name": "VITAMENT",
+    "short_name": "VITAMENT",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Terapinin Adresi...",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

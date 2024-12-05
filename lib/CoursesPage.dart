@@ -36,19 +36,15 @@ class _CoursesPageState extends State<CoursesPage> {
   @override
   void initState() {
     super.initState();
-    selectedCategory =
-    widget.category.isEmpty || widget.category == '' ? 'Seçilmedi' : widget
-        .category;
+    selectedCategory = widget.category.isEmpty ? 'Seçilmedi' : widget.category;
     selectedSubCategory =
-    widget.subCategory.isEmpty || widget.category == '' ? 'Seçilmedi' : widget
-        .subCategory;
+    widget.subCategory.isEmpty ? 'Seçilmedi' : widget.subCategory;
     initData();
   }
 
-  Future<void> initData() async
-  {
+  Future<void> initData() async {
     isLoggedIn = await AuthService().isUserSignedIn();
-    loadInitialData();
+    await loadInitialData();
     setState(() {});
   }
 
@@ -63,7 +59,6 @@ class _CoursesPageState extends State<CoursesPage> {
   void filterCourses() {
     setState(() {
       courses = coursesHolder;
-      print(selectedCategory);
       List<Map<String, dynamic>> filteredCourses = courses.where((course) {
         return (selectedCategory == 'Seçilmedi' ||
             course['category'] == selectedCategory) &&
@@ -74,11 +69,9 @@ class _CoursesPageState extends State<CoursesPage> {
       }).toList();
 
       if (sortBy == 'price_asc') {
-        filteredCourses.sort((a, b) =>
-            a['hourlyPrice'].compareTo(b['hourlyPrice']));
+        filteredCourses.sort((a, b) => a['hourlyPrice'].compareTo(b['hourlyPrice']));
       } else if (sortBy == 'price_desc') {
-        filteredCourses.sort((a, b) =>
-            b['hourlyPrice'].compareTo(a['hourlyPrice']));
+        filteredCourses.sort((a, b) => b['hourlyPrice'].compareTo(a['hourlyPrice']));
       }
 
       courses = filteredCourses;
@@ -89,102 +82,179 @@ class _CoursesPageState extends State<CoursesPage> {
   void _showFilterModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Tam ekran yapmak için
+      backgroundColor: Colors.transparent, // Arkaplanı saydam yapıyoruz
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: EdgeInsets.all(16.0),
-              height: 400,
-              child: Column(
-                children: [
-                  Text(
-                    'Filtreleme',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        return FractionallySizedBox(
+          heightFactor: 0.8, // Yüksekliğini ayarlıyoruz
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              // Ekran boyutunu almak için MediaQuery kullanıyoruz
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isMobile = screenWidth < 800;
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF222831), // Arkaplan rengini ayarlıyoruz
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(20),
                   ),
-                  SizedBox(height: 16),
-                  DropdownButton<String>(
-                    value: selectedCategory,
-                    hint: Text('Kategori Seç'),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedCategory = newValue!;
-                        selectedSubCategory = 'Seçilmedi';
-                      });
-                      setModalState(() {}); // Dropdown güncelleme
-                    },
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: 'Seçilmedi',
-                        child: Text('Seçilmedi'),
+                ),
+                padding: EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Filtreleme',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFEEEEEE), // Metin rengini ayarlıyoruz
+                        ),
                       ),
-                      ...categories.map<DropdownMenuItem<String>>((category) {
-                        return DropdownMenuItem<String>(
-                          value: category['uid'],
-                          child: Text(category['name']),
-                        );
-                      }).toList(),
+                      Divider(color: Color(0xFFEEEEEE)),
+                      SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Kategori Seç',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFEEEEEE),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        dropdownColor:
+                        Color(0xFF393E46), // Dropdown arkaplan rengini ayarlıyoruz
+                        value:
+                        selectedCategory != 'Seçilmedi' ? selectedCategory : null,
+                        decoration: _inputDecoration('Kategori Seç'),
+                        hint: Text('Kategori Seç',
+                            style: TextStyle(color: Color(0xFFEEEEEE))),
+                        iconEnabledColor: Color(0xFFEEEEEE),
+                        onChanged: (String? newValue) {
+                          setModalState(() {
+                            selectedCategory = newValue ?? 'Seçilmedi';
+                            selectedSubCategory = 'Seçilmedi';
+                          });
+                        },
+                        items: [
+                          DropdownMenuItem<String>(
+                            value: 'Seçilmedi',
+                            child: Text('Seçilmedi',
+                                style: TextStyle(color: Color(0xFFEEEEEE))),
+                          ),
+                          ...categories.map<DropdownMenuItem<String>>((category) {
+                            return DropdownMenuItem<String>(
+                              value: category['uid'],
+                              child: Text(category['name'],
+                                  style: TextStyle(color: Color(0xFFEEEEEE))),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                      if (selectedCategory != 'Seçilmedi') ...[
+                        SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Alt Kategori Seç',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFEEEEEE),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          dropdownColor: Color(0xFF393E46),
+                          value: selectedSubCategory != 'Seçilmedi'
+                              ? selectedSubCategory
+                              : null,
+                          decoration: _inputDecoration('Alt Kategori Seç'),
+                          hint: Text('Alt Kategori Seç',
+                              style: TextStyle(color: Color(0xFFEEEEEE))),
+                          iconEnabledColor: Color(0xFFEEEEEE),
+                          onChanged: (String? newValue) {
+                            setModalState(() {
+                              selectedSubCategory = newValue ?? 'Seçilmedi';
+                            });
+                          },
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: 'Seçilmedi',
+                              child: Text('Seçilmedi',
+                                  style: TextStyle(color: Color(0xFFEEEEEE))),
+                            ),
+                            ...categories
+                                .firstWhere(
+                                    (category) => category['uid'] == selectedCategory)[
+                            'subCategories']
+                                .map<DropdownMenuItem<String>>((subCategory) {
+                              return DropdownMenuItem<String>(
+                                value: subCategory['uid'],
+                                child: Text(subCategory['name'],
+                                    style: TextStyle(color: Color(0xFFEEEEEE))),
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      ],
+                      SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Fiyat Aralığı',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFEEEEEE),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      RangeSlider(
+                        activeColor: Color(0xFF76ABAE),
+                        inactiveColor: Color(0xFF393E46),
+                        values: RangeValues(minPrice, maxPrice),
+                        min: 0,
+                        max: 1000,
+                        divisions: 100,
+                        labels: RangeLabels(
+                          '${minPrice.round()} TL',
+                          '${maxPrice.round()} TL',
+                        ),
+                        onChanged: (RangeValues values) {
+                          setModalState(() {
+                            minPrice = values.start;
+                            maxPrice = values.end;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          filterCourses();
+                          Navigator.pop(context);
+                        },
+                        child: Text('Uygula'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF76ABAE),
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(double.infinity, 50),
+                        ),
+                      ),
                     ],
                   ),
-                  if (selectedCategory != 'Seçilmedi')
-                    DropdownButton<String>(
-                      value: selectedSubCategory,
-                      hint: Text('Alt Kategori Seç'),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedSubCategory = newValue!;
-                        });
-                        setModalState(() {}); // Dropdown güncelleme
-                      },
-                      items: [
-                        DropdownMenuItem<String>(
-                          value: 'Seçilmedi',
-                          child: Text('Seçilmedi'),
-                        ),
-                        ...categories
-                            .firstWhere((category) =>
-                        category['uid'] == selectedCategory)['subCategories']
-                            .map<DropdownMenuItem<String>>((subCategory) {
-                          return DropdownMenuItem<String>(
-                            value: subCategory['uid'],
-                            child: Text(subCategory['name']),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Fiyat Aralığı',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  RangeSlider(
-                    values: RangeValues(minPrice, maxPrice),
-                    min: 0,
-                    max: 1000,
-                    divisions: 20,
-                    labels: RangeLabels(
-                      '${minPrice.round()} TL',
-                      '${maxPrice.round()} TL',
-                    ),
-                    onChanged: (RangeValues values) {
-                      setState(() {
-                        minPrice = values.start;
-                        maxPrice = values.end;
-                      });
-                      setModalState(() {}); // Slider güncelleme
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      filterCourses();
-                      Navigator.pop(context);
-                    },
-                    child: Text('Uygula'),
-                  ),
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -193,123 +263,173 @@ class _CoursesPageState extends State<CoursesPage> {
   void _showSortModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Tam ekran yapmak için
+      backgroundColor: Colors.transparent, // Arkaplanı saydam yapıyoruz
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: EdgeInsets.all(16.0),
-              height: 300,
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Text(
-                    'Sıralama',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        return FractionallySizedBox(
+          heightFactor: 0.5, // Yüksekliğini ayarlıyoruz
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF222831), // Arkaplan rengini ayarlıyoruz
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(20),
                   ),
-                  SizedBox(height: 16),
-                  RadioListTile<String>(
-                    title: Text('Fiyata Göre Artan'),
-                    value: 'price_asc',
-                    groupValue: sortBy,
-                    onChanged: (String? value) {
-                      setModalState(() {
-                        sortBy = value!;
-                      });
-                      setState(() {}); // Add this to update the UI
-                    },
-                  ),
-                  RadioListTile<String>(
-                    title: Text('Fiyata Göre Azalan'),
-                    value: 'price_desc',
-                    groupValue: sortBy,
-                    onChanged: (String? value) {
-                      setModalState(() {
-                        sortBy = value!;
-                      });
-                      setState(() {}); // Add this to update the UI
-                    },
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      filterCourses();
-                      Navigator.pop(context);
-                    },
-                    child: Text('Uygula'),
-                  ),
-                ],
-              ),
-            );
-          },
+                ),
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Sıralama',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFEEEEEE), // Metin rengini ayarlıyoruz
+                      ),
+                    ),
+                    Divider(color: Color(0xFFEEEEEE)),
+                    SizedBox(height: 16),
+                    RadioListTile<String>(
+                      activeColor: Color(0xFF76ABAE),
+                      title: Text('Varsayılan',
+                          style: TextStyle(color: Color(0xFFEEEEEE))),
+                      value: 'none',
+                      groupValue: sortBy,
+                      onChanged: (String? value) {
+                        setModalState(() {
+                          sortBy = value!;
+                        });
+                      },
+                    ),
+                    RadioListTile<String>(
+                      activeColor: Color(0xFF76ABAE),
+                      title: Text('Fiyata Göre Artan',
+                          style: TextStyle(color: Color(0xFFEEEEEE))),
+                      value: 'price_asc',
+                      groupValue: sortBy,
+                      onChanged: (String? value) {
+                        setModalState(() {
+                          sortBy = value!;
+                        });
+                      },
+                    ),
+                    RadioListTile<String>(
+                      activeColor: Color(0xFF76ABAE),
+                      title: Text('Fiyata Göre Azalan',
+                          style: TextStyle(color: Color(0xFFEEEEEE))),
+                      value: 'price_desc',
+                      groupValue: sortBy,
+                      onChanged: (String? value) {
+                        setModalState(() {
+                          sortBy = value!;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        filterCourses();
+                        Navigator.pop(context);
+                      },
+                      child: Text('Uygula'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF76ABAE),
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 50),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         );
       },
     );
   }
 
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: Color(0xFFEEEEEE)),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Color(0xFF76ABAE)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Color(0xFF183A37),
-        title: Image.asset('assets/header.png', height: MediaQuery
-            .of(context)
-            .size
-            .width < 600 ? 250 : 300),
-        centerTitle: MediaQuery
-            .of(context)
-            .size
-            .width < 600 ? true : false,
-        leading: MediaQuery
-            .of(context)
-            .size
-            .width < 600
+        backgroundColor: Color(0xFF222831),
+        title: Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 60 : 80,
+        ),
+        centerTitle: isMobile,
+        leading: isMobile
             ? IconButton(
-          icon: Icon(Icons.menu),
+          icon: Icon(Icons.menu, color: Colors.white),
           onPressed: () {
             _scaffoldKey.currentState!.openDrawer();
           },
         )
             : null,
-        actions: MediaQuery
-            .of(context)
-            .size
-            .width >= 600
+        actions: !isMobile
             ? [
           TextButton(
             onPressed: () {
               context.go('/');
             },
-            child: Text('Ana Sayfa', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Ana Sayfa',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
-              context.go('/categories'); // CategoriesPage'e yönlendirme
+              context.go('/categories');
             },
-            child: Text('Kategoriler', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Kategoriler',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
-              context.go('/courses'); // CategoriesPage'e yönlendirme
+              context.go('/courses');
             },
-            child: Text('Kurslar', style: TextStyle(
-                color: Color(0xFFC44900), fontWeight: FontWeight.bold)),
+            child: Text('Kurslar',
+                style: TextStyle(
+                    color: Color(0xFF76ABAE),
+                    fontWeight: FontWeight.bold)),
           ),
-          isLoggedIn ? TextButton(
+          isLoggedIn
+              ? TextButton(
             onPressed: () {
               context.go('/appointments/' + AuthService().userUID());
             },
-            child: Text('Randevularım', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ) : SizedBox.shrink(),
+            child: Text('Randevularım',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
+          )
+              : SizedBox.shrink(),
           TextButton(
-            onPressed: isLoggedIn ?
-                () {
+            onPressed: isLoggedIn
+                ? () {
               context.go('/profile/' + AuthService().userUID());
             }
-                :
-                () {
+                : () {
               context.go('/login');
             },
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
@@ -319,116 +439,105 @@ class _CoursesPageState extends State<CoursesPage> {
         ]
             : null,
       ),
-      drawer: MediaQuery
-          .of(context)
-          .size
-          .width < 600
-          ? DrawerMenu(isLoggedIn: isLoggedIn)
-          : null,
+      drawer: isMobile ? DrawerMenu(isLoggedIn: isLoggedIn) : null,
       body: isLoading
-          ? Center(child: LoadingAnimationWidget.dotsTriangle(
-          color: Color(0xFF183A37), size: 200))
-          : Column(
+          ? Center(
+          child: LoadingAnimationWidget.dotsTriangle(
+              color: Color(0xFF222831), size: 200))
+          : Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Positioned.fill(
+            child: Image.asset(
+              "assets/therapy-main.jpg",
+              fit: BoxFit.cover,
+              colorBlendMode: BlendMode.darken,
+            ),
+          ),
+          SafeArea(
+            child: Column(
               children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(5), // Yuvarlak köşe
-                        topRight: Radius.circular(5), // Yuvarlak köşe
-                        bottomLeft: Radius.circular(5), // Sivri köşe
-                        bottomRight: Radius.circular(5),
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF222831),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: Color(0xFF04151F),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        onPressed: () {
+                          _showFilterModal(context);
+                        },
+                        icon: Icon(Icons.filter_list),
+                        label: Text(
+                          'Filtrele',
+                          style: TextStyle(fontSize: 18),
+                        ),
                       ),
-                      side: BorderSide(
-                        width: 2,
-                        color: Color(int.parse(
-                            "#04151F".substring(1, 7), radix: 16) + 0xFF000000),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF222831),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: Color(0xFF04151F),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        onPressed: () {
+                          _showSortModal(context);
+                        },
+                        icon: Icon(Icons.sort),
+                        label: Text(
+                          'Sırala',
+                          style: TextStyle(fontSize: 18),
+                        ),
                       ),
-                    ),
-                    backgroundColor: Color(0xFF183A37),
+                    ],
                   ),
-                  onPressed: () {
-                    _showFilterModal(context);
-                  },
-                  child: Text(
-                    'Filtreleme', style: TextStyle(color: Color(0xFFEFD6AC), fontSize: 20),),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(5), // Yuvarlak köşe
-                        topRight: Radius.circular(5), // Yuvarlak köşe
-                        bottomLeft: Radius.circular(5), // Sivri köşe
-                        bottomRight: Radius.circular(5),
-                      ),
-                      side: BorderSide(
-                        width: 2,
-                        color: Color(
-                            int.parse("#04151F".substring(1, 7), radix: 16) +
-                                0xFF000000),
-                      ),
+                Expanded(
+                  child: GridView.builder(
+                    padding: EdgeInsets.all(16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount:
+                      MediaQuery.of(context).size.width >= 800 ? 4 : 2,
+                      crossAxisSpacing: isMobile ? 2 : 16,
+                      mainAxisSpacing: isMobile ? 2 : 16,
+                      childAspectRatio: 0.75,
                     ),
-                    backgroundColor: Color(0xFF183A37),
+                    itemCount: courses.length,
+                    itemBuilder: (context, index) {
+                      final course = courses[index];
+                      return CourseCard(
+                        course: course,
+                        author: teachers.firstWhere((element) =>
+                        element["UID"] == course["author"]),
+                      );
+                    },
                   ),
-                  onPressed: () {
-                    _showSortModal(context);
-                  },
-                  child: Text('Sıralama', style: TextStyle(color: Color(0xFFEFD6AC), fontSize: 20),),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: MediaQuery
-                    .of(context)
-                    .size
-                    .width >= 600 ? 4 : 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: courses.length,
-              itemBuilder: (context, index) {
-                final course = courses[index];
-                return CourseCard(
-                  course: course,
-                  author: teachers.firstWhere((element) =>
-                  element["UID"] == course["author"]),
-                );
-              },
-            ),
-          ),
-          FooterSection()
         ],
       ),
-      backgroundColor: Color(0xFFEFD6AC),
-    );
-  }
-}
-
-class HeaderSection extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 200,
-      color: Color(0xFF183A37),
-      child: Center(
-        child: Row(
-          children: [
-            Image.network('https://cdn-icons-png.flaticon.com/512/992/992257.png', height: 200),
-            SizedBox(width: 20,),
-            Text("Kategoriler", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 40),)
-          ],
-        ),
-      ),
+      backgroundColor: Color(0xFFEEEEEE),
     );
   }
 }
