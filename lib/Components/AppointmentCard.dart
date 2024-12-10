@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/LoadingIndicator.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'dart:html' as html;
 
 import 'package:ozel_ders/services/JitsiService.dart';

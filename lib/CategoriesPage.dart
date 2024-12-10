@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/Footer.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:ozel_ders/services/PaymentService.dart';
 
 import 'Components/Drawer.dart';
@@ -115,6 +115,15 @@ class _CategoriesPageState extends State<CategoriesPage> {
             },
             child: Text('Kurslar', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.go('/blogs');
+            },
+            child: Text('Blog',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
             onPressed: () {

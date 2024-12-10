@@ -8,10 +8,11 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
+import 'Components/BlogCard.dart';
 import 'Components/Drawer.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -730,6 +731,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
+          TextButton(
+            onPressed: () {
+              context.go('/blogs');
+            },
+            child: Text('Blog',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
+          ),
           isLoggedIn ? TextButton(
             onPressed: () {
               context.go('/appointments/' + AuthService().userUID());
@@ -748,7 +758,8 @@ class _ProfilePageState extends State<ProfilePage> {
             },
             child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
                 style: TextStyle(
-                    color: isSelf ? Color(0xFF76ABAE) : Colors.white, fontWeight: FontWeight.bold)),
+                    color: isSelf ? Color(0xFF76ABAE) : Colors.white,
+                    fontWeight: FontWeight.bold)),
           ),
         ]
             : null,
@@ -871,7 +882,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       if (isSelf) SizedBox(height: 4),
                       if (isSelf) NotificationIconButtonWithBadge(
-                          userType: isTeacher ? UserType.teacher : UserType.student,
+                          userType: isTeacher ? UserType.teacher : UserType
+                              .student,
                           userUID: widget.uid),
                       Text(
                         isTeacher ? 'Eğitimci' : 'Öğrenci',
@@ -1085,8 +1097,106 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
                             ),
+                            // Kursları gösteren bölümün hemen altına, geniş ekran için (flex:2 bölmesinin altına ya da yanına):
                           ],
                         ),
+                        SizedBox(height: 16),
+                        Card(
+                          color: Color(0xFF50727B),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              // İçeriğe göre min boy
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Yazdığı Bloglar',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    if (isSelf) ...[
+                                      SizedBox(width: 10),
+                                      IconButton(
+                                        onPressed: () {
+                                          context.go("/blog-create/${userInfo["uid"]}");
+                                        },
+                                        icon: Icon(Icons.add_circle,
+                                            color: Colors.white),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+                                FutureBuilder<List<Map<String, dynamic>>>(
+                                  future: isTeacher ? FirestoreService()
+                                      .getTeacherBlogs(widget.uid) : Future
+                                      .value([]),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return SizedBox(height: 50,
+                                          child: Center(
+                                              child: CircularProgressIndicator()));
+                                    } else if (snapshot.hasError) {
+                                      return Text('Hata: ${snapshot.error}',
+                                          style: TextStyle(
+                                              color: Colors.white));
+                                    } else {
+                                      final blogs = snapshot.data ?? [];
+                                      if (blogs.isEmpty) {
+                                        return Text('Henüz blog yok.',
+                                            style: TextStyle(
+                                                color: Colors.white));
+                                      } else {
+                                        // CarouselSlider ile blogları yatayda kaydırıyoruz.
+                                        return CarouselSlider(
+                                          options: CarouselOptions(
+                                            aspectRatio: 3,
+                                            height: 300.0,
+                                            enableInfiniteScroll: false,
+                                            enlargeCenterPage: true,
+                                            scrollDirection: Axis.horizontal,
+                                          ),
+                                          items: blogs.map((blog) {
+                                            return Stack(
+                                              children: [
+                                                Container(
+                                                    height: 300,
+                                                    width: 500,
+                                                    child: BlogCard(blog: blog)
+                                                ),
+                                                if (isSelf)
+                                                  Positioned(
+                                                    top: 8,
+                                                    right: 8,
+                                                    child: IconButton(
+                                                      icon: Icon(Icons.build_circle,
+                                                        color: Colors.black, size: 35,),
+                                                      onPressed: () {
+                                                        context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
+                                                      },
+                                                    ),
+                                                  ),
+                                              ],
+                                            );
+                                          }).toList(),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                       ],
                     ),
                   ),
@@ -1167,8 +1277,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 color:
                                 Colors.white),
                           ),
-                          SizedBox(width: 10,),
-                          IconButton(
+                          if(isSelf) SizedBox(width: 10,),
+                          if(isSelf) IconButton(
                             onPressed: () {
                               _showCreateCourseDialog(context);
                             },
@@ -1229,6 +1339,96 @@ class _ProfilePageState extends State<ProfilePage> {
                           }).toList() ?? [],
                         ),
 
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Card(
+                    color: Color(0xFF50727B),
+                    child: ExpansionTile(
+                      initiallyExpanded: false,
+                      title: Row(
+                        children: [
+                          Text(
+                            'Yazdığı Bloglar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (isSelf) SizedBox(width: 10),
+                          if (isSelf) IconButton(
+                            onPressed: () {
+                              context.go("/blog-create/${userInfo["uid"]}");
+                            },
+                            icon: Icon(Icons.add_circle, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      children: [
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: isTeacher ? FirestoreService()
+                              .getTeacherBlogs(widget.uid) : Future.value([]),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: SizedBox(height: 50,
+                                    child: Center(
+                                        child: CircularProgressIndicator())),
+                              );
+                            } else if (snapshot.hasError) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text('Hata: ${snapshot.error}',
+                                    style: TextStyle(color: Colors.white)),
+                              );
+                            } else {
+                              final blogs = snapshot.data ?? [];
+                              if (blogs.isEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text('Henüz blog yok.',
+                                      style: TextStyle(color: Colors.white)),
+                                );
+                              } else {
+                                // Dar ekranda da CarouselSlider kullanıyoruz
+                                return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: CarouselSlider(
+                                    options: CarouselOptions(
+                                      height: 300.0,
+                                      enableInfiniteScroll: false,
+                                      enlargeCenterPage: true,
+                                      scrollDirection: Axis.horizontal,
+                                    ),
+                                    items: blogs.map((blog) {
+                                      return Stack(
+                                        children: [
+                                          BlogCard(blog: blog),
+                                          if (isSelf)
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: IconButton(
+                                                icon: Icon(Icons.build_circle,
+                                                    color: Colors.black, size: 35,),
+                                                onPressed: () {
+                                                  context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
+                                                },
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
                       ],
                     ),
                   ),

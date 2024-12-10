@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/BlogCreatePage.dart';
 import 'package:ozel_ders/Components/LoadingIndicator.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:ozel_ders/Components/comment.dart';
 import 'package:ozel_ders/services/JitsiService.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' as dt_picker;
@@ -374,6 +374,15 @@ class _CoursePageState extends State<CoursePage> {
             },
             child: const Text('Kurslar', style: TextStyle(
                 color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.go('/blogs');
+            },
+            child: Text('Blog',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
             onPressed: () {

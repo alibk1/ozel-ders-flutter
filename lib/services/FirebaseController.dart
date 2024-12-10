@@ -83,6 +83,18 @@ class AuthService {
   String userEmail() {
     return _auth.currentUser?.email ?? '';
   }
+
+  // Şifre Sıfırlama E-postası Gönderme
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      print('Şifre sıfırlama e-postası gönderildi.');
+      return true;
+    } catch (e) {
+      print('Şifre Sıfırlama Hatası: ${e.toString()}');
+      return false;
+    }
+  }
 }
 
 
@@ -704,6 +716,37 @@ class FirestoreService {
     }
   }
 
+  Future<void> sendAppointmentAcceptedToStudent(String appointmentUID, String teacherUID, String studentUID, String teacherName, String formattedDate) async {
+    String collection = "students";
+    String collection2 = "notifications";
+    await _db.collection(collection).doc(studentUID).collection(collection2).doc(appointmentUID + "Acccept").set({
+      "appointmentUID" : appointmentUID,
+      "notType" : "MeetingAccept",
+      "teacherUID": teacherUID,
+      "studentUID": studentUID,
+      "message" : "$teacherName ile olan randevu talebiniz yanıtlandı. $formattedDate tarihinde randevunuz oluşturuldu. Görüşmek üzere...",
+      "hasRead" : false,
+    });
+  }
+
+  Future<void> markAppointmentAcceptedAsReadForStudent(String studentUID, String appointmentUID) async {
+    String collection = "students";
+    String notificationsCollection = "notifications";
+    try {
+      await _db
+          .collection(collection)
+          .doc(studentUID)
+          .collection(notificationsCollection)
+          .doc(appointmentUID)
+          .update({
+        "hasRead": true,
+      });
+      print("Teacher request marked as read successfully.");
+    } catch (e) {
+      print("Error marking teacher request as read: $e");
+    }
+  }
+
   Future<bool> acceptAppointmentRequest(String teacherUID, String studentUID, String appointmentUID, DateTime selectedDate) async {
     String collection1 = "teachers";
     String collection2 = "students";
@@ -750,4 +793,96 @@ class FirestoreService {
       return false;
     }
   }
+
+  // Blog oluşturma
+  Future<void> createBlog(String creatorUID, String title, String content) async {
+    // Öncelikle, creatorUID'nin bir öğretmene ait olup olmadığını kontrol edin
+    DocumentSnapshot teacherDoc = await _db.collection('teachers').doc(creatorUID).get();
+    if (!teacherDoc.exists) {
+      throw Exception('Sadece öğretmenler blog yazısı oluşturabilir.');
+    }
+
+    await _db.collection('blogs').add({
+      'creatorUID': creatorUID,
+      'title': title,
+      'content': content,
+      'createdAt': DateTime.now(),
+    });
+  }
+
+  // Tüm blogları getirme
+  Future<List<Map<String, dynamic>>> getAllBlogs() async {
+    QuerySnapshot snapshot = await _db.collection('blogs').orderBy('createdAt', descending: true).get();
+    return snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getAllBlogs20Times({int limit = 20, DocumentSnapshot? startAfter}) async {
+    Query query = _db.collection('blogs').orderBy('createdAt', descending: true).limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    QuerySnapshot snapshot = await query.get();
+    return snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    }).toList();
+  }
+
+  // Belirli bir öğretmenin bloglarını getirme
+  Future<List<Map<String, dynamic>>> getTeacherBlogs(String teacherUID) async {
+    QuerySnapshot snapshot = await _db.collection('blogs')
+        .where('creatorUID', isEqualTo: teacherUID)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    }).toList();
+  }
+
+  // Belirli bir blogu getirme
+  Future<Map<String, dynamic>> getBlog(String blogUID) async {
+    DocumentSnapshot doc = await _db.collection('blogs').doc(blogUID).get();
+    if (doc.exists) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    } else {
+      throw Exception('Blog bulunamadı.');
+    }
+  }
+
+  // Blog güncelleme
+  Future<void> updateBlogDetails(String blogUID, String? title, String? content) async {
+    Map<String, dynamic> updateData = {};
+    if (title != null) updateData['title'] = title;
+    if (content != null) updateData['content'] = content;
+
+    if (updateData.isNotEmpty) {
+      await _db.collection('blogs').doc(blogUID).update(updateData);
+    }
+  }
+
+  // Bloga yorum ekleme
+  Future<void> commentToBlog(String blogUID, String commenterUID, String comment) async {
+    await _db.collection('blogs').doc(blogUID).collection('comments').add({
+      'commenterUID': commenterUID,
+      'comment': comment,
+      'commentedAt': DateTime.now(),
+    });
+  }
+
+  // Blogun yorumlarını getirme
+  Future<List<Map<String, dynamic>>> getBlogComments(String blogUID) async {
+    QuerySnapshot snapshot = await _db.collection('blogs').doc(blogUID).collection('comments')
+        .orderBy('commentedAt', descending: true)
+        .get();
+    return snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    }).toList();
+  }
+
 }

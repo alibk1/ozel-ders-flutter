@@ -3,7 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'Components/Drawer.dart';
@@ -634,6 +634,15 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)
             ),
+          ),
+          TextButton(
+            onPressed: () {
+              context.go('/blogs');
+            },
+            child: Text('Blog',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
           ),
           isLoggedIn ? TextButton(
             onPressed: ()

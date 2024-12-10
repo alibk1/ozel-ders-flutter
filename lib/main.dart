@@ -4,6 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/AppointmentsPage.dart';
+import 'package:ozel_ders/BlogCreatePage.dart';
+import 'package:ozel_ders/BlogPage.dart';
+import 'package:ozel_ders/BlogsPage.dart';
 import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
@@ -47,6 +50,32 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/courses',
         builder: (context, state) => CoursesPage(category: '', subCategory: '',),
+      ),
+      GoRoute(
+        path: '/blog-update/:uid/:blogUID',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          final blogUID = state.pathParameters['blogUID']!;
+          return BlogWritePage(uid: uid, isUpdate: true, blogUID: blogUID);
+        },
+      ),
+      GoRoute(
+        path: '/blog-create/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return BlogWritePage(uid: uid,);
+        },
+      ),
+      GoRoute(
+        path: '/blog/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return BlogPage(blogUID: uid,);
+        },
+      ),
+      GoRoute(
+        path: '/blogs',
+        builder: (context, state) => BlogsPage(),
       ),
       GoRoute(
         path: '/courses/:category/:subcategory',

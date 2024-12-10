@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import '../FirebaseController.dart'; // FirestoreService'i kullanmak için
+import '../services/FirebaseController.dart'; // FirestoreService'i kullanmak için
 
 class CommentRatingWidget extends StatefulWidget {
   final String courseId;
