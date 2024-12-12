@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/Footer.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/Components/LoadingIndicator.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'Components/Drawer.dart';
 import 'HomePage.dart';
 
@@ -138,6 +139,15 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             },
             child: const Text('Kurslar', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.go('/blogs');
+            },
+            child: Text('Blog',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
@@ -335,6 +345,13 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         ),
         child: const Text('Giriş Yap', style: TextStyle(color: Colors.white),),
       ),
+      const SizedBox(height: 10),
+      TextButton(
+        onPressed: () {
+          _showChangePasswordDialog(context, _emailController.text);
+        },
+        child: Text('Şifreni mi unuttun?', style: TextStyle(color: Color(0xFF76ABAE)),),
+      ),
     ];
   }
 
@@ -509,6 +526,71 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       );
     }
   }
+
+  Future<void> _showChangePasswordDialog(BuildContext context, String email) async {
+    TextEditingController emailController =
+    TextEditingController(text: email);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+          ),
+          child: Wrap(
+            children: [
+              SizedBox(height: 10),
+              Text("Kayıt Olurken Kullandığınız E-posta'yı Giriniz:",
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              SizedBox(height: 10),
+              TextField(
+                controller: emailController,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'E-posta',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: Color(0xFF393E46),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  LoadingIndicator(context).showLoading();
+                  await AuthService().sendPasswordResetEmail(emailController.text);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: Text('Şifre Sıfırlama Bağlantısı Gönder'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF76ABAE),
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 50),
+                ),
+              ),
+              SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 }
 
 class HeaderSection extends StatelessWidget {
@@ -567,21 +649,6 @@ class _BirthdateInputWidgetState extends State<BirthdateInputWidget> {
       decoration: const InputDecoration(
         labelText: 'Doğum Tarihinizi Seçin',
         border: OutlineInputBorder(),
-      ),
-    );
-  }
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 100,
-          title: const Text('Doğum Tarihi Girişi Örneği'),
-        ),
-        body: BirthdateInputExample(),
       ),
     );
   }

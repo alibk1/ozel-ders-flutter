@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../FirebaseController.dart';
+import 'package:ionicons/ionicons.dart';
+import '../services/FirebaseController.dart';
 
 class DrawerMenu extends StatelessWidget {
   final bool isLoggedIn;
@@ -54,6 +55,13 @@ class DrawerMenu extends StatelessWidget {
               title: Text('Kurslar', style: TextStyle(color: Colors.white)),
               onTap: () {
                 context.go('/courses');
+              },
+            ),
+            ListTile(
+              leading: Icon(Ionicons.book, color: Colors.white70),
+              title: Text('Blog', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                context.go('/blogs');
               },
             ),
             if (isLoggedIn)

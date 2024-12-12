@@ -4,7 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ozel_ders/Components/ContactForm.dart';
 import 'package:ozel_ders/Components/Drawer.dart';
 import 'package:ozel_ders/Components/Footer.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:ozel_ders/services/JitsiService.dart';
 
 class HomePage extends StatefulWidget {
@@ -110,6 +110,15 @@ class _HomePageState extends State<HomePage> {
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold)),
                           ),
+                          TextButton(
+                            onPressed: () {
+                              context.go('/blogs');
+                            },
+                            child: Text('Blog',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                          ),
                           isLoggedIn
                               ? TextButton(
                             onPressed: () {
@@ -186,6 +195,7 @@ class HeaderMenu extends StatelessWidget implements PreferredSizeWidget {
           HeaderMenuItem(title: 'Ana Sayfa', route: '/'),
           HeaderMenuItem(title: 'Kategoriler', route: '/categories'),
           HeaderMenuItem(title: 'Kurslar', route: '/courses'),
+          HeaderMenuItem(title: 'Blog', route: '/blogs'),
           if (isLoggedIn)
             HeaderMenuItem(
                 title: 'Randevularım',

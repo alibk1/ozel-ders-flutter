@@ -4,7 +4,7 @@ import 'package:cool_alert_two/cool_alert_two.dart';
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:intl/intl.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 
 // Kullanıcının öğrenci mi öğretmen mi olduğunu belirtmek için enum
 enum UserType { student, teacher }
@@ -16,6 +16,8 @@ Future<String> getTitle(String type) async {
       return "Yeni Davet";
     case 'Meeting':
       return "Yeni Randevu";
+    case 'MeetingAccept':
+      return "Randevu Kabul Edildi";
     case 'Comment':
       return "Yeni Yorum";
     default:
@@ -234,7 +236,11 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
         ).show();
 
         // Async işlemi gerçekleştir
-        bool success = await FirestoreService().acceptAppointmentRequest(notification["teacherUID"], notification["studentUID"], notification["appointmentUID"], DateTime.parse(selectedDate));
+        bool success = await FirestoreService().acceptAppointmentRequest(
+            notification["teacherUID"],
+            notification["studentUID"],
+            notification["appointmentUID"],
+            DateTime.parse(selectedDate));
 
         // Yükleniyor dialog'unu kapat
         Navigator.of(context, rootNavigator: true).pop();
@@ -248,7 +254,17 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
             title: 'Başarılı!',
             desc: "Randevu başarıyla kaydedildi.",
             btnOkText: "Tamam",
-            btnOkOnPress: () {},
+            btnOkOnPress: () async {
+              Map<String, dynamic> teacher = await FirestoreService().getTeacherByUID(notification["teacherUID"]);
+              print(teacher);
+              print(teacher["name"]);
+              await FirestoreService().sendAppointmentAcceptedToStudent(
+                  notification["appointmentUID"],
+                  notification["teacherUID"],
+                  notification["studentUID"],
+                  teacher["name"],
+                  dateFormatter.format(DateTime.parse(selectedDate)));
+            },
           ).show();
         } else {
           AwesomeDialog(
@@ -278,6 +294,33 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
   ).show();
 }
 
+Future<void> handleMeetingAccept(BuildContext context, Map<String, dynamic> notification) async {
+  AwesomeDialog(
+    context: context,
+    dialogType: DialogType.info,
+    animType: AnimType.bottomSlide,
+    title: 'Randevu Kabul Edildi',
+    desc: notification["message"],
+    // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+    body: StatefulBuilder(
+      builder: (BuildContext context, StateSetter setModalState) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 10),
+            Text(
+              notification["message"],
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 10),
+          ],
+        );
+      },
+    ),
+    btnOkText: "Tamam",
+    btnOkOnPress: (){}
+  ).show();
+}
 
 Future<void> handleComment(BuildContext context, Map<String, dynamic> notification) async {
   showDialog(
@@ -366,7 +409,9 @@ class _NotificationIconButtonWithBadgeState extends State<NotificationIconButton
     }
     else if(notType == "Meeting"){
       _firestoreService.markAppointmentAsReadForTeacher(widget.userUID, notification["id"]);
-
+    }
+    else if(notType == "MeetingAccept"){
+      _firestoreService.markAppointmentAcceptedAsReadForStudent(widget.userUID, notification["id"]);
     }
   }
 
@@ -378,6 +423,9 @@ class _NotificationIconButtonWithBadgeState extends State<NotificationIconButton
         break;
       case 'Meeting':
         handleMeeting(context, notification);
+        break;
+      case 'MeetingAccept':
+        handleMeetingAccept(context, notification);
         break;
       case 'Comment':
         handleComment(context, notification);

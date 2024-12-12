@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ozel_ders/FirebaseController.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 
 class ContactForm extends StatefulWidget {
   @override
