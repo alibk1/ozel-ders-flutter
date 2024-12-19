@@ -280,7 +280,7 @@ class FirestoreService {
     });
   }
 
-
+//--------------------------------------------------------------------------------------------------
   Future<void> createCategory(String name, List<String> subCategories, String imageUrl) async {
     DocumentReference categoryRef = await _db.collection('categories1')
         .add({'name': name, 'imageUrl' : imageUrl});

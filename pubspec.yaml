@@ -58,6 +58,7 @@ dependencies:
   zefyrka: ^1.6.0
   image_picker: ^1.1.2
   universal_platform: ^1.1.0
+  file_saver: ^0.2.13
 
 dev_dependencies:
   flutter_test:
