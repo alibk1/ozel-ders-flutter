@@ -1,16 +1,20 @@
 import 'dart:io';
 
+import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import 'Components/BlogCard.dart';
 import 'Components/Drawer.dart';
@@ -35,6 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String teamNameIfCurrent = "";
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> notifications = [];
+  List<Map<String, dynamic>> appointments = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -95,6 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
       notifications = await FirestoreService().getNotificationsForStudent(widget.uid);
       isTeacher = false;
     }
+    appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
     print(notifications);
     categories = await FirestoreService().getCategories();
     setState(() {
@@ -326,6 +332,346 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void showAppointmentsBottomSheet(BuildContext context,) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            // 08:00'den 20:00'ye kadar 50 dakikalık süreler oluştur
+            final List<Map<String, String>> timeSlots = [];
+            for (int hour = 8; hour < 20; hour++) {
+              String startTime = '${hour.toString().padLeft(2, '0')}:00';
+              String endTime = '${hour.toString().padLeft(2, '0')}:50';
+              timeSlots.add({'start': startTime, 'end': endTime});
+            }
+
+            // Öğretmenin randevularının DateTime listesi (tarih/saat kontrolü için)
+            final List<DateTime> teacherAppDates = [];
+            for (var app in appointments) {
+              Timestamp date = app["date"];
+              DateTime dateTime = date.toDate();
+              teacherAppDates.add(dateTime);
+            }
+
+            // eventsMap: Her güne ait randevuları tutacak bir map (TableCalendar marker'ları için)
+            final Map<DateTime, List<Map<String, dynamic>>> eventsMap = {};
+            for (var appointment in appointments) {
+              final dateTime = (appointment['date'] as Timestamp).toDate();
+              final dayOnly = DateTime(
+                  dateTime.year, dateTime.month, dateTime.day);
+
+              if (!eventsMap.containsKey(dayOnly)) {
+                eventsMap[dayOnly] = [];
+              }
+              eventsMap[dayOnly]!.add(appointment);
+            }
+
+            // Takvimle ilgili state
+            DateTime _focusedDay = DateTime.now();
+            DateTime? _selectedDay;
+
+            // Seçilen saat
+            DateTime? _selectedTime;
+
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState2) {
+                return Padding(
+                  padding: MediaQuery
+                      .of(context)
+                      .viewInsets,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Başlık
+                        Container(
+                          margin: const EdgeInsets.only(top: 16),
+                          child: const Text(
+                            'Randevu Takvimi',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        // TableCalendar widget
+                        TableCalendar(
+                          locale: 'tr_TR',
+                          focusedDay: _focusedDay,
+                          firstDay: DateTime.now().add(Duration(days: -1)),
+                          lastDay: DateTime.utc(2030, 12, 31),
+                          selectedDayPredicate: (day) =>
+                              isSameDay(_selectedDay, day),
+                          eventLoader: (day) {
+                            final dayOnly = DateTime(
+                                day.year, day.month, day.day);
+                            return eventsMap[dayOnly] ?? [];
+                          },
+                          onDaySelected: (selectedDay, focusedDay) {
+                            setState2(() {
+                              _selectedDay = selectedDay;
+                              _focusedDay = focusedDay;
+                              // Gün değiştiğinde seçili saati sıfırlıyoruz
+                              _selectedTime = null;
+                            });
+                          },
+                          calendarStyle: const CalendarStyle(
+                            markerDecoration: BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+
+                        if (_selectedDay != null) ...[
+                          const SizedBox(height: 16),
+
+                          // Seçilen Gün
+                          Text(
+                            'Seçilen Gün: '
+                                '${_selectedDay!.day}.${_selectedDay!
+                                .month}.${_selectedDay!.year}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Saat Seçimi
+                          Wrap(
+                            spacing: 8.0,
+                            runSpacing: 8.0,
+                            alignment: WrapAlignment.center,
+                            children: timeSlots.map((slot) {
+                              // Başlangıç saati
+                              final int slotStart =
+                              int.parse(slot["start"]!.split(":")[0]);
+
+                              // Seçili güne bu saati ekliyoruz
+                              final DateTime slotDateTime = DateTime(
+                                _selectedDay!.year,
+                                _selectedDay!.month,
+                                _selectedDay!.day,
+                                slotStart,
+                                0,
+                              );
+
+                              bool canReserve = true;
+                              for (DateTime date in teacherAppDates) {
+                                if (date.year == slotDateTime.year &&
+                                    date.month == slotDateTime.month &&
+                                    date.day == slotDateTime.day &&
+                                    date.hour == slotDateTime.hour) {
+                                  canReserve = false; // Bu saat dolu
+                                  break;
+                                }
+                              }
+
+                              // Seçilen saat mi?
+                              final bool isSelected = _selectedTime != null &&
+                                  _selectedTime!.year == slotDateTime.year &&
+                                  _selectedTime!.month == slotDateTime.month &&
+                                  _selectedTime!.day == slotDateTime.day &&
+                                  _selectedTime!.hour == slotDateTime.hour;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  setState2(() {
+                                    _selectedTime = slotDateTime;
+                                  });
+                                },
+                                child: Container(
+                                  width: 80,
+                                  // 4 slotun yan yana gelmesi için
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(
+                                        0xFF76ABAE) // Seçilen slot rengi
+                                        : canReserve
+                                        ? const Color(0xFF393E46) // Boş slot
+                                        : Colors.red, // Dolu slot
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: isSelected
+                                        ? Border.all(
+                                        color: Colors.white, width: 2)
+                                        : null,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${slot['start']} - ${slot['end']}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Builder(
+                            builder: (context) {
+                              // Henüz saat seçilmediyse (null) => buton da pasif kalsın
+                              if (_selectedTime == null) {
+                                return ElevatedButton(
+                                  onPressed: null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF76ABAE),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(120, 50),
+                                  ),
+                                  child: const Text("Saat Seçiniz"),
+                                );
+                              }
+
+                              // Seçili saat bir randevu mu? appointments listesinden bulalım.
+                              // firstWhereOrNull => bulursa map, bulamazsa null döner.
+                              final existingAppointment = appointments
+                                  .firstWhere((app) {
+                                final dt = (app['date'] as Timestamp).toDate();
+                                return dt.year == _selectedTime!.year &&
+                                    dt.month == _selectedTime!.month &&
+                                    dt.day == _selectedTime!.day &&
+                                    dt.hour == _selectedTime!.hour;
+                              }, orElse: () => {});
+                              print(existingAppointment);
+                              if (existingAppointment.isNotEmpty) {
+                                return existingAppointment["student"] !=
+                                    existingAppointment["author"]
+                                    ? Container(
+                                  height: 400,
+
+                                  child: AppointmentCard(
+                                    appointmentUID: existingAppointment["UID"],
+                                    // isTeacher true/false nasıl belirleniyorsa...
+                                    isTeacher: false,
+                                  ),
+                                )
+                                    : ElevatedButton(
+                                  onPressed: () async {
+                                    AwesomeDialog(
+                                      context: context,
+                                      dialogType: DialogType.noHeader,
+                                      animType: AnimType.bottomSlide,
+                                      title: 'Kendine Ayırdığın Saati Sil',
+                                      desc: 'Kendine Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                                      // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                                      body: StatefulBuilder(
+                                        builder: (BuildContext context,
+                                            StateSetter setModalState) {
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(height: 10),
+                                              Text(
+                                                'Kendine Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                                                style: TextStyle(
+                                                    fontSize: 16),
+                                              ), SizedBox(height: 10),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      // Dialog'un altındaki butonlar
+                                      btnOkText: "Evet",
+                                      btnCancelText: "Hayır",
+                                      btnOkOnPress: () async {
+                                        await FirestoreService()
+                                            .deleteSelfAppointment(
+                                            widget.uid,
+                                            existingAppointment["UID"]);
+                                        appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+                                        setState((){});
+                                        setState2((){});
+                                      },
+                                      btnCancelOnPress: () {},
+                                    ).show();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF76ABAE),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(120, 50),
+                                  ),
+                                  child: const Text(
+                                    "Kendine Ayırdığın Saati İptal Et",
+                                    style: TextStyle(color: Colors.red),),
+                                );
+                              } else {
+                                // RANDEVU YOK: buton göster
+                                return ElevatedButton(
+                                  onPressed: () async {
+                                    AwesomeDialog(
+                                      context: context,
+                                      dialogType: DialogType.noHeader,
+                                      animType: AnimType.bottomSlide,
+                                      title: 'Saati Kendine Ayır',
+                                      desc: 'Bu Saati Kendinize Ayırmak İstiyor Musunuz?',
+                                      // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                                      body: StatefulBuilder(
+                                        builder: (BuildContext context,
+                                            StateSetter setModalState) {
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(height: 10),
+                                              Text(
+                                                'Bu Saati Kendinize Ayırmak İstiyor Musunuz?',
+                                                style: TextStyle(fontSize: 16),
+                                              ), SizedBox(height: 10),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      // Dialog'un altındaki butonlar
+                                      btnOkText: "Evet",
+                                      btnCancelText: "Hayır",
+                                      btnOkOnPress: () async {
+                                        await FirestoreService()
+                                            .createSelfAppointment(
+                                            widget.uid, _selectedTime!);
+                                        appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+                                        setState((){});
+                                        setState2((){});
+                                        },
+                                      btnCancelOnPress: () {},
+                                    ).show();
+
+                                    debugPrint("Yeni randevu ekleme işlemi");
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF76ABAE),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(120, 50),
+                                  ),
+                                  child: const Text("Bu Saati Kendine Ayır"),
+                                );
+                              }
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -885,6 +1231,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           userType: isTeacher ? UserType.teacher : UserType
                               .student,
                           userUID: widget.uid),
+                      if (isSelf && isTeacher) IconButton(onPressed: (){
+                        showAppointmentsBottomSheet(context);
+                      }, icon: Icon(Icons.calendar_month), color: Colors.white,),
+                      if (isSelf && isTeacher) SizedBox(width: 4),
                       Text(
                         isTeacher ? 'Eğitimci' : 'Öğrenci',
                         style: TextStyle(

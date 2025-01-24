@@ -464,8 +464,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         onPressed: () async
         {
           await _signup();
-        },
-        child: const Text('Kayıt Ol'),
+        },style: ElevatedButton.styleFrom(
+        backgroundColor: Color(0xFF222831),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(3), // Köşeleri 3 birim yuvarlat
+          side: const BorderSide(color: Color(0xFFEEEEEE), width: 2), // 2 birim border
+        ),
+      ),
+        child: const Text('Kayıt Ol', style: TextStyle(color: Colors.white),),
       ),
 
     ];

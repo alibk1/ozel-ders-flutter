@@ -40,7 +40,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       String currentUser = AuthService().userUID();
       if (currentUser == widget.uid) {
         userInfo = await FirestoreService().getTeacherByUID(widget.uid);
-
         if (userInfo.isNotEmpty) {
           isTeacher = true;
         } else {
@@ -68,8 +67,9 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       Timestamp dateA = a['date'] as Timestamp;
       Timestamp dateB = b['date'] as Timestamp;
 
-      // En yeni olan en başa gelecek şekilde sıralama
-      return dateB.compareTo(dateA);
+      DateTime aD = dateA.toDate();
+      DateTime bD = dateB.toDate();
+      return aD.compareTo(bD);
     });
   }
   
@@ -223,10 +223,14 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       itemCount: userAppointments.length,
       itemBuilder: (context, index) {
         final appointment = userAppointments[index];
-        return AppointmentCard(
-          appointmentUID: appointment["UID"],
-          isTeacher: isTeacher,
-        );
+        //print(appointment["UID"].toString() + " - " + appointment["author"].toString() + " - " + appointment["student"].toString());
+        if(appointment["author"] != appointment["student"]) {
+          return AppointmentCard(
+            appointmentUID: appointment["UID"],
+            isTeacher: isTeacher,
+          );
+        }
+        return SizedBox.shrink();
       },
     );
   }

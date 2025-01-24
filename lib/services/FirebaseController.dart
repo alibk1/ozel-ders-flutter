@@ -206,6 +206,9 @@ class FirestoreService {
       'meetingURL': meetingURL,
       'selectedDates': selectedDates,
       'isAccepted' : false,
+      'homework' : '',
+      'note' : '',
+      'homeworkFiles': []
     });
 
     await _db.collection('students').doc(student).collection("appointments").doc(doc1.id).set({
@@ -216,6 +219,9 @@ class FirestoreService {
       'meetingURL': meetingURL,
       'selectedDates': selectedDates,
       'isAccepted' : false,
+      'note' : '',
+      'homework' : '',
+      'homeworkFiles': []
     });
 
 
@@ -242,8 +248,35 @@ class FirestoreService {
       'meetingURL': meetingURL,
       'selectedDates': selectedDates,
       'isAccepted' : false,
+      'note' : '',
+      'homework' : '',
+      'homeworkFiles': []
     });
     return doc1.id;
+  }
+
+
+  // Randevu oluşturma
+  Future<String> createSelfAppointment(String author, DateTime date) async {
+    DocumentReference doc1 = await _db.collection('appointments').add({
+      'author': author,
+      'student': author,
+      'date': date,
+      'isAccepted' : true,
+    });
+
+    await _db.collection('teachers').doc(author).collection("appointments").doc(doc1.id).set({
+      'author': author,
+      'student': author,
+      'date': date,
+      'isAccepted' : true,
+    });
+    return doc1.id;
+  }
+
+  Future<void> deleteSelfAppointment(String author, String uid) async {
+    await _db.collection('appointments').doc(uid).delete();
+    await _db.collection('teachers').doc(author).collection("appointments").doc(uid).delete();
   }
 
   // Randevu düzenleme
@@ -253,7 +286,6 @@ class FirestoreService {
       'date': date,
     });
   }
-
 
   // Randevu düzenleme
   Future<void> acceptAppointment(String appointmentId, String teacherId, String studentId, DateTime selectedDate) async {
@@ -272,6 +304,128 @@ class FirestoreService {
       'date' : selectedDate
     });
   }
+
+  Future<void> addHomeworkToAppointment(String appointmentId, String teacherId, String studentId, String homework, List<String> homeworkFiles) async {
+    await _db.collection('appointments').doc(appointmentId).update({
+      'homework' : homework,
+      'homeworkFiles' : homeworkFiles
+    });
+
+    await _db.collection('teachers').doc(teacherId).collection("appointments").doc(appointmentId).update({
+      'homework' : homework,
+      'homeworkFiles' : homeworkFiles
+    });
+
+    await _db.collection('students').doc(studentId).collection("appointments").doc(appointmentId).update({
+      'homework' : homework,
+      'homeworkFiles' : homeworkFiles
+    });
+  }
+
+
+  Future<void> addNoteToAppointment(String appointmentId, String teacherId, String studentId, String note) async {
+    await _db.collection('appointments').doc(appointmentId).update({
+      'note' : note,
+    });
+
+    await _db.collection('teachers').doc(teacherId).collection("appointments").doc(appointmentId).update({
+      'note' : note,
+    });
+
+    await _db.collection('students').doc(studentId).collection("appointments").doc(appointmentId).update({
+      'note' : note,
+    });
+  }
+
+  Future<String> createAppointmentSurvey(String appointmentUID, String author, String student, List<String> questions, String surveyName) async {
+    DocumentReference doc1 = await _db.collection('appointments').doc(appointmentUID).collection("surveys").add({
+      'surveyName' : surveyName,
+      'author': author,
+      'student': student,
+      "questions" : questions,
+      'answers' : []
+    });
+
+    await _db.collection('teachers').doc(author).collection("appointments").doc(appointmentUID).collection("surveys").doc(doc1.id).set({
+      'surveyName' : surveyName,
+      'author': author,
+      'student': student,
+      "questions" : questions,
+      'answers' : []
+    });
+
+    await _db.collection('students').doc(student).collection("appointments").doc(appointmentUID).collection("surveys").doc(doc1.id).set({
+      'surveyName' : surveyName,
+      'author': author,
+      'student': student,
+      "questions" : questions,
+      'answers' : []
+    });
+    return doc1.id;
+  }
+
+  Future<String> createAppointmentSurveyTemplate(String author, List<String> questions, String surveyName) async {
+    DocumentReference doc1 = await _db.collection('teachers').doc(author).collection("surveyTemplates").add({
+      'surveyName' : surveyName,
+      "questions" : questions,
+    });
+    return doc1.id;
+  }
+
+  Future<void> updateAppointmentSurveyQuestions(String appointmentUID, String surveyUID, String author, String student, List<String> questions) async {
+    await _db.collection('appointments').doc(appointmentUID).collection("surveys").doc(surveyUID).update({
+      "questions" : questions,
+    });
+
+    await _db.collection('teachers').doc(author).collection("appointments").doc(appointmentUID).collection("surveys").doc(surveyUID).update({
+      "questions" : questions,
+    });
+
+    await _db.collection('students').doc(student).collection("appointments").doc(appointmentUID).collection("surveys").doc(surveyUID).update({
+      "questions" : questions,
+    });
+  }
+
+  Future<void> updateAppointmentSurveyAnswers(String appointmentUID, String surveyUID,String author, String student, List<String> answers) async {
+    await _db.collection('appointments').doc(appointmentUID).collection("surveys").doc(surveyUID).update({
+      "answers" : answers,
+    });
+
+    await _db.collection('teachers').doc(author).collection("appointments").doc(appointmentUID).collection("surveys").doc(surveyUID).update({
+      "answers" : answers,
+    });
+
+    await _db.collection('students').doc(student).collection("appointments").doc(appointmentUID).collection("surveys").doc(surveyUID).update({
+      "answers" : answers,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAppointmentSurveys(String appointmentUID) async {
+    QuerySnapshot snapshot = await _db.collection('appointments').doc(appointmentUID).collection("surveys").get();
+    if(snapshot.docs.isNotEmpty) {
+      return snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        return {...data, 'UID': doc.id};
+      }).toList();
+    }
+    else{
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getASurveyTemplates(String author) async {
+    QuerySnapshot snapshot = await _db.collection('teachers').doc(author).collection("surveyTemplates").get();
+    if(snapshot.docs.isNotEmpty) {
+      return snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        return {...data, 'UID': doc.id};
+      }).toList();
+    }
+    else{
+      return [];
+    }
+  }
+
 
   // Randevu düzenleme
   Future<void> updateAppointmentUrl(String appointmentId, String meetingURL) async {

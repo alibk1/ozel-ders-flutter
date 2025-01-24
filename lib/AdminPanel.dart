@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'dart:html' as html; // HTML dosyasından erişim
-import 'package:file_saver/file_saver.dart'; // Dosya indirici için
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';

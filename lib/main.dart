@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/AdminPanel.dart';
 import 'package:ozel_ders/AppointmentsPage.dart';
@@ -50,7 +51,7 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => AdminPanel() ,//CoursesPage(category: '', subCategory: '',),
+        builder: (context, state) => CoursesPage(category: '', subCategory: '',) ,//,AdminPanel()
       ),
       GoRoute(
         path: '/blog-update/:uid/:blogUID',
@@ -136,6 +137,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       routerConfig: _router,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      // Uygulamanız hangi dilleri destekleyecekse buraya ekleyin.
+      supportedLocales: const [
+        Locale('en', 'US'), // İngilizce
+        Locale('tr', 'TR'), // Türkçe
+      ],
+      // Uygulamanın varsayılan dili
+      locale: const Locale('tr', 'TR'),
     );
   }
 }
