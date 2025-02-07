@@ -112,7 +112,7 @@ class _BlogPageState extends State<BlogPage> {
             onPressed: () {
               context.go('/courses');
             },
-            child: Text('Kurslar',
+            child: Text('Terapiler',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
@@ -161,18 +161,7 @@ class _BlogPageState extends State<BlogPage> {
           ? Center(
         child: Text('Blog bulunamadı.'),
       )
-          : Stack(
-        children: [
-          // Arka plan resmi
-          Positioned.fill(
-            child: Image.asset(
-              "assets/therapy-main.jpg",
-              fit: BoxFit.cover,
-              colorBlendMode: BlendMode.darken,
-              color: Colors.black.withOpacity(0.5),
-            ),
-          ),
-          SingleChildScrollView(
+          : SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Center(
@@ -303,8 +292,6 @@ class _BlogPageState extends State<BlogPage> {
               ),
             ),
           ),
-        ],
-      ),
     );
   }
 }

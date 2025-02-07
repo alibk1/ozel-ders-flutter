@@ -28,6 +28,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _referenceController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _problemController = TextEditingController();
+  final TextEditingController _studentNameController = TextEditingController();
 
   final TextEditingController _dateController = TextEditingController(); // Yeni TextField için controller
 
@@ -137,7 +139,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: const Text('Kurslar', style: TextStyle(
+            child: const Text('Terapiler', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
@@ -435,6 +437,46 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
           ),
         ),
       ],
+      if(_selectedRole == "Öğrenci")...[
+        TextFormField(
+          controller: _studentNameController,
+          style: TextStyle(color: Colors.white),
+          cursorColor: Colors.white,
+          decoration: InputDecoration(
+            labelText: 'Çocuğunuzun Adı',
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            border: OutlineInputBorder(
+              borderSide: const BorderSide(width: 4, color: Colors.white),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            labelStyle: const TextStyle(color: Colors.white),
+
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _problemController,
+          style: TextStyle(color: Colors.white),
+          cursorColor: Colors.white,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: 'Çocuğunuzun Durumunu Özetleyin',
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            border: OutlineInputBorder(
+              borderSide: const BorderSide(width: 4, color: Colors.white),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            labelStyle: const TextStyle(color: Colors.white),
+
+          ),
+        ),
+      ],
       const SizedBox(height: 20),
       //BirthdateInputWidget(dateController: _dateController),
       const SizedBox(height: 20.0),
@@ -442,7 +484,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
           RoleButton(
-            role: 'Öğrenci',
+            role: 'Veli',
             isSelected: _selectedRole == 'Öğrenci',
             onTap: () => _selectRole('Öğrenci'),
           ),
@@ -464,11 +506,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         onPressed: () async
         {
           await _signup();
-        },style: ElevatedButton.styleFrom(
+        },
+        style: ElevatedButton.styleFrom(
         backgroundColor: Color(0xFF222831),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(3), // Köşeleri 3 birim yuvarlat
-          side: const BorderSide(color: Color(0xFFEEEEEE), width: 2), // 2 birim border
+          borderRadius: BorderRadius.circular(3),
+          side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
         ),
       ),
         child: const Text('Kayıt Ol', style: TextStyle(color: Colors.white),),
@@ -521,7 +564,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       if(_selectedRole == "Kurum") {
         await FirestoreService().createTeamDocument(user!.uid, _emailController.text, _nameController.text, "Ankara", "", 10);
       } else {
-        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, 21, "Ankara", "", _referenceController.text);
+        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, _studentNameController.text, _problemController.text, 21, "Ankara", "", _referenceController.text);
       }
       // Kayıt başarılı, giriş ekranına yönlendir
       context.go("/profile/" + user.uid);

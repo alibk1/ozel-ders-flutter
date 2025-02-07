@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/Footer.dart';
+import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'Components/CourseCard.dart';
 import 'Components/Drawer.dart';
@@ -18,14 +22,21 @@ class CoursesPage extends StatefulWidget {
 
 class _CoursesPageState extends State<CoursesPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
+  final Color _darkColor = Color(0xFF3C72C2);
+  bool _isAppBarExpanded = true;
 
   FirestoreService _firestore = FirestoreService();
   List<Map<String, dynamic>> coursesHolder = [];
   List<Map<String, dynamic>> courses = [];
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> teachers = [];
+  List<Map<String, dynamic>> blogs = [];
+  List<Map<String, dynamic>> appointments = [];
   bool isLoading = true;
   bool isLoggedIn = false;
+  bool canGetEveryCourse = true;
 
   String? selectedCategory;
   String? selectedSubCategory;
@@ -37,8 +48,7 @@ class _CoursesPageState extends State<CoursesPage> {
   void initState() {
     super.initState();
     selectedCategory = widget.category.isEmpty ? 'Seçilmedi' : widget.category;
-    selectedSubCategory =
-    widget.subCategory.isEmpty ? 'Seçilmedi' : widget.subCategory;
+    selectedSubCategory = widget.subCategory.isEmpty ? 'Seçilmedi' : widget.subCategory;
     initData();
   }
 
@@ -53,19 +63,33 @@ class _CoursesPageState extends State<CoursesPage> {
     courses = await _firestore.getAllCourses();
     coursesHolder = courses;
     teachers = await _firestore.getAllTeachers();
+    blogs = await _firestore.getAllBlogs();
+    appointments = await _firestore.getAllAppointments();
+    if (isLoggedIn) {
+      String uid = await AuthService().userUID();
+      bool isTeacher = teachers.firstWhere((t) => t["UID"] == uid, orElse: () => {}).isNotEmpty;
+      if (!isTeacher) {
+        var userInfo = await _firestore.getStudentByUID(uid);
+        bool hasPersonal = userInfo["hasPersonalCheck"];
+        canGetEveryCourse = hasPersonal;
+      }
+    }
     filterCourses();
   }
 
   void filterCourses() {
     setState(() {
       courses = coursesHolder;
+      if (!canGetEveryCourse) {
+        selectedCategory = "ORo10XNqzYkLcQUl420k";
+        selectedSubCategory = "i4rsttkgwvY5NhP1uJTh";
+      }
       List<Map<String, dynamic>> filteredCourses = courses.where((course) {
-        return (selectedCategory == 'Seçilmedi' ||
+        return (selectedCategory == 'Seçilmedi' && course["status"] == 1 ||
             course['category'] == selectedCategory) &&
-            (selectedSubCategory == 'Seçilmedi' ||
+            (selectedSubCategory == 'Seçilmedi' && course["status"] == 1 ||
                 course['subCategory'] == selectedSubCategory) &&
-            (course['hourlyPrice'] >= minPrice &&
-                course['hourlyPrice'] <= maxPrice);
+            (course['hourlyPrice'] >= minPrice && course['hourlyPrice'] <= maxPrice && course["status"] == 1);
       }).toList();
 
       if (sortBy == 'price_asc') {
@@ -82,23 +106,17 @@ class _CoursesPageState extends State<CoursesPage> {
   void _showFilterModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Tam ekran yapmak için
-      backgroundColor: Colors.transparent, // Arkaplanı saydam yapıyoruz
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return FractionallySizedBox(
-          heightFactor: 0.8, // Yüksekliğini ayarlıyoruz
+          heightFactor: 0.8,
           child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setModalState) {
-              // Ekran boyutunu almak için MediaQuery kullanıyoruz
-              final screenWidth = MediaQuery.of(context).size.width;
-              final isMobile = screenWidth < 800;
-
               return Container(
                 decoration: BoxDecoration(
-                  color: Color(0xFF222831), // Arkaplan rengini ayarlıyoruz
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
+                  color: _darkColor,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 padding: EdgeInsets.all(16.0),
                 child: SingleChildScrollView(
@@ -110,10 +128,10 @@ class _CoursesPageState extends State<CoursesPage> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFEEEEEE), // Metin rengini ayarlıyoruz
+                          color: _backgroundColor,
                         ),
                       ),
-                      Divider(color: Color(0xFFEEEEEE)),
+                      Divider(color: _backgroundColor),
                       SizedBox(height: 16),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -122,20 +140,17 @@ class _CoursesPageState extends State<CoursesPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFEEEEEE),
+                            color: _backgroundColor,
                           ),
                         ),
                       ),
                       SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        dropdownColor:
-                        Color(0xFF393E46), // Dropdown arkaplan rengini ayarlıyoruz
-                        value:
-                        selectedCategory != 'Seçilmedi' ? selectedCategory : null,
+                        dropdownColor: Color(0xFF393E46),
+                        value: selectedCategory != 'Seçilmedi' ? selectedCategory : null,
                         decoration: _inputDecoration('Kategori Seç'),
-                        hint: Text('Kategori Seç',
-                            style: TextStyle(color: Color(0xFFEEEEEE))),
-                        iconEnabledColor: Color(0xFFEEEEEE),
+                        hint: Text('Kategori Seç', style: TextStyle(color: _backgroundColor)),
+                        iconEnabledColor: _backgroundColor,
                         onChanged: (String? newValue) {
                           setModalState(() {
                             selectedCategory = newValue ?? 'Seçilmedi';
@@ -145,14 +160,12 @@ class _CoursesPageState extends State<CoursesPage> {
                         items: [
                           DropdownMenuItem<String>(
                             value: 'Seçilmedi',
-                            child: Text('Seçilmedi',
-                                style: TextStyle(color: Color(0xFFEEEEEE))),
+                            child: Text('Seçilmedi', style: TextStyle(color: _backgroundColor)),
                           ),
                           ...categories.map<DropdownMenuItem<String>>((category) {
                             return DropdownMenuItem<String>(
                               value: category['uid'],
-                              child: Text(category['name'],
-                                  style: TextStyle(color: Color(0xFFEEEEEE))),
+                              child: Text(category['name'], style: TextStyle(color: _backgroundColor)),
                             );
                           }).toList(),
                         ],
@@ -166,20 +179,17 @@ class _CoursesPageState extends State<CoursesPage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFEEEEEE),
+                              color: _backgroundColor,
                             ),
                           ),
                         ),
                         SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           dropdownColor: Color(0xFF393E46),
-                          value: selectedSubCategory != 'Seçilmedi'
-                              ? selectedSubCategory
-                              : null,
+                          value: selectedSubCategory != 'Seçilmedi' ? selectedSubCategory : null,
                           decoration: _inputDecoration('Alt Kategori Seç'),
-                          hint: Text('Alt Kategori Seç',
-                              style: TextStyle(color: Color(0xFFEEEEEE))),
-                          iconEnabledColor: Color(0xFFEEEEEE),
+                          hint: Text('Alt Kategori Seç', style: TextStyle(color: _backgroundColor)),
+                          iconEnabledColor: _backgroundColor,
                           onChanged: (String? newValue) {
                             setModalState(() {
                               selectedSubCategory = newValue ?? 'Seçilmedi';
@@ -188,18 +198,13 @@ class _CoursesPageState extends State<CoursesPage> {
                           items: [
                             DropdownMenuItem<String>(
                               value: 'Seçilmedi',
-                              child: Text('Seçilmedi',
-                                  style: TextStyle(color: Color(0xFFEEEEEE))),
+                              child: Text('Seçilmedi', style: TextStyle(color: _backgroundColor)),
                             ),
-                            ...categories
-                                .firstWhere(
-                                    (category) => category['uid'] == selectedCategory)[
-                            'subCategories']
+                            ...categories.firstWhere((category) => category['uid'] == selectedCategory)['subCategories']
                                 .map<DropdownMenuItem<String>>((subCategory) {
                               return DropdownMenuItem<String>(
                                 value: subCategory['uid'],
-                                child: Text(subCategory['name'],
-                                    style: TextStyle(color: Color(0xFFEEEEEE))),
+                                child: Text(subCategory['name'], style: TextStyle(color: _backgroundColor)),
                               );
                             }).toList(),
                           ],
@@ -213,13 +218,13 @@ class _CoursesPageState extends State<CoursesPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFEEEEEE),
+                            color: _backgroundColor,
                           ),
                         ),
                       ),
                       SizedBox(height: 8),
                       RangeSlider(
-                        activeColor: Color(0xFF76ABAE),
+                        activeColor: _primaryColor,
                         inactiveColor: Color(0xFF393E46),
                         values: RangeValues(minPrice, maxPrice),
                         min: 0,
@@ -244,7 +249,7 @@ class _CoursesPageState extends State<CoursesPage> {
                         },
                         child: Text('Uygula'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF76ABAE),
+                          backgroundColor: _primaryColor,
                           foregroundColor: Colors.white,
                           minimumSize: Size(double.infinity, 50),
                         ),
@@ -263,19 +268,17 @@ class _CoursesPageState extends State<CoursesPage> {
   void _showSortModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Tam ekran yapmak için
-      backgroundColor: Colors.transparent, // Arkaplanı saydam yapıyoruz
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return FractionallySizedBox(
-          heightFactor: 0.5, // Yüksekliğini ayarlıyoruz
+          heightFactor: 0.5,
           child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setModalState) {
               return Container(
                 decoration: BoxDecoration(
-                  color: Color(0xFF222831), // Arkaplan rengini ayarlıyoruz
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
+                  color: _darkColor,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 padding: EdgeInsets.all(16.0),
                 child: Column(
@@ -286,15 +289,14 @@ class _CoursesPageState extends State<CoursesPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFEEEEEE), // Metin rengini ayarlıyoruz
+                        color: _backgroundColor,
                       ),
                     ),
-                    Divider(color: Color(0xFFEEEEEE)),
+                    Divider(color: _backgroundColor),
                     SizedBox(height: 16),
                     RadioListTile<String>(
-                      activeColor: Color(0xFF76ABAE),
-                      title: Text('Varsayılan',
-                          style: TextStyle(color: Color(0xFFEEEEEE))),
+                      activeColor: _primaryColor,
+                      title: Text('Varsayılan', style: TextStyle(color: _backgroundColor)),
                       value: 'none',
                       groupValue: sortBy,
                       onChanged: (String? value) {
@@ -304,9 +306,8 @@ class _CoursesPageState extends State<CoursesPage> {
                       },
                     ),
                     RadioListTile<String>(
-                      activeColor: Color(0xFF76ABAE),
-                      title: Text('Fiyata Göre Artan',
-                          style: TextStyle(color: Color(0xFFEEEEEE))),
+                      activeColor: _primaryColor,
+                      title: Text('Fiyata Göre Artan', style: TextStyle(color: _backgroundColor)),
                       value: 'price_asc',
                       groupValue: sortBy,
                       onChanged: (String? value) {
@@ -316,9 +317,8 @@ class _CoursesPageState extends State<CoursesPage> {
                       },
                     ),
                     RadioListTile<String>(
-                      activeColor: Color(0xFF76ABAE),
-                      title: Text('Fiyata Göre Azalan',
-                          style: TextStyle(color: Color(0xFFEEEEEE))),
+                      activeColor: _primaryColor,
+                      title: Text('Fiyata Göre Azalan', style: TextStyle(color: _backgroundColor)),
                       value: 'price_desc',
                       groupValue: sortBy,
                       onChanged: (String? value) {
@@ -335,7 +335,7 @@ class _CoursesPageState extends State<CoursesPage> {
                       },
                       child: Text('Uygula'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,
                         minimumSize: Size(double.infinity, 50),
                       ),
@@ -353,13 +353,13 @@ class _CoursesPageState extends State<CoursesPage> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Color(0xFFEEEEEE)),
+      labelStyle: TextStyle(color: _backgroundColor),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+        borderSide: BorderSide(color: _backgroundColor),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Color(0xFF76ABAE)),
+        borderSide: BorderSide(color: _primaryColor),
         borderRadius: BorderRadius.circular(8),
       ),
     );
@@ -367,186 +367,212 @@ class _CoursesPageState extends State<CoursesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: Color(0xFF222831),
-        title: Image.asset(
-          'assets/vitament1.png',
-          height: isMobile ? 60 : 80,
-        ),
-        centerTitle: isMobile,
-        leading: isMobile
-            ? IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: () {
-            _scaffoldKey.currentState!.openDrawer();
-          },
-        )
-            : null,
-        actions: !isMobile
-            ? [
-          TextButton(
-            onPressed: () {
-              context.go('/');
-            },
-            child: Text('Ana Sayfa',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/categories');
-            },
-            child: Text('Kategoriler',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/courses');
-            },
-            child: Text('Kurslar',
-                style: TextStyle(
-                    color: Color(0xFF76ABAE),
-                    fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/blogs');
-            },
-            child: Text('Blog',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold)),
-          ),
-          isLoggedIn
-              ? TextButton(
-            onPressed: () {
-              context.go('/appointments/' + AuthService().userUID());
-            },
-            child: Text('Randevularım',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold)),
-          )
-              : SizedBox.shrink(),
-          TextButton(
-            onPressed: isLoggedIn
-                ? () {
-              context.go('/profile/' + AuthService().userUID());
-            }
-                : () {
-              context.go('/login');
-            },
-            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ]
-            : null,
-      ),
+      backgroundColor: _backgroundColor,
       drawer: isMobile ? DrawerMenu(isLoggedIn: isLoggedIn) : null,
-      body: isLoading
-          ? Center(
-          child: LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF222831), size: 200))
-          : Stack(
+      body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              "assets/therapy-main.jpg",
-              fit: BoxFit.cover,
-              colorBlendMode: BlendMode.darken,
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF222831),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: Color(0xFF04151F),
-                              width: 2,
-                            ),
-                          ),
+          _buildMainContent(isMobile),
+          if (isLoading) _buildLoadingOverlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent(bool isMobile) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(isMobile),
+            SliverPadding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : screenWidth * 0.2, // Ekran genişliğinin 3/5'i
+                vertical: 20,
+              ),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Filtreleme ve Sıralama Butonları
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ActionButton(
+                          icon: Icons.filter_list,
+                          label: 'Filtrele',
+                          onPressed: () => _showFilterModal(context),
                         ),
-                        onPressed: () {
-                          _showFilterModal(context);
-                        },
-                        icon: Icon(Icons.filter_list),
-                        label: Text(
-                          'Filtrele',
-                          style: TextStyle(fontSize: 18),
+                        ActionButton(
+                          icon: Icons.sort,
+                          label: 'Sırala',
+                          onPressed: () => _showSortModal(context),
                         ),
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF222831),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: Color(0xFF04151F),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        onPressed: () {
-                          _showSortModal(context);
-                        },
-                        icon: Icon(Icons.sort),
-                        label: Text(
-                          'Sırala',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: GridView.builder(
-                    padding: EdgeInsets.all(16),
+                  // Kurs Listesi
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount:
-                      MediaQuery.of(context).size.width >= 800 ? 4 : 2,
-                      crossAxisSpacing: isMobile ? 2 : 16,
-                      mainAxisSpacing: isMobile ? 2 : 16,
-                      childAspectRatio: 0.75,
+                      crossAxisCount: isMobile ? 2 : 4,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: isMobile ? 0.65 : 0.65,
                     ),
                     itemCount: courses.length,
                     itemBuilder: (context, index) {
                       final course = courses[index];
                       return CourseCard(
                         course: course,
-                        author: teachers.firstWhere((element) =>
-                        element["UID"] == course["author"]),
+                        author: teachers.firstWhere(
+                              (element) => element["UID"] == course["author"],
+                        ),
                       );
                     },
                   ),
-                ),
-              ],
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      backgroundColor: Color(0xFFEEEEEE),
     );
+  }
+
+  SliverAppBar _buildAppBar(bool isMobile) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      title: AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        child: _isAppBarExpanded
+            ? Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 50 : 70,
+          key: ValueKey('expanded-logo'),
+        ).animate().fadeIn(duration: 500.ms)
+            : Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 50,
+            key: ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
+      centerTitle: isMobile || _isAppBarExpanded,
+      pinned: true,
+      expandedHeight: 120,
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final isExpanded = constraints.maxHeight > kToolbarHeight;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_isAppBarExpanded != isExpanded) {
+              setState(() {
+                _isAppBarExpanded = isExpanded;
+              });
+            }
+          });
+          return FlexibleSpaceBar(
+            background: GlassmorphicContainer(
+              width: double.infinity,
+              height: double.infinity,
+              borderRadius: 0,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+            ),
+          );
+        },
+      ),
+      actions: isMobile ? null : [_buildDesktopMenu()],
+      leading: isMobile
+          ? IconButton(
+        icon: Icon(Icons.menu, color: _darkColor),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      )
+          : null,
+    );
+  }
+
+  Widget _buildDesktopMenu() {
+    return Row(
+      children: [
+        HeaderButton(title: 'Ana Sayfa', route: '/'),
+        HeaderButton(title: 'Kategoriler', route: '/categories'),
+        HeaderButton(title: 'Terapiler', route: '/courses'),
+        HeaderButton(title: 'Blog', route: '/blogs'),
+        if (isLoggedIn)
+          HeaderButton(
+            title: 'Randevularım',
+            route: '/appointments/${AuthService().userUID()}',
+          ),
+        HeaderButton(
+          title: isLoggedIn ? 'Profilim' : 'Giriş Yap',
+          route: isLoggedIn ? '/profile/${AuthService().userUID()}' : '/login',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: SpinKitFadingCircle(
+          color: _primaryColor,
+          size: 50,
+        ),
+      ),
+    );
+  }
+}
+
+class ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 24, color: Colors.white),
+      label: Text(label, style: TextStyle(color: Colors.white)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Color(0xFF3C72C2),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: 5,
+      )
+    ).animate().fadeIn(duration: 300.ms).scale();
   }
 }

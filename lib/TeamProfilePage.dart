@@ -630,7 +630,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
             onPressed: () {
               context.go('/courses');
             },
-            child: const Text('Kurslar',
+            child: const Text('Terapiler',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)
             ),

@@ -102,16 +102,26 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   // Öğrenci dökümanı oluşturma
-  Future<void> createStudentDocument(String uid, String email, String name, int age, String city, String profilePictureUrl, String reference) async {
+  Future<void> createStudentDocument(String uid, String email, String name, String studentName, String studentProblem, int age, String city, String profilePictureUrl, String reference) async {
     await _db.collection('students').doc(uid).set({
       'email': email,
       'name': name,
+      'studentName' : studentName,
+      'studentProblem': studentProblem,
       'age': age,
       'city': city,
       'profilePictureUrl': profilePictureUrl,
       'desc': '',
       'reference': reference,
-      'courses': []
+      'courses': [],
+      'hasPersonalCheck': false
+    });
+  }
+
+  // Öğrenci Bireysel Değerlendirme Aldı
+  Future<void> studentHadPersonalCheck(String uid) async {
+    await _db.collection('students').doc(uid).update({
+      'hasPersonalCheck': true
     });
   }
 
@@ -126,9 +136,45 @@ class FirestoreService {
       'profilePictureUrl': profilePictureUrl,
       'desc': '',
       "reference": reference,
-      'courses': []
+      'courses': [],
+      'availableHours': [],
     });
   }
+
+  Future<void> updateTeacherAvailableHours(String teacherId, DateTime newAvailable) async {
+    DocumentReference teacherRef = _db.collection('teachers').doc(teacherId);
+
+    await _db.runTransaction((transaction) async {
+      DocumentSnapshot snapshot = await transaction.get(teacherRef);
+
+      if (!snapshot.exists) {
+        throw Exception("Teacher does not exist!");
+      }
+
+      List<dynamic> availableHours = snapshot['availableHours'];
+      if(!availableHours.contains(newAvailable)) availableHours.add(newAvailable);
+
+      transaction.update(teacherRef, {'availableHours': availableHours});
+    });
+  }
+
+  Future<void> removeTeacherAvailableHour(String teacherId, DateTime availableHourToRemove) async {
+    DocumentReference teacherRef = _db.collection('teachers').doc(teacherId);
+
+    await _db.runTransaction((transaction) async {
+      DocumentSnapshot snapshot = await transaction.get(teacherRef);
+
+      if (!snapshot.exists) {
+        throw Exception("Teacher does not exist!");
+      }
+
+      List<dynamic> availableHours = snapshot['availableHours'];
+      availableHours.remove(availableHourToRemove);
+
+      transaction.update(teacherRef, {'availableHours': availableHours});
+    });
+  }
+
 
   Future<void> createTeamDocument(String uid, String email, String name, String address, String profilePictureUrl, double discountPercent) async {
     await _db.collection('teams').doc(uid).set({
@@ -161,6 +207,8 @@ class FirestoreService {
         'subCategory': subCategory,
         'hourlyPrice': hourlyPrice,
         'photos': photos,
+        'status': 0,
+        'denyReason': "",
       });
 
       String courseId = courseRef.id;
@@ -193,6 +241,20 @@ class FirestoreService {
       'category': category,
       'subCategory': subCategory,
       'hourlyPrice': hourlyPrice,
+      'status' : 0
+    });
+  }
+
+  Future<void> acceptCourse(String courseId) async {
+    await _db.collection('courses').doc(courseId).update({
+      'status': 1,
+    });
+  }
+
+  Future<void> denyCourse(String courseId, String denyReason) async {
+    await _db.collection('courses').doc(courseId).update({
+      'status': -1,
+      'denyReason': denyReason,
     });
   }
 
@@ -514,13 +576,30 @@ class FirestoreService {
     }).toList();
   }
 
-  // Tüm kursları alma
+  // Tüm Terapiler alma
   Future<List<Map<String, dynamic>>> getAllCourses() async {
     QuerySnapshot snapshot = await _db.collection('courses').get();
-    return snapshot.docs.map((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'UID': doc.id};
-    }).toList();
+
+    List<Map<String, dynamic>> courses = [];
+
+    for (var doc in snapshot.docs) {
+      // Kursun temel verileri
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['UID'] = doc.id;
+
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+      courseData['comments'] = comments;
+      courses.add(courseData);
+    }
+
+    return courses;
   }
 
   Future<List<Map<String, dynamic>>> getAllTeams() async {
@@ -960,17 +1039,49 @@ class FirestoreService {
       'creatorUID': creatorUID,
       'title': title,
       'content': content,
+      'status': 0,
+      'denyReason': "",
       'createdAt': DateTime.now(),
+    });
+  }
+
+  Future<void> acceptBlog(String blogId) async {
+    await _db.collection('blogs').doc(blogId).update({
+      'status': 1,
+    });
+  }
+
+  Future<void> denyBlog(String blogId, String denyReason) async {
+    await _db.collection('blogs').doc(blogId).update({
+      'status': -1,
+      'denyReason': denyReason,
     });
   }
 
   // Tüm blogları getirme
   Future<List<Map<String, dynamic>>> getAllBlogs() async {
     QuerySnapshot snapshot = await _db.collection('blogs').orderBy('createdAt', descending: true).get();
-    return snapshot.docs.map((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
-    }).toList();
+
+    List<Map<String, dynamic>> blogs = [];
+
+    for (var doc in snapshot.docs) {
+      // Kursun temel verileri
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['UID'] = doc.id;
+
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+      courseData['comments'] = comments;
+      blogs.add(courseData);
+    }
+
+    return blogs;
   }
 
   Future<List<Map<String, dynamic>>> getAllBlogs20Times({int limit = 20, DocumentSnapshot? startAfter}) async {
@@ -979,10 +1090,26 @@ class FirestoreService {
       query = query.startAfterDocument(startAfter);
     }
     QuerySnapshot snapshot = await query.get();
-    return snapshot.docs.map((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
-    }).toList();
+    List<Map<String, dynamic>> blogs = [];
+
+    for (var doc in snapshot.docs) {
+      // Kursun temel verileri
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['UID'] = doc.id;
+
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+      courseData['comments'] = comments;
+      blogs.add(courseData);
+    }
+
+    return blogs;
   }
 
   // Belirli bir öğretmenin bloglarını getirme

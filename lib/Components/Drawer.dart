@@ -1,31 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import '../services/FirebaseController.dart';
 
 class DrawerMenu extends StatelessWidget {
   final bool isLoggedIn;
+
   DrawerMenu({
     required this.isLoggedIn,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color primaryColor = Color(0xFFA7D8DB);
+    final Color backgroundColor = Color(0xFFEEEEEE);
+    final Color darkColor = Color(0xFF3C72C2);
+
     return Drawer(
+      backgroundColor: backgroundColor,
       child: Container(
-        color: Color(0xFF222831), // Drawer arka plan rengini ayarladık
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF222831), Color(0xFF393E46)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // Drawer Başlığı
             UserAccountsDrawerHeader(
               decoration: BoxDecoration(
-                color: Color(0xFF222831),
+                gradient: LinearGradient(
+                  colors: [primaryColor, darkColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
               accountName: isLoggedIn
                   ? Text(
                 'Hoşgeldiniz',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               )
                   : null,
               accountEmail: isLoggedIn
@@ -34,75 +50,95 @@ class DrawerMenu extends StatelessWidget {
                 style: TextStyle(color: Colors.white70),
               )
                   : null,
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person,
+                  color: darkColor,
+                  size: 40,
+                ),
+              ),
             ),
-            // Drawer Öğeleri
-            ListTile(
-              leading: Icon(Icons.home, color: Colors.white70),
-              title: Text('Ana Sayfa', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                context.go('/');
-              },
+            _buildDrawerItem(
+              icon: Icons.home,
+              text: 'Ana Sayfa',
+              onTap: () => context.go('/'),
+              primaryColor: primaryColor,
+              darkColor: darkColor,
             ),
-            ListTile(
-              leading: Icon(Icons.category, color: Colors.white70),
-              title: Text('Kategoriler', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                context.go('/categories');
-              },
+            _buildDrawerItem(
+              icon: Icons.category,
+              text: 'Kategoriler',
+              onTap: () => context.go('/categories'),
+              primaryColor: primaryColor,
+              darkColor: darkColor,
             ),
-            ListTile(
-              leading: Icon(Icons.school, color: Colors.white70),
-              title: Text('Kurslar', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                context.go('/courses');
-              },
+            _buildDrawerItem(
+              icon: Icons.school,
+              text: 'Terapiler',
+              onTap: () => context.go('/courses'),
+              primaryColor: primaryColor,
+              darkColor: darkColor,
             ),
-            ListTile(
-              leading: Icon(Ionicons.book, color: Colors.white70),
-              title: Text('Blog', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                context.go('/blogs');
-              },
+            _buildDrawerItem(
+              icon: Ionicons.book,
+              text: 'Blog',
+              onTap: () => context.go('/blogs'),
+              primaryColor: primaryColor,
+              darkColor: darkColor,
             ),
             if (isLoggedIn)
-              ListTile(
-                leading: Icon(Icons.calendar_today, color: Colors.white70),
-                title:
-                Text('Randevularım', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  context.go('/appointments/${AuthService().userUID()}');
-                },
+              _buildDrawerItem(
+                icon: Icons.calendar_today,
+                text: 'Randevularım',
+                onTap: () => context.go('/appointments/${AuthService().userUID()}'),
+                primaryColor: primaryColor,
+                darkColor: darkColor,
               ),
-            ListTile(
-              leading: Icon(
-                isLoggedIn ? Icons.person : Icons.login,
-                color: Colors.white70,
-              ),
-              title: Text(
-                isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
-                style: TextStyle(color: Colors.white),
-              ),
+            _buildDrawerItem(
+              icon: isLoggedIn ? Icons.person : Icons.login,
+              text: isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
               onTap: isLoggedIn
-                  ? () {
-                context.go('/profile/' + AuthService().userUID());
-              }
-                  : () {
-                context.go('/login');
-              },
+                  ? () => context.go('/profile/' + AuthService().userUID())
+                  : () => context.go('/login'),
+              primaryColor: primaryColor,
+              darkColor: darkColor,
             ),
             Divider(color: Colors.white54),
             if (isLoggedIn)
-              ListTile(
-                leading: Icon(Icons.logout, color: Colors.white70),
-                title: Text('Çıkış Yap', style: TextStyle(color: Colors.white)),
+              _buildDrawerItem(
+                icon: Icons.logout,
+                text: 'Çıkış Yap',
                 onTap: () async {
                   await AuthService().signOut();
                   context.go('/');
                 },
+                primaryColor: primaryColor,
+                darkColor: darkColor,
               ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+    required Color primaryColor,
+    required Color darkColor,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white70),
+      title: Text(text, style: TextStyle(color: Colors.white)),
+      onTap: onTap,
+      tileColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      hoverColor: primaryColor.withOpacity(0.2),
+      splashColor: primaryColor.withOpacity(0.3),
     );
   }
 }

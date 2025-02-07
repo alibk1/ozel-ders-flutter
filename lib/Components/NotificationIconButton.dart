@@ -97,7 +97,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
   List<dynamic> timestamps = app["selectedDates"];
 
   // Tarihlerin doğru şekilde alındığından emin olun
-  if (timestamps.length < 3) {
+  if (timestamps.length < 1) {
     AwesomeDialog(
       context: context,
       dialogType: DialogType.error,

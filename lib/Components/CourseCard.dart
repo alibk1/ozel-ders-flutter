@@ -1,178 +1,143 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ozel_ders/CoursePage.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class CourseCard extends StatefulWidget {
   final Map<String, dynamic> course;
   final Map<String, dynamic> author;
 
-  CourseCard({
+  const CourseCard({
     required this.course,
     required this.author,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   _CourseCardState createState() => _CourseCardState();
 }
 
 class _CourseCardState extends State<CourseCard> {
-  bool isExpanded = false;
-  final int maxLinesCollapsed = 3;
-  final int maxLinesExpanded = 7;
+  bool isHovered = false;
+
+  // Rating ortalamasını hesapla
+  double _calculateAverageRating() {
+    if (widget.course['comments'] == null || widget.course['comments'].isEmpty) {
+      return 0.0;
+    }
+    double totalRating = 0.0;
+    for (var comment in widget.course['comments']) {
+      totalRating += comment['rating'] ?? 0.0;
+    }
+    return totalRating.toDouble() / widget.course['comments'].length;
+  }
 
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 800;
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(25), // Yuvarlak köşe
-          topRight: Radius.circular(25), // Yuvarlak köşe
-          bottomLeft: Radius.circular(25), // Sivri köşe
-          bottomRight: Radius.circular(25),
+    double averageRating = _calculateAverageRating();
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        transform: Matrix4.identity()..translate(0.0, isHovered ? -5.0 : 0.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        side: BorderSide(
-          width: 3,
-          color: Color(int.parse("#31363F".substring(1, 7), radix: 16) + 0xFF000000),
-        ),
-      ),
-      color: Color(int.parse("#222831".substring(1, 7), radix: 16) + 0xFF000000),
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(25),
-                topRight: Radius.circular(25),
-                bottomLeft: Radius.circular(15),
-                bottomRight: Radius.circular(15),
-              ),
-              child: PageView(
-                children: widget.course['photos'].map<Widget>((photoUrl) {
-                  return Image.network(photoUrl, fit: BoxFit.cover);
-                }).toList(),
-              ),
-            ),
-          ),
-          SizedBox(height: 4),
-          TextButton(
-            child: Text(
-              widget.course['name'],
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: isMobile ? 15 : 20,
-                color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
-              ),
-            ),
-            onPressed: ()
-            {
-              context.go('/courses/' + widget.course["UID"]);
-            },
-          ),
-          Text(
-            widget.author["name"],
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: isMobile ? 12 : 15,
-              color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.go('/courses/${widget.course["UID"]}');
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Card(
-                color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(5), // Yuvarlak köşe
-                    topRight: Radius.circular(5), // Yuvarlak köşe
-                    bottomLeft: Radius.circular(5), // Sivri köşe
-                    bottomRight: Radius.circular(5),
-                  ),
-                  side: BorderSide(
-                    width: 1,
-                    color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
-                child: Text(
-                  "   ${widget.course['hourlyPrice']} TL   ",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
-                  ),
+                child: Image.network(
+                  widget.course['photos'][0], // İlk fotoğrafı göster
+                  fit: BoxFit.cover,
+                  height: isMobile ? 150 : 200,
+                  width: double.infinity,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.course['name'],
+                      style: TextStyle(
+                        fontSize: isMobile ? 18 : 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      widget.author["name"],
+                      style: TextStyle(
+                        fontSize: isMobile ? 14 : 16,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${widget.course['hourlyPrice']} TL",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        // Rating Bar'ı göster
+                        RatingBar.builder(
+                          initialRating: averageRating,
+                          minRating: 0,
+                          direction: Axis.horizontal,
+                          allowHalfRating: true,
+                          itemCount: 5,
+                          itemSize: 20,
+                          itemBuilder: (context, _) => Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                          ),
+                          onRatingUpdate: (rating) {
+                            // Rating güncelleme işlemi (isteğe bağlı)
+                          },
+                          ignoreGestures: true, // Kullanıcı rating değiştiremesin
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          if(!isMobile) Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: <Widget>[
-                Stack(
-                  children: [
-                    Text(
-                      widget.course['desc'],
-                      maxLines: isExpanded ? maxLinesExpanded : maxLinesCollapsed,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
-                      ),
-                    ),
-                    if (!isExpanded)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.white.withOpacity(0.0), Colors.white],
-                              stops: [0.0, 1.0],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                          ),
-                          child: Text(
-                            "...",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isExpanded = !isExpanded;
-                    });
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        isExpanded ? "Daha az göster" : "Devamını oku",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
-                        ),
-                      ),
-                      Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Color(int.parse("#76ABAE".substring(1, 7), radix: 16) + 0xFF000000),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

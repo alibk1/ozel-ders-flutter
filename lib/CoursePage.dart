@@ -33,6 +33,7 @@ class _CoursePageState extends State<CoursePage> {
   Map<String, dynamic> course = {};
   Map<String, dynamic> teacher = {};
   List<Map<String, dynamic>> teacherApps = [];
+  List<dynamic> teacherAvailableHours = [];
   int _currentPage = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -53,6 +54,7 @@ class _CoursePageState extends State<CoursePage> {
     course = await FirestoreService().getCourseByUID(widget.uid);
     teacher = await FirestoreService().getTeacherByUID(course["author"]);
     teacherApps = await FirestoreService().getUserAppointments(course["author"], true);
+    teacherAvailableHours = teacher["availableHours"];
     setState(() {
       isLoading = false; // Yüklenme işlemi tamamlandığında false yapıyoruz
     });
@@ -65,14 +67,20 @@ class _CoursePageState extends State<CoursePage> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         DateTime selectedDate = DateTime.now().add(const Duration(days: 2));
-        List<DateTime> selectedTimes = []; // Seçilen tarih ve saatleri saklamak için
+        List<DateTime> selectedTimes = [];
         List<Map<String, String>> timeSlots = [];
         List<DateTime> teacherAppDates = [];
+        List<DateTime> teacherAvailables = [];
 
         for (var app in teacherApps) {
           Timestamp date = app["date"];
           DateTime dateTime = date.toDate();
           teacherAppDates.add(dateTime);
+        }
+
+        for(Timestamp a in teacherAvailableHours)
+        {
+          teacherAvailables.add(a.toDate());
         }
 
         // 08:00'dan 20:00'e kadar 50 dakikalık süreler oluştur
@@ -118,38 +126,33 @@ class _CoursePageState extends State<CoursePage> {
                     SizedBox(height: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: const Color(0xFF76ABAE),
                         foregroundColor: Colors.white,
-                        minimumSize: Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 50),
                       ),
                       onPressed: () async {
-                        dt_picker.DatePicker.showDatePicker(
-                          context,
-                          showTitleActions: true,
-                          minTime: DateTime.now().add(Duration(days: 2)),
-                          maxTime: DateTime.now().add(Duration(days: 365)),
-                          onConfirm: (date) {
-                            setModalState(() {
-                              selectedDate = date;
-                            });
-                          },
-                          currentTime: selectedDate,
-                          locale: dt_picker.LocaleType.tr,
-                          theme: dt_picker.DatePickerTheme(
-                            backgroundColor: Color(0xFF393E46),
-                            headerColor: Color(0xFF222831),
-                            itemStyle: TextStyle(color: Colors.white, fontSize: 18),
-                            doneStyle: TextStyle(color: Color(0xFF76ABAE), fontSize: 16),
-                            cancelStyle: TextStyle(color: Colors.redAccent, fontSize: 16),
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now().add(const Duration(days: 2)), // minTime → 2 gün sonrası
+                          lastDate: DateTime.now().add(const Duration(days: 365)), // maxTime → 365 gün sonrası
+                          locale: const Locale('tr', 'TR'), // Türkçe takvim
+                          builder: (context, child) => Theme(
+                            data: _customDatePickerTheme(),
+                            child: child!,
                           ),
                         );
+                        if (picked != null) {
+                          setModalState(() {
+                            selectedDate = picked; // Saat bilgisi korunuyor (8AM isterseniz DateTime(picked.year, picked.month, picked.day, 8) yapın)
+                          });
+                        }
                       },
                       child: Text(
                         'Tarih Seç (${DateFormat('dd/MM/yyyy').format(selectedDate)})',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    SizedBox(height: 16),
+                    ),                    SizedBox(height: 16),
                     // Saat Seçimi
                     Text(
                       'Saat Seç (En fazla 3 adet)',
@@ -179,6 +182,10 @@ class _CoursePageState extends State<CoursePage> {
                             break;
                           }
                         }
+                        if (!teacherAvailables.contains(slotDateTime)) {
+                          canReserve = false;
+                        }
+
 
                         bool isSelected = selectedTimes.any((dateTime) =>
                         dateTime.year == slotDateTime.year &&
@@ -372,7 +379,7 @@ class _CoursePageState extends State<CoursePage> {
             onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: const Text('Kurslar', style: TextStyle(
+            child: const Text('Terapiler', style: TextStyle(
                 color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)),
           ),
           TextButton(
@@ -416,331 +423,337 @@ class _CoursePageState extends State<CoursePage> {
       body: isLoading
           ? Center(child: LoadingAnimationWidget.dotsTriangle(
           color: const Color(0xFF222831), size: 200))
-          : Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                "assets/therapy-main.jpg", // Buraya arkaplan resmini ekle
-                fit: BoxFit.cover,
-                colorBlendMode: BlendMode.darken,
-              ),
-            ),
-            SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(2.0),
-                      color: const Color(0xFF222831),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 16),
-                          Text(
-                            course['name'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+          : SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(2.0),
+                    color: const Color(0xFF222831),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 16),
+                        Text(
+                          course['name'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          const SizedBox(height: 16),
-                          Container(
-                            height: MediaQuery
-                                .of(context)
-                                .size
-                                .width >= 800
-                                ? MediaQuery
-                                .of(context)
-                                .size
-                                .height * 2 / 4 : MediaQuery
-                                .of(context)
-                                .size
-                                .height * 1 / 4,
-                            child: CarouselSlider(
-                              options: CarouselOptions(
-                                aspectRatio: 22 / 9,
-                                enlargeCenterPage: true,
-                                enableInfiniteScroll: false,
-                                onPageChanged: (index, reason) {
-                                  setState(() {
-                                    _currentPage = index;
-                                  });
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: MediaQuery
+                              .of(context)
+                              .size
+                              .width >= 800
+                              ? MediaQuery
+                              .of(context)
+                              .size
+                              .height * 2 / 4 : MediaQuery
+                              .of(context)
+                              .size
+                              .height * 1 / 4,
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              aspectRatio: 22 / 9,
+                              enlargeCenterPage: true,
+                              enableInfiniteScroll: false,
+                              onPageChanged: (index, reason) {
+                                setState(() {
+                                  _currentPage = index;
+                                });
+                              },
+                            ),
+                            items: course['photos']?.map<Widget>((photoUrl) {
+                              return Builder(
+                                builder: (BuildContext context) {
+                                  return Image.network(
+                                    photoUrl,
+                                    fit: BoxFit.fill,
+                                    scale: 0.6,
+                                  );
                                 },
+                              );
+                            }).toList() ??
+                                [],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: MediaQuery
+                        .of(context)
+                        .size
+                        .width >= 800
+                        ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left side
+                        Expanded(
+                          flex: 4,
+                          child: Card(
+                            color: const Color(0xFF222831),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    mainAxisAlignment: MainAxisAlignment
+                                        .center,
+                                    children: [
+                                      Text(
+                                        'Kurs Açıklaması',
+                                        style: TextStyle(fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Divider(
+                                      thickness: 2, color: Colors.white),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    course['desc'] ?? '',
+                                    style: const TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white),
+                                  ),
+                                ],
                               ),
-                              items: course['photos']?.map<Widget>((photoUrl) {
-                                return Builder(
-                                  builder: (BuildContext context) {
-                                    return Image.network(
-                                      photoUrl,
-                                      fit: BoxFit.fill,
-                                      scale: 0.6,
-                                    );
-                                  },
-                                );
-                              }).toList() ??
-                                  [],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: MediaQuery
-                          .of(context)
-                          .size
-                          .width >= 800
-                          ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Left side
-                          Expanded(
-                            flex: 4,
-                            child: Card(
-                              color: const Color(0xFF222831),
-                              child: Padding(
+                        ),
+                        const SizedBox(width: 16),
+                        // Right side
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(
+                                            0xFF222831),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
+                                          // Diğer shape özelliklerini de belirleyebilirsiniz
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        if (isLoggedIn)
+                                          _showDateTimePicker(context);
+                                        else
+                                          context.go('/login');
+                                      },
+                                      child: Text(
+                                        '\n Bu Kursu Satın Al - ${course['hourlyPrice']} TL \n',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 20),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Card(
+                                      color: const Color(0xFF50727B),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment
+                                              .center,
+                                          children: [
+                                            CircleAvatar(
+                                              foregroundColor: Colors.white,
+                                              radius: 60,
+                                              backgroundImage: NetworkImage(
+                                                  teacher['profilePictureUrl'] ??
+                                                      ''),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            TextButton(
+                                              child: Text(
+                                                teacher['name'] ?? '',
+                                                style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight
+                                                        .bold,
+                                                    color: Colors.white),
+                                              ),
+                                              onPressed: () {
+                                                context.go("/profile/" +
+                                                    teacher["uid"]);
+                                              },
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              teacher['fieldOfStudy'] ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.white),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CommentRatingWidget(
+                                      courseId: course["uid"],
+                                      paddingInset: 16.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                        : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF222831),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
+                              // Diğer shape özelliklerini de belirleyebilirsiniz
+                            ),
+                          ),
+                          onPressed: () {
+                            _showDateTimePicker(context);
+                          },
+                          child: Text(
+                            'Bu Kursu Satın Al - ${course['hourlyPrice']} TL',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Card(
+                          color: const Color(0xFF222831),
+                          child: ExpansionTile(
+                            initiallyExpanded: true,
+                            title: const Text(
+                              'Kurs Açıklaması',
+                              style: TextStyle(fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text(
+                                  course['desc'] ?? '',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Card(
+                          color: const Color(0xFF50727B),
+                          child: ExpansionTile(
+                            initiallyExpanded: false,
+                            title: const Text(
+                              'Öğretmen Bilgileri',
+                              style: TextStyle(fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                            children: [
+                              Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment
+                                      .center,
                                   children: [
-                                    const Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .center,
-                                      children: [
-                                        Text(
-                                          'Kurs Açıklaması',
-                                          style: TextStyle(fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white),
-                                        ),
-                                      ],
+                                    CircleAvatar(
+                                      radius: 50,
+                                      backgroundImage: NetworkImage(
+                                          teacher['profilePictureUrl'] ?? ''),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      teacher['name'] ?? '',
+                                      style: const TextStyle(fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
                                     ),
                                     const SizedBox(height: 8),
-                                    const Divider(
-                                        thickness: 2, color: Colors.white),
-                                    const SizedBox(height: 8),
                                     Text(
-                                      course['desc'] ?? '',
-                                      style: const TextStyle(fontSize: 15,
-                                          fontWeight: FontWeight.bold,
+                                      teacher['fieldOfStudy'] ?? '',
+                                      style: const TextStyle(
                                           color: Colors.white),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                          const SizedBox(width: 16),
-                          // Right side
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                              0xFF222831),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
-                                            // Diğer shape özelliklerini de belirleyebilirsiniz
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          if (isLoggedIn)
-                                            _showDateTimePicker(context);
-                                          else
-                                            context.go('/login');
-                                        },
-                                        child: Text(
-                                          '\n Bu Kursu Satın Al - ${course['hourlyPrice']} TL \n',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.all(0.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: CommentRatingWidget(
+                                  courseId: course["uid"],
+                                  paddingInset: 8.0,
                                 ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Card(
-                                        color: const Color(0xFF50727B),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment
-                                                .center,
-                                            children: [
-                                              CircleAvatar(
-                                                foregroundColor: Colors.white,
-                                                radius: 60,
-                                                backgroundImage: NetworkImage(
-                                                    teacher['profilePictureUrl'] ??
-                                                        ''),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              TextButton(
-                                                child: Text(
-                                                  teacher['name'] ?? '',
-                                                  style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight: FontWeight
-                                                          .bold,
-                                                      color: Colors.white),
-                                                ),
-                                                onPressed: () {
-                                                  context.go("/profile/" +
-                                                      teacher["uid"]);
-                                                },
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                teacher['fieldOfStudy'] ?? '',
-                                                style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.white),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: CommentRatingWidget(
-                                        courseId: course["uid"],
-                                        paddingInset: 16.0,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                          : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF222831),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                    10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
-                                // Diğer shape özelliklerini de belirleyebilirsiniz
                               ),
-                            ),
-                            onPressed: () {
-                              _showDateTimePicker(context);
-                            },
-                            child: Text(
-                              'Bu Kursu Satın Al - ${course['hourlyPrice']} TL',
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 16),
-                            ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Card(
-                            color: const Color(0xFF222831),
-                            child: ExpansionTile(
-                              initiallyExpanded: true,
-                              title: const Text(
-                                'Kurs Açıklaması',
-                                style: TextStyle(fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
-                              ),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    course['desc'] ?? '',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Card(
-                            color: const Color(0xFF50727B),
-                            child: ExpansionTile(
-                              initiallyExpanded: false,
-                              title: const Text(
-                                'Öğretmen Bilgileri',
-                                style: TextStyle(fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
-                              ),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment
-                                        .center,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 50,
-                                        backgroundImage: NetworkImage(
-                                            teacher['profilePictureUrl'] ?? ''),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        teacher['name'] ?? '',
-                                        style: const TextStyle(fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        teacher['fieldOfStudy'] ?? '',
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.all(0.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: CommentRatingWidget(
-                                    courseId: course["uid"],
-                                    paddingInset: 8.0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ]
-      ),
+          ),
       backgroundColor: Color(0xFFEEEEEE),
+    );
+  }
+
+
+  ThemeData _customDatePickerTheme() {
+    return ThemeData.dark().copyWith(
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF76ABAE),       // Seçili tarih & header
+        surface: Color(0xFF222831),       // Header arkaplan
+        onSurface: Colors.white,          // Metin renkleri
+      ),
+      dialogBackgroundColor: const Color(0xFF393E46), // Ana arkaplan
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.redAccent, // İptal butonu
+        ),
+      ),
     );
   }
 }

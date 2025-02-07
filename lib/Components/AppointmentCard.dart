@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -39,6 +40,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
   String dateStr = "";
   late Timestamp time;
   bool isAccepted = false;
+  bool isPersonalCheck = false;
+  bool hasStudentPersonalCheck = false;
   @override
   void initState() {
     // TODO: implement initState
@@ -52,6 +55,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
     authorData = await FirestoreService().getTeacherByUID(appData["author"]);
     studentData = await FirestoreService().getStudentByUID(appData["student"]);
     surveys = await FirestoreService().getAppointmentSurveys(widget.appointmentUID);
+    isPersonalCheck = courseData["category"] == "ORo10XNqzYkLcQUl420k";
+    hasStudentPersonalCheck = studentData["hasPersonalCheck"];
     isLoading = false;
     time = appData["date"] as Timestamp;
     isAccepted = appData["isAccepted"];
@@ -268,7 +273,48 @@ class _AppointmentCardState extends State<AppointmentCard> {
                       : null
                       : () => _showAppointmentSurveyDetails(context),
                 ),
-
+                isPersonalCheck ? ListTile(
+                  leading: Icon(Icons.check_circle, color: Colors.green),
+                  title: Text(
+                    "Bireysel Değerlendirme",
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                  ),
+                    subtitle: Text(
+                      widget.isTeacher
+                          ? "Danışanı 'Bireysel Değerlendirme Aldı' Olarak İşaretle"
+                          : hasStudentPersonalCheck
+                          ? "Bireysel Değerlendirmeniz Onaylandı"
+                          : "Bireysel Değerlendirmeniz Henüz Onaylanmadı" ,
+                      style: TextStyle(
+                        fontSize: 18,
+                        color:  widget.isTeacher
+                            ? Colors.grey
+                            : hasStudentPersonalCheck
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    ),
+                  onTap: () async
+                  {
+                    AwesomeDialog(
+                      context: context,
+                      dialogType: DialogType.noHeader,
+                      animType: AnimType.bottomSlide,
+                      btnCancelText: "Hayır",
+                      btnOkText: "Evet",
+                      title: 'Bireysel Değerlendirmeyi Onaylıyor Musunuz?',
+                      desc: "Lütfen bireysel değerlendirme tamamlanmadıysa onaylamayınız. Hatalı veya kasıtlı yanlış kullanımlar cezai sonuçlar doğurabilir.",
+                      btnOkOnPress: () async {
+                        LoadingIndicator(context).showLoading();
+                        await FirestoreService().studentHadPersonalCheck(studentData["uid"]);
+                        Navigator.pop(context);
+                      },
+                      btnCancelOnPress: ()
+                      {
+                      }
+                    ).show();
+                  }
+                ) : SizedBox.shrink(),
                 SizedBox(height: 16),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(

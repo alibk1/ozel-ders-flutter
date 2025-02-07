@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 
 class ContactForm extends StatefulWidget {
   @override
@@ -14,10 +17,10 @@ class _ContactFormState extends State<ContactForm> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
-  // Form alanlarının odak renkleri ve stilleri için tema renklerini kullanabiliriz
-  final Color _primaryColor = Color(0xFF76ABAE);
-  final Color _textColor = Color(0xFFEEEEEE);
-  final Color _backgroundColor = Color(0xFF222831);
+  // Renk şemasını HomePage'den alıyoruz
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _textColor = Color(0xFF222831);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
 
   @override
   void dispose() {
@@ -30,96 +33,91 @@ class _ContactFormState extends State<ContactForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container(
-        decoration: BoxDecoration(
-          // Gölge ve kenarlıkları düzenliyoruz
-          borderRadius: BorderRadius.circular(12),
-          color: _backgroundColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
+    double width = MediaQuery.of(context).size.width;
+    bool isMobile = width < 800;
+    return GlassmorphicContainer(
+      width: isMobile ? width - 20 : width - 380,
+      padding: EdgeInsets.all(24.0),
+      borderRadius: 20,
+      blur: 20,
+      border: 2,
+      linearGradient: LinearGradient(
+        colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.05)],
+      ),
+      borderGradient: LinearGradient(colors: [Colors.white24, Colors.white12]),
+      height: 450,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: 20,),
+            Text(
+              'Bizimle İletişime Geçin',
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: _textColor,
+              ),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(duration: 500.ms),
+            SizedBox(height: 24),
+            TextFormField(
+              controller: _nameController,
+              style: GoogleFonts.poppins(color: _textColor),
+              decoration: _inputDecoration('Adınız'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Lütfen adınızı girin';
+                }
+                return null;
+              },
+            ).animate().fadeIn(duration: 600.ms),
+            SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              style: GoogleFonts.poppins(color: _textColor),
+              decoration: _inputDecoration('E-posta'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Lütfen e-posta adresinizi girin';
+                }
+                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                  return 'Lütfen geçerli bir e-posta adresi girin';
+                }
+                return null;
+              },
+            ).animate().fadeIn(duration: 700.ms),
+            SizedBox(height: 16),
+            TextFormField(
+              controller: _messageController,
+              style: GoogleFonts.poppins(color: _textColor),
+              decoration: _inputDecoration('Mesajınız'),
+              maxLines: 5,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Lütfen mesajınızı girin';
+                }
+                return null;
+              },
+            ).animate().fadeIn(duration: 800.ms),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _submitForm,
+              child: Text(
+                'Gönder',
+                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ).animate().fadeIn(duration: 900.ms),
           ],
-        ),
-        padding: EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            // Elemanları ortalıyoruz
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'İletişim Formu',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: _textColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 24),
-              TextFormField(
-                controller: _nameController,
-                style: TextStyle(color: _textColor),
-                decoration: _inputDecoration('Adınız'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen adınızı girin';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                style: TextStyle(color: _textColor),
-                decoration: _inputDecoration('E-posta'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen e-posta adresinizi girin';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Lütfen geçerli bir e-posta adresi girin';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _messageController,
-                style: TextStyle(color: _textColor),
-                decoration: _inputDecoration('Mesajınız'),
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Lütfen mesajınızı girin';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: Text(
-                  'Gönder',
-                  style: TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-
-            ],
-          ),
         ),
       ),
     );
@@ -128,23 +126,26 @@ class _ContactFormState extends State<ContactForm> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: _textColor),
+      labelStyle: GoogleFonts.poppins(color: _textColor),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.9),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: _textColor),
-        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(10),
       ),
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: _primaryColor),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
       ),
       errorBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
       ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
     );
   }
 

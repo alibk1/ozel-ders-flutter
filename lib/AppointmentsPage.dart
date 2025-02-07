@@ -114,7 +114,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             onPressed: () {
               context.go('/courses');
             },
-            child: Text('Kurslar',
+            child: Text('Terapiler',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
@@ -167,16 +167,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
           ],
         ),
       )
-          : Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              "assets/therapy-main.jpg",
-              fit: BoxFit.cover,
-              colorBlendMode: BlendMode.darken,
-            ),
-          ),
-          SafeArea(
+          : SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -202,8 +193,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
               },
             ),
           ),
-        ],
-      ),
       backgroundColor: Color(0xFFEEEEEE),
     );
   }

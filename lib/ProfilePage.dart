@@ -1,21 +1,19 @@
-import 'dart:io';
-
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' as dt_picker;
+import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
-import 'package:ozel_ders/Components/Footer.dart';
+import 'package:ozel_ders/Components/LoadingIndicator.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:table_calendar/table_calendar.dart';
-
 import 'Components/BlogCard.dart';
 import 'Components/Drawer.dart';
 
@@ -55,7 +53,6 @@ class _ProfilePageState extends State<ProfilePage> {
         isCurrentTeam = false;
         categories = [];
       });
-      initMenu();
       initData();
     }
   }
@@ -63,28 +60,24 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    initMenu();
     initData();
   }
 
-  Future<void> initMenu() async {
-    isLoggedIn = await AuthService().isUserSignedIn();
-    if (isLoggedIn) {
-      String currentUID = AuthService().userUID();
-      var teamCheck = await FirestoreService().getTeamByUID(currentUID);
-      if (teamCheck.isNotEmpty) {
-        isCurrentTeam = true;
-        teamUidIfCurrent = teamCheck["uid"];
-        teamNameIfCurrent = teamCheck["name"];
-      }
-      if (widget.uid == AuthService().userUID()) {
-        isSelf = true;
-      }
-    }
-    setState(() {});
-  }
 
   Future<void> initData() async {
+    isLoggedIn = await AuthService().isUserSignedIn();
+  if (isLoggedIn) {
+    String currentUID = AuthService().userUID();
+    var teamCheck = await FirestoreService().getTeamByUID(currentUID);
+    if (teamCheck.isNotEmpty) {
+      isCurrentTeam = true;
+      teamUidIfCurrent = teamCheck["uid"];
+      teamNameIfCurrent = teamCheck["name"];
+    }
+    if (widget.uid == AuthService().userUID()) {
+      isSelf = true;
+    }
+  }
     var teamCheck = await FirestoreService().getTeamByUID(widget.uid);
     if (teamCheck.isNotEmpty) {
       String uid = teamCheck["uid"];
@@ -103,6 +96,21 @@ class _ProfilePageState extends State<ProfilePage> {
     appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
     print(notifications);
     categories = await FirestoreService().getCategories();
+
+    if(isSelf && !isTeacher && userInfo["hasPersonalCheck"] == false)
+    {
+      AwesomeDialog(
+          context: context,
+          dialogType: DialogType.warning,
+          animType: AnimType.bottomSlide,
+          btnOkText: "Tamam",
+          title: 'Bireysel Değerlendirme',
+          desc: 'Başka Terapi Almadan Önce "Bireysel Değerlendirme" Terapisi Almanız Gerekmektedir. Terapiler Sayfasından Bireysel Değerlendirme Terapisi Alabilirsiniz.',
+          btnOkOnPress: () {
+          },
+      ).show();
+    }
+
     setState(() {
       isLoading = false;
     });
@@ -355,15 +363,19 @@ class _ProfilePageState extends State<ProfilePage> {
               timeSlots.add({'start': startTime, 'end': endTime});
             }
 
-            // Öğretmenin randevularının DateTime listesi (tarih/saat kontrolü için)
             final List<DateTime> teacherAppDates = [];
+            List<DateTime> availableHours = [];
+            for(Timestamp a in userInfo["availableHours"])
+            {
+              availableHours.add(a.toDate());
+            }
             for (var app in appointments) {
               Timestamp date = app["date"];
-              DateTime dateTime = date.toDate();
+              DateTime dateTime = date.toDate().toUtc();
+              print(dateTime);
               teacherAppDates.add(dateTime);
             }
 
-            // eventsMap: Her güne ait randevuları tutacak bir map (TableCalendar marker'ları için)
             final Map<DateTime, List<Map<String, dynamic>>> eventsMap = {};
             for (var appointment in appointments) {
               final dateTime = (appointment['date'] as Timestamp).toDate();
@@ -376,10 +388,9 @@ class _ProfilePageState extends State<ProfilePage> {
               eventsMap[dayOnly]!.add(appointment);
             }
 
-            // Takvimle ilgili state
             DateTime _focusedDay = DateTime.now();
             DateTime? _selectedDay;
-
+            bool selectedAvailable = false;
             // Seçilen saat
             DateTime? _selectedTime;
 
@@ -404,13 +415,216 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
+                        Container(
+                          margin: const EdgeInsets.only(top: 16),
+                          child: ElevatedButton(
+                            onPressed: () async
+                            {
+                              DateTime firstSelectedDate = DateTime.now().add(Duration(days: 1));
+                              DateTime secondSelectedDate = DateTime.now().add(Duration(days: 2));
+                              List<TimeOfDay> times = [];
+                              AwesomeDialog(
+                                context: context,
+                                dialogType: DialogType.noHeader,
+                                animType: AnimType.bottomSlide,
+                                title: 'Yeni Randevu Talebi',
+                                desc: "",
+                                // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                                body: StatefulBuilder(
+                                  builder: (BuildContext context, StateSetter setModalState) {
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(height: 10),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF76ABAE),
+                                            foregroundColor: Colors.white,
+                                            minimumSize: const Size(double.infinity, 50),
+                                          ),
+                                          onPressed: () async {
+                                            final DateTime? picked = await showDatePicker(
+                                              context: context,
+                                              initialDate: secondSelectedDate,
+                                              firstDate: DateTime.now(),
+                                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                                              locale: const Locale('tr', 'TR'), // Türkçe için
+                                              builder: (context, child) => Theme(
+                                                data: _customDatePickerTheme(), // Özel tema
+                                                child: child!,
+                                              ),
+                                            );
+                                            if (picked != null) {
+                                              setModalState(() {
+                                                firstSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
+                                              });
+                                            }
+                                          },
+                                          child: Text(
+                                            'Başlangıç Tarihi Seç (${DateFormat('dd/MM/yyyy').format(firstSelectedDate)})',
+                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                        SizedBox(height: 10),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF76ABAE),
+                                            foregroundColor: Colors.white,
+                                            minimumSize: const Size(double.infinity, 50),
+                                          ),
+                                          onPressed: () async {
+                                            final DateTime? picked = await showDatePicker(
+                                              context: context,
+                                              initialDate: secondSelectedDate,
+                                              firstDate: DateTime.now(),
+                                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                                              locale: const Locale('tr', 'TR'), // Türkçe için
+                                              builder: (context, child) => Theme(
+                                                data: _customDatePickerTheme(), // Özel tema
+                                                child: child!,
+                                              ),
+                                            );
+                                            if (picked != null) {
+                                              setModalState(() {
+                                                secondSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
+                                              });
+                                            }
+                                          },
+                                          child: Text(
+                                            'Bitiş Tarihi Seç (${DateFormat('dd/MM/yyyy').format(secondSelectedDate)})',
+                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                        SizedBox(height: 10,),
+                                        Wrap(
+                                          spacing: 8.0,
+                                          runSpacing: 8.0,
+                                          alignment: WrapAlignment.center,
+                                          children: timeSlots.map((slot) {
+                                            // Başlangıç saati
+                                            final int slotStart =
+                                            int.parse(slot["start"]!.split(":")[0]);
 
-                        // TableCalendar widget
+                                            final bool isSelected = times.contains(TimeOfDay(hour: slotStart, minute: 0));
+
+                                            return GestureDetector(
+                                              onTap: () {
+                                                setModalState(() {
+                                                  if(isSelected)
+                                                  {
+                                                    times.remove(TimeOfDay(hour: slotStart, minute: 0));
+                                                  }
+                                                  else{
+                                                    times.add(TimeOfDay(hour: slotStart, minute: 0));
+                                                  }
+                                                });
+                                              },
+                                              child: Container(
+                                                width: 80,
+                                                padding: const EdgeInsets.symmetric(
+                                                    vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? const Color(
+                                                      0xFF76ABAE)
+                                                      : const Color(0xFF393E46),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: isSelected
+                                                      ? Border.all(
+                                                      color: Colors.white, width: 2)
+                                                      : null,
+                                                ),
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  '${slot['start']} - ${slot['end']}',
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+
+                                      ],
+                                    );
+                                  },
+                                ),
+                                btnOkText: "Seç",
+                                btnCancelText: "İptal",
+                                btnOkOnPress: () async {
+                                  LoadingIndicator(context).showLoading();
+                                  if(firstSelectedDate == secondSelectedDate)
+                                  {
+                                    for(TimeOfDay time in times)
+                                    {
+                                      DateTime newDate = DateTime(firstSelectedDate.year, firstSelectedDate.month, firstSelectedDate.day, time.hour, time.minute);
+                                      await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
+                                    }
+                                    setState2((){});
+                                  }
+                                  else if(firstSelectedDate.isBefore(secondSelectedDate))
+                                  {
+                                    DateTime first = firstSelectedDate;
+                                    while(true){
+                                      for(TimeOfDay time in times)
+                                      {
+                                        print("Girdi");
+                                        DateTime newDate = DateTime(first.year, first.month, first.day, time.hour, time.minute);
+                                        await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
+                                      }
+                                      if(first == secondSelectedDate){
+                                        break;
+                                      }
+                                      first = first.add(Duration(days: 1));
+                                    }
+                                    setState2((){});
+                                  }
+                                  else if(firstSelectedDate.isAfter(secondSelectedDate))
+                                  {
+                                    AwesomeDialog(
+                                      context: context,
+                                      dialogType: DialogType.error,
+                                      animType: AnimType.bottomSlide,
+                                      body: const Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Text(
+                                          'Hatalı veya Eksik Bilgi (Tarihleri Kontrol Ediniz)',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                      ),
+                                      dismissOnTouchOutside: false,
+                                      dismissOnBackKeyPress: false,
+                                      btnOkText: "Tamam",
+                                      btnOkOnPress: () {}
+                                    ).show();
+                                  }
+                                  await initData();
+                                  print(firstSelectedDate);
+                                  print(secondSelectedDate);
+                                  Navigator.pop(context);
+
+                                },
+                                btnCancelOnPress: () {},
+                              ).show();
+                            },
+                            style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF222831),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(3),
+                              side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+                            ),
+                          ),
+                            child: const Text('Çoklu Müsaitlik Ayarlama', style: TextStyle(color: Colors.white),),
+                          ),
+                        ),
                         TableCalendar(
                           locale: 'tr_TR',
                           focusedDay: _focusedDay,
                           firstDay: DateTime.now().add(Duration(days: -1)),
                           lastDay: DateTime.utc(2030, 12, 31),
+                          startingDayOfWeek: StartingDayOfWeek.monday,
                           selectedDayPredicate: (day) =>
                               isSameDay(_selectedDay, day),
                           eventLoader: (day) {
@@ -422,7 +636,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             setState2(() {
                               _selectedDay = selectedDay;
                               _focusedDay = focusedDay;
-                              // Gün değiştiğinde seçili saati sıfırlıyoruz
                               _selectedTime = null;
                             });
                           },
@@ -468,11 +681,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
                               bool canReserve = true;
                               for (DateTime date in teacherAppDates) {
+                                if (date.year == slotDateTime.toUtc().year &&
+                                    date.month == slotDateTime.toUtc().month &&
+                                    date.day == slotDateTime.toUtc().day &&
+                                    date.hour == slotDateTime.toUtc().hour) {
+                                  canReserve = false; // Bu saat dolu
+                                  break;
+                                }
+                              }
+
+                              bool hasAvailable = false;
+                              for (DateTime date in availableHours) {
                                 if (date.year == slotDateTime.year &&
                                     date.month == slotDateTime.month &&
                                     date.day == slotDateTime.day &&
                                     date.hour == slotDateTime.hour) {
-                                  canReserve = false; // Bu saat dolu
+                                  hasAvailable = true; // Bu saat dolu
                                   break;
                                 }
                               }
@@ -488,6 +712,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 onTap: () {
                                   setState2(() {
                                     _selectedTime = slotDateTime;
+                                    selectedAvailable = hasAvailable;
                                   });
                                 },
                                 child: Container(
@@ -499,9 +724,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                     color: isSelected
                                         ? const Color(
                                         0xFF76ABAE) // Seçilen slot rengi
-                                        : canReserve
-                                        ? const Color(0xFF393E46) // Boş slot
-                                        : Colors.red, // Dolu slot
+                                        : !hasAvailable
+                                        ? Colors.red // Boş slot
+                                        : canReserve ? Colors.green : const Color(0xFF393E46), // Dolu slot
                                     borderRadius: BorderRadius.circular(8),
                                     border: isSelected
                                         ? Border.all(
@@ -520,9 +745,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               );
                             }).toList(),
                           ),
-
                           const SizedBox(height: 16),
-
                           Builder(
                             builder: (context) {
                               // Henüz saat seçilmediyse (null) => buton da pasif kalsın
@@ -538,8 +761,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                 );
                               }
 
-                              // Seçili saat bir randevu mu? appointments listesinden bulalım.
-                              // firstWhereOrNull => bulursa map, bulamazsa null döner.
                               final existingAppointment = appointments
                                   .firstWhere((app) {
                                 final dt = (app['date'] as Timestamp).toDate();
@@ -548,28 +769,23 @@ class _ProfilePageState extends State<ProfilePage> {
                                     dt.day == _selectedTime!.day &&
                                     dt.hour == _selectedTime!.hour;
                               }, orElse: () => {});
-                              print(existingAppointment);
                               if (existingAppointment.isNotEmpty) {
-                                return existingAppointment["student"] !=
-                                    existingAppointment["author"]
-                                    ? Container(
+                                return Container(
                                   height: 400,
-
                                   child: AppointmentCard(
                                     appointmentUID: existingAppointment["UID"],
-                                    // isTeacher true/false nasıl belirleniyorsa...
                                     isTeacher: false,
                                   ),
-                                )
-                                    : ElevatedButton(
+                                );
+                              } else {
+                                return selectedAvailable ? ElevatedButton(
                                   onPressed: () async {
                                     AwesomeDialog(
                                       context: context,
                                       dialogType: DialogType.noHeader,
                                       animType: AnimType.bottomSlide,
-                                      title: 'Kendine Ayırdığın Saati Sil',
-                                      desc: 'Kendine Ayırdığınız Saati Silmek İstiyor Musunuz?',
-                                      // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                                      title: 'Randevuya Ayırdığın Saati Sil',
+                                      desc: 'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
                                       body: StatefulBuilder(
                                         builder: (BuildContext context,
                                             StateSetter setModalState) {
@@ -578,7 +794,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                             children: [
                                               SizedBox(height: 10),
                                               Text(
-                                                'Kendine Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                                                'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
                                                 style: TextStyle(
                                                     fontSize: 16),
                                               ), SizedBox(height: 10),
@@ -586,15 +802,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                           );
                                         },
                                       ),
-                                      // Dialog'un altındaki butonlar
                                       btnOkText: "Evet",
                                       btnCancelText: "Hayır",
                                       btnOkOnPress: () async {
                                         await FirestoreService()
-                                            .deleteSelfAppointment(
+                                            .removeTeacherAvailableHour(
                                             widget.uid,
-                                            existingAppointment["UID"]);
-                                        appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+                                            DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
+                                        userInfo = await FirestoreService().getTeacherByUID(widget.uid);
                                         setState((){});
                                         setState2((){});
                                       },
@@ -607,19 +822,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                     minimumSize: const Size(120, 50),
                                   ),
                                   child: const Text(
-                                    "Kendine Ayırdığın Saati İptal Et",
+                                    "Randevuya Ayırdığın Saati İptal Et",
                                     style: TextStyle(color: Colors.red),),
-                                );
-                              } else {
-                                // RANDEVU YOK: buton göster
-                                return ElevatedButton(
+                                ) :
+                                    ElevatedButton(
                                   onPressed: () async {
                                     AwesomeDialog(
                                       context: context,
                                       dialogType: DialogType.noHeader,
                                       animType: AnimType.bottomSlide,
-                                      title: 'Saati Kendine Ayır',
-                                      desc: 'Bu Saati Kendinize Ayırmak İstiyor Musunuz?',
+                                      title: 'Saati Randevuya Ayır',
+                                      desc: 'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
                                       // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
                                       body: StatefulBuilder(
                                         builder: (BuildContext context,
@@ -629,7 +842,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                             children: [
                                               SizedBox(height: 10),
                                               Text(
-                                                'Bu Saati Kendinize Ayırmak İstiyor Musunuz?',
+                                                'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
                                                 style: TextStyle(fontSize: 16),
                                               ), SizedBox(height: 10),
                                             ],
@@ -641,9 +854,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                       btnCancelText: "Hayır",
                                       btnOkOnPress: () async {
                                         await FirestoreService()
-                                            .createSelfAppointment(
-                                            widget.uid, _selectedTime!);
-                                        appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+                                            .updateTeacherAvailableHours(
+                                            widget.uid,
+                                            DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
+                                        userInfo = await FirestoreService().getTeacherByUID(widget.uid);
                                         setState((){});
                                         setState2((){});
                                         },
@@ -657,7 +871,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     foregroundColor: Colors.white,
                                     minimumSize: const Size(120, 50),
                                   ),
-                                  child: const Text("Bu Saati Kendine Ayır"),
+                                  child: const Text("Bu Saati Randevuya Ayır"),
                                 );
                               }
                             },
@@ -987,7 +1201,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             Navigator.pop(context); // Yükleniyor animasyonunu kapat
                             Navigator.pop(context); // Modal'ı kapat
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Kurs başarıyla oluşturuldu')),
+                              SnackBar(content: Text('Kurs Onaya Gönderildi')),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -1073,7 +1287,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () {
               context.go('/courses');
             },
-            child: Text('Kurslar',
+            child: Text('Terapiler',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
@@ -1331,7 +1545,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       Column(
                                         children: [
                                           !isTeacher ? Text(
-                                            'Aldığı Kurslar',
+                                            'Aldığı Terapiler',
                                             style: TextStyle(
                                                 fontSize: 18,
                                                 fontWeight:
@@ -1345,7 +1559,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 .center,
                                             children: [
                                               Text(
-                                                'Verdiği Kurslar',
+                                                'Verdiği Terapiler',
                                                 style: TextStyle(
                                                     fontSize: 18,
                                                     fontWeight:
@@ -1354,8 +1568,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                     color:
                                                     Colors.white),
                                               ),
-                                              if(isSelf) SizedBox(width: 10,),
-                                              if(isSelf) IconButton(
+                                              if(isSelf || isCurrentTeam && teamUidIfCurrent == userInfo["reference"]) SizedBox(width: 10,),
+                                              if(isSelf || isCurrentTeam && teamUidIfCurrent == userInfo["reference"]) IconButton(
                                                 onPressed: () {
                                                   _showCreateCourseDialog(
                                                       context);
@@ -1447,7 +1661,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
                             ),
-                            // Kursları gösteren bölümün hemen altına, geniş ekran için (flex:2 bölmesinin altına ya da yanına):
+                            // Terapiler gösteren bölümün hemen altına, geniş ekran için (flex:2 bölmesinin altına ya da yanına):
                           ],
                         ),
                         SizedBox(height: 16),
@@ -1606,7 +1820,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: ExpansionTile(
                       initiallyExpanded: false,
                       title: !isTeacher ? Text(
-                        'Aldığı Kurslar',
+                        'Aldığı Terapiler',
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight:
@@ -1618,7 +1832,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           : Row(
                         children: [
                           Text(
-                            'Verdiği Kurslar',
+                            'Verdiği Terapiler',
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight:
@@ -1789,6 +2003,23 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       backgroundColor: Color(0xFFEEEEEE),
+    );
+  }
+
+
+  ThemeData _customDatePickerTheme() {
+    return ThemeData.dark().copyWith(
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF76ABAE),       // Seçili tarih & header
+        surface: Color(0xFF222831),       // Header arkaplan
+        onSurface: Colors.white,          // Metin renkleri
+      ),
+      dialogBackgroundColor: const Color(0xFF393E46), // Ana arkaplan
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.redAccent, // İptal butonu
+        ),
+      ),
     );
   }
 }

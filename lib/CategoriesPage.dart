@@ -113,7 +113,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
             onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: Text('Kurslar', style: TextStyle(
+            child: Text('Terapiler', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
@@ -163,38 +163,27 @@ class _CategoriesPageState extends State<CategoriesPage> {
         ],
       )
       )
-          : Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                "assets/therapy-main.jpg", // Buraya arkaplan resmini ekle
-                fit: BoxFit.cover,
-                colorBlendMode: BlendMode.darken,
-              ),
-            ),
-            SafeArea(
-              child: Center(
-                child: Column(
-                  children: [
-                    HeaderSection(),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: AnimatedSwitcher(
-                          duration: Duration(milliseconds: 750),
-                          child: showSubCategories
-                              ? buildSubCategoriesGrid()
-                              : buildCategoriesGrid(),
-                        ),
+          : SafeArea(
+            child: Center(
+              child: Column(
+                children: [
+                  HeaderSection(),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: AnimatedSwitcher(
+                        duration: Duration(milliseconds: 750),
+                        child: showSubCategories
+                            ? buildSubCategoriesGrid()
+                            : buildCategoriesGrid(),
                       ),
                     ),
-                    FooterSection(),
-                  ],
-                ),
+                  ),
+                  FooterSection(),
+                ],
               ),
             ),
-          ]
-      ),
+          ),
       backgroundColor: Color(0xFFEEEEEE),
     );
   }

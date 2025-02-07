@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ozel_ders/AdminPanel.dart';
 import 'package:ozel_ders/AppointmentsPage.dart';
 import 'package:ozel_ders/BlogCreatePage.dart';
 import 'package:ozel_ders/BlogPage.dart';
@@ -51,7 +48,7 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => CoursesPage(category: '', subCategory: '',) ,//,AdminPanel()
+        builder: (context, state) => CoursesPage(category: '', subCategory: '',)//AdminPanel2() ,
       ),
       GoRoute(
         path: '/blog-update/:uid/:blogUID',
@@ -136,6 +133,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      title: "Vitament",
       routerConfig: _router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
