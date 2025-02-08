@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import '../services/FirebaseController.dart';
 
 class BlogCommentWidget extends StatefulWidget {
@@ -20,6 +22,11 @@ class _BlogCommentWidgetState extends State<BlogCommentWidget> {
   bool _isLoading = true;
   bool isLoggedIn = false;
   String currentUserUID = '';
+
+  // HomePage'dan alınan renk şeması
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
+  final Color _darkColor = Color(0xFF3C72C2);
 
   @override
   void initState() {
@@ -131,7 +138,10 @@ class _BlogCommentWidgetState extends State<BlogCommentWidget> {
               // Yorumlar bölümü
               _isLoading
                   ? Center(
-                child: CircularProgressIndicator(),
+                child: SpinKitFadingCircle(
+                  color: _primaryColor,
+                  size: 50.0,
+                ),
               )
                   : _comments.isNotEmpty
                   ? Column(
@@ -143,57 +153,77 @@ class _BlogCommentWidgetState extends State<BlogCommentWidget> {
                     itemCount: _comments.length,
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
-                      return Card(
-                        color: Color(0xFF393E46), // Arka plan rengi
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8.0),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage:
-                            comment['profilePictureUrl'] != ''
-                                ? NetworkImage(
-                                comment['profilePictureUrl'])
-                                : null,
-                            backgroundColor: Color(0xFF76ABAE),
-                            child: comment['profilePictureUrl'] == ''
-                                ? Text(
-                              comment['userName'] != null &&
-                                  comment['userName']
-                                      .length >
-                                      0
-                                  ? comment['userName'][0]
-                                  : 'A',
-                              style: TextStyle(
-                                  color: Colors.white),
-                            )
-                                : null,
-                          ),
-                          title: Text(
-                            comment['userName'] ?? 'Anonim',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4.0),
-                              Text(
-                                comment['comment'] ?? '',
+                      return GlassmorphicContainer(
+                        width: double.infinity,
+                        height: 120,
+                        borderRadius: 20,
+                        blur: 20,
+                        alignment: Alignment.bottomCenter,
+                        border: 2,
+                        linearGradient: LinearGradient(
+                          colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.05)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderGradient: LinearGradient(
+                          colors: [Colors.white24, Colors.white12],
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              backgroundImage:
+                              comment['profilePictureUrl'] != ''
+                                  ? NetworkImage(
+                                  comment['profilePictureUrl'])
+                                  : null,
+                              backgroundColor: _primaryColor,
+                              child: comment['profilePictureUrl'] == ''
+                                  ? Text(
+                                comment['userName'] != null &&
+                                    comment['userName']
+                                        .length >
+                                        0
+                                    ? comment['userName'][0]
+                                    : 'A',
                                 style: TextStyle(
-                                    color: Colors.white70),
+                                    color: Colors.white),
+                              )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16.0),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    comment['userName'] ?? 'Anonim',
+                                    style: TextStyle(
+                                        color: _darkColor,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4.0),
+                                  Text(
+                                    comment['comment'] ?? '',
+                                    style: TextStyle(
+                                        color: _darkColor.withOpacity(0.7)),
+                                  ),
+                                  const SizedBox(height: 4.0),
+                                  if (comment['commentedAt'] != null)
+                                    Text(
+                                      DateFormat('dd MMM yyyy, HH:mm')
+                                          .format(comment['commentedAt']
+                                          .toDate()),
+                                      style: const TextStyle(
+                                          fontSize: 12.0,
+                                          color: Colors.grey),
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 4.0),
-                              if (comment['commentedAt'] != null)
-                                Text(
-                                  DateFormat('dd MMM yyyy, HH:mm')
-                                      .format(comment['commentedAt']
-                                      .toDate()),
-                                  style: const TextStyle(
-                                      fontSize: 12.0,
-                                      color: Colors.grey),
-                                ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -208,53 +238,60 @@ class _BlogCommentWidgetState extends State<BlogCommentWidget> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24.0),
-              Card(
-                color: Color(0xFF393E46), // Arka plan rengini ayarladık
-                elevation: 4.0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+              GlassmorphicContainer(
+                width: double.infinity,
+                height: 200,
+                borderRadius: 20,
+                blur: 20,
+                alignment: Alignment.bottomCenter,
+                border: 2,
+                linearGradient: LinearGradient(
+                  colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.05)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      TextField(
-                        controller: _controller,
-                        style: TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Yorumunuzu yazın',
-                          labelStyle: TextStyle(color: Colors.white70),
-                          border: OutlineInputBorder(),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Colors.white70, width: 1.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide:
-                            BorderSide(color: Colors.white, width: 1.0),
-                          ),
+                borderGradient: LinearGradient(
+                  colors: [Colors.white24, Colors.white12],
+                ),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    TextField(
+                      controller: _controller,
+                      style: TextStyle(color: _darkColor),
+                      decoration: InputDecoration(
+                        labelText: 'Yorumunuzu yazın',
+                        labelStyle: TextStyle(color: _darkColor.withOpacity(0.7)),
+                        border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                              color: _darkColor.withOpacity(0.7), width: 1.0),
                         ),
-                        maxLines: screenWidth < 800 ? 2 : 3,
-                      ),
-                      const SizedBox(height: 16.0),
-                      ElevatedButton(
-                        onPressed: _sendComment,
-                        child: const Text('Gönder'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF76ABAE),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          textStyle: TextStyle(
-                            fontSize: screenWidth < 800 ? 16.0 : 18.0,
-                          ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide:
+                          BorderSide(color: _primaryColor, width: 1.0),
                         ),
                       ),
-                    ],
-                  ),
+                      maxLines: screenWidth < 800 ? 2 : 3,
+                    ),
+                    const SizedBox(height: 16.0),
+                    ElevatedButton(
+                      onPressed: _sendComment,
+                      child: const Text('Gönder'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        textStyle: TextStyle(
+                          fontSize: screenWidth < 800 ? 16.0 : 18.0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

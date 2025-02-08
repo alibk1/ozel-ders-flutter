@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
-
-import 'Components/Drawer.dart';
+import 'package:ozel_ders/Components/Drawer.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 
 class AppointmentsPage extends StatefulWidget {
   final String uid;
@@ -23,9 +26,9 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   List<Map<String, dynamic>> userAppointments = [];
   Map<String, dynamic> userInfo = {};
   bool isLoading = true;
-  bool showSubCategories = false;
   bool isLoggedIn = false;
   bool isTeacher = true;
+  bool _isAppBarExpanded = true;
 
   @override
   void initState() {
@@ -33,8 +36,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     super.initState();
   }
 
-  Future<void> initData() async
-  {
+  Future<void> initData() async {
     isLoggedIn = await AuthService().isUserSignedIn();
     if (isLoggedIn) {
       String currentUser = AuthService().userUID();
@@ -46,16 +48,13 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
           userInfo = await FirestoreService().getStudentByUID(widget.uid);
           isTeacher = false;
         }
-        userAppointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
+        userAppointments =
+        await FirestoreService().getUserAppointments(widget.uid, isTeacher);
         sortUserAppointments();
-      }
-      else
-      {
+      } else {
         context.go('/');
       }
-    }
-    else
-    {
+    } else {
       context.go('/');
     }
     isLoading = false;
@@ -66,154 +65,72 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     userAppointments.sort((a, b) {
       Timestamp dateA = a['date'] as Timestamp;
       Timestamp dateB = b['date'] as Timestamp;
-
       DateTime aD = dateA.toDate();
       DateTime bD = dateB.toDate();
       return aD.compareTo(bD);
     });
   }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: Color(0xFF222831),
-        title: Image.asset(
-          'assets/vitament1.png',
-          height: MediaQuery.of(context).size.width < 800 ? 60 : 80,
+
+  // Tasarım şemasına uygun renkler:
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
+  final Color _darkColor = Color(0xFF3C72C2);
+  final Color _textColor = Color(0xFF222831);
+
+  // HomePage'deki header tarzını referans alarak header kısmı
+  Widget _buildHeaderSection() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_primaryColor, _darkColor],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
-        centerTitle: MediaQuery.of(context).size.width < 800 ? true : false,
-        leading: MediaQuery.of(context).size.width < 800
-            ? IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: () {
-            _scaffoldKey.currentState!.openDrawer();
-          },
-        )
-            : null,
-        actions: MediaQuery.of(context).size.width >= 800
-            ? [
-          TextButton(
-            onPressed: () {
-              context.go('/');
-            },
-            child: Text('Ana Sayfa',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/categories');
-            },
-            child: Text('Kategoriler',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/courses');
-            },
-            child: Text('Terapiler',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/blogs');
-            },
-            child: Text('Blog',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold)),
-          ),
-          isLoggedIn
-              ? TextButton(
-            onPressed: () {
-              context.go('/appointments/' + AuthService().userUID());
-            },
-            child: Text('Randevularım',
-                style: TextStyle(
-                    color: Color(0xFF76ABAE),
-                    fontWeight: FontWeight.bold)),
-          )
-              : SizedBox.shrink(),
-          TextButton(
-            onPressed: isLoggedIn
-                ? () {
-              context.go('/profile/' + AuthService().userUID());
-            }
-                : () {
-              context.go('/login');
-            },
-            child: Text(
-                isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ]
-            : null,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
       ),
-      drawer: MediaQuery.of(context).size.width < 800
-          ? DrawerMenu(isLoggedIn: isLoggedIn)
-          : null,
-      body: isLoading
-          ? Center(
-        child: Column(
-          children: [
-            HeaderSection(),
-            LoadingAnimationWidget.dotsTriangle(
-                color: Color(0xFF222831), size: 200),
-          ],
-        ),
-      )
-          : SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints:
-                    BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        HeaderSection(),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: AnimatedSwitcher(
-                            duration: Duration(milliseconds: 750),
-                            child: buildAppointmentsGrid(),
-                          ),
-                        ),
-                        FooterSection(),
-                      ],
-                    ),
-                  ),
-                );
-              },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Randevular",
+            style: GoogleFonts.poppins(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-      backgroundColor: Color(0xFFEEEEEE),
+          // İsteğe bağlı: kısa açıklama ekleyebilirsiniz
+          SizedBox(height: 10),
+          Text(
+            "Tüm randevularınızı buradan takip edebilirsiniz.",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-
-  Widget buildAppointmentsGrid() {
+  Widget _buildAppointmentsGrid() {
     return GridView.builder(
-      key: ValueKey('categoriesGrid'),
+      key: ValueKey('appointmentsGrid'),
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: MediaQuery.of(context).size.width >= 800 ? 4 : 2,
-        crossAxisSpacing: 50,
-        mainAxisSpacing: 50,
+        crossAxisSpacing: 30,
+        mainAxisSpacing: 30,
         childAspectRatio: MediaQuery.of(context).size.width >= 800 ? 1.5 : 0.75,
       ),
       itemCount: userAppointments.length,
       itemBuilder: (context, index) {
         final appointment = userAppointments[index];
-        //print(appointment["UID"].toString() + " - " + appointment["author"].toString() + " - " + appointment["student"].toString());
-        if(appointment["author"] != appointment["student"]) {
+        // Sadece eğitmen ile öğrencinin farklı olduğu randevuları göster
+        if (appointment["author"] != appointment["student"]) {
           return AppointmentCard(
             appointmentUID: appointment["UID"],
             isTeacher: isTeacher,
@@ -224,23 +141,167 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     );
   }
 
-}
+  SliverAppBar _buildAppBar(bool isMobile) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      title: AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        child: _isAppBarExpanded
+            ? Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 50 : 70,
+          key: ValueKey('expanded-logo'),
+        ).animate().fadeIn(duration: 500.ms)
+            : Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 50,
+            key: ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
+      centerTitle: isMobile || _isAppBarExpanded,
+      pinned: true,
+      expandedHeight: 120,
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final isExpanded = constraints.maxHeight > kToolbarHeight;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_isAppBarExpanded != isExpanded) {
+              setState(() {
+                _isAppBarExpanded = isExpanded;
+              });
+            }
+          });
+          return FlexibleSpaceBar(
+            background: GlassmorphicContainer(
+              width: double.infinity,
+              height: double.infinity,
+              borderRadius: 0,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+            ),
+          );
+        },
+      ),
+      actions: isMobile ? null : _buildDesktopMenu(),
+      leading: isMobile
+          ? IconButton(
+        icon: Icon(Icons.menu, color: _darkColor),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      )
+          : null,
+    );
+  }
 
-class HeaderSection extends StatelessWidget {
+
+  List<Widget> _buildDesktopMenu() {
+    return [
+      HeaderButton(title: 'Ana Sayfa', route: '/'),
+      HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
+      HeaderButton(title: 'Blog', route: '/blogs'),
+      if (isLoggedIn)
+        HeaderButton(title: 'Randevularım', route: '/appointments/' + AuthService().userUID()),
+      HeaderButton(
+          title: isLoggedIn ? 'Profilim' : 'Giriş Yap',
+          route: isLoggedIn ? '/profile/' + AuthService().userUID() : '/login'),
+    ];
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: SpinKitFadingCircle(
+          color: _primaryColor,
+          size: 50,
+        ),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Color(0xFF222831),
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(height: 55,),
-            Text("Randevular", style: TextStyle(color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20),),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
 
-          ],
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: isMobile ? DrawerMenu(isLoggedIn: isLoggedIn) : null,
+      backgroundColor: _backgroundColor,
+      body: Stack(
+        children: [
+          // Asıl sayfa içeriği
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: SafeArea(
+              child: CustomScrollView(
+                slivers: [
+                  _buildAppBar(isMobile),
+                  SliverToBoxAdapter(child: _buildHeaderSection()),
+                  SliverFillRemaining(
+                    hasScrollBody: true,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          alignment: Alignment.center,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 16.0 : screenWidth * 0.2,
+                            vertical: 30,
+                          ),
+                          child: _buildAppointmentsGrid(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: FooterSection()),
+                ],
+              ),
+            ),
+          ),
+
+          // Loading overlay (HomePage’teki mantıkla)
+          if (isLoading) _buildLoadingOverlay(),
+        ],
+      ),
+    );
+  }
+
+}
+
+class HeaderButton extends StatelessWidget {
+  final String title;
+  final String route;
+
+  const HeaderButton({required this.title, required this.route});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () => context.go(route),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: Color(0xFF0344A3),
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

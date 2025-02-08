@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/Footer.dart';
@@ -23,7 +26,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   bool _isLogin = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _referenceController = TextEditingController();
@@ -33,42 +35,27 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
   final TextEditingController _dateController = TextEditingController(); // Yeni TextField için controller
 
-  // Yeni TextField için controller
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: '619520758342-mc02si573tea3f48n429fmbkngnpd38c.apps.googleusercontent.com',
-
   );
+
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
+  final Color _darkColor = Color(0xFF3C72C2);
 
   @override
   void initState() {
     _referenceController.text = widget.reference;
     if(widget.reference != ""){
       _isLogin = false;
-      setState(() {
-
-      });
+      setState(() {});
     }
-
     super.initState();
   }
 
   Future<void> _loginWithGoogle() async {
     try {
-      /*final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // Kullanıcı Google Sign-In penceresini kapattı
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);*/
       await AuthService().signInWithGoogle();
       Navigator.pushReplacement(
         context,
@@ -81,7 +68,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     }
   }
 
-
   String _selectedRole = 'Öğrenci';
 
   void _selectRole(String role) {
@@ -90,119 +76,124 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     });
   }
 
-  //title: Text(_isLogin ? 'Giriş Yap' : 'Kayıt Ol')
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF222831),
-        title: Image.asset('assets/vitament1.png', height: MediaQuery
-            .of(context)
-            .size
-            .width < 800 ? 60 : 80),
-        centerTitle: MediaQuery
-            .of(context)
-            .size
-            .width < 800 ? true : false,
-        leading: MediaQuery
-            .of(context)
-            .size
-            .width < 800
-            ? IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () {
-            _scaffoldKey.currentState!.openDrawer();
-          },
-        )
-            : null,
-        actions: MediaQuery
-            .of(context)
-            .size
-            .width >= 800
-            ? [
-          TextButton(
-            onPressed: () {
-              context.go('/');
-            },
-            child: const Text('Ana Sayfa', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/categories'); // CategoriesPage'e yönlendirme
-            },
-            child: const Text('Kategoriler', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/courses'); // CategoriesPage'e yönlendirme
-            },
-            child: const Text('Terapiler', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/blogs');
-            },
-            child: Text('Blog',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/login');
-            },
-            child: const Text('Giriş Yap / Kaydol',
-                style: TextStyle(
-                    color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)),
-          ),
-        ]
-            : null,),
-      drawer: MediaQuery
-          .of(context)
-          .size
-          .width < 800
-          ? DrawerMenu(isLoggedIn: false)
-          : null,
-      body: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                "assets/therapy-login.jpg", // Buraya arkaplan resmini ekle
-                fit: BoxFit.cover,
-                colorBlendMode: BlendMode.darken,
-                color: Colors.grey[500],
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    HeaderSection(),
-                    LayoutBuilder(
+      backgroundColor: _backgroundColor,
+      drawer: isMobile ? DrawerMenu(isLoggedIn: false) : null,
+      body: _buildMainContent(isMobile),
+    );
+  }
+
+  Widget _buildMainContent(bool isMobile) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(isMobile),
+            SliverToBoxAdapter(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    height: MediaQuery.of(context).size.height,
+                    child: LayoutBuilder(
                       builder: (context, constraints) {
                         if (constraints.maxWidth < 800) {
-                          // Small screen (e.g. mobile)
                           return _buildMobileLayout();
                         } else {
-                          // Large screen (e.g. tablet, desktop)
                           return _buildDesktopLayout();
                         }
                       },
                     ),
-                    FooterSection(),
-                  ],
-                ),
+                  ),
+                  FooterSection(),
+                ],
               ),
             ),
-          ]
+          ],
+        ),
       ),
-      backgroundColor: Color(0xFFEEEEEE),
+    );
+  }
+
+  SliverAppBar _buildAppBar(bool isMobile) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      title: isMobile ? Image.asset(
+        'assets/vitament1.png',
+        height: isMobile ? 50 : 80,
+        key: ValueKey('expanded-logo'),
+      ).animate()
+          .fadeIn(duration: 1000.ms)
+          :
+      AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        child:  Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 70,
+            key: ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
+      centerTitle: isMobile,
+      pinned: true,
+      expandedHeight: 120,
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          return FlexibleSpaceBar(
+            background: GlassmorphicContainer(
+              width: double.infinity,
+              height: double.infinity,
+              borderRadius: 0,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+            ),
+          );
+        },
+      ),
+      actions: isMobile ? null : [_buildDesktopMenu()],
+      leading: isMobile
+          ? IconButton(
+        icon: Icon(Icons.menu, color: _darkColor),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      )
+          : null,
+    );
+  }
+
+  Widget _buildDesktopMenu() {
+    return Row(
+      children: [
+        HeaderButton(title: 'Ana Sayfa', route: '/'),
+        HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
+        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(
+          title: 'Giriş Yap / Kaydol',
+          route: '/login',
+        ),
+      ],
     );
   }
 
@@ -239,7 +230,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
                   : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
             ),
             const SizedBox(height: 10),
-            // _buildGoogleSignInButton(),
           ],
         ),
       ),
@@ -247,41 +237,84 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   }
 
   Widget _buildDesktopLayout() {
-    return Center(
-      child: Container(
-        width: 400,
+    return Expanded(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Color(0xFF222831),
-          border: Border.all(color: Color(0xFF76ABAE), width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: _buildForm(),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: _isLogin ? Offset(-1, 0) : Offset(1, 0),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  );
+                },
+                child: _isLogin
+                    ? _buildFormContainer(
+                  child: _buildForm(),
+                  imagePath: 'assets/therapy-login.jpg',
+                )
+                    : _buildFormContainer(
+                  child: _buildForm(),
+                  imagePath: 'assets/therapy-login.jpg',
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _isLogin = !_isLogin;
-                });
-              },
-              child: Text(_isLogin
-                  ? 'Hala kayıt olmadın mı? Kayıt Ol'
-                  : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
-            ),
-            const SizedBox(height: 10),
-            //_buildGoogleSignInButton(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFormContainer({required Widget child, required String imagePath}) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Color(0xFF222831),
+        border: Border.all(color: Color(0xFF76ABAE), width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  child,
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLogin = !_isLogin;
+                      });
+                    },
+                    child: Text(_isLogin
+                        ? 'Hala kayıt olmadın mı? Kayıt Ol'
+                        : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -341,8 +374,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         style: ElevatedButton.styleFrom(
           backgroundColor: Color(0xFF222831),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(3), // Köşeleri 3 birim yuvarlat
-            side: const BorderSide(color: Color(0xFFEEEEEE), width: 2), // 2 birim border
+            borderRadius: BorderRadius.circular(3),
+            side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
           ),
         ),
         child: const Text('Giriş Yap', style: TextStyle(color: Colors.white),),
@@ -364,7 +397,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         style: TextStyle(color: Colors.white),
         cursorColor: Colors.white,
         decoration: InputDecoration(
-            labelText: 'Adınız',
+          labelText: 'Adınız',
           focusedBorder: OutlineInputBorder(
             borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
             borderRadius: BorderRadius.circular(5),
@@ -374,7 +407,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             borderRadius: BorderRadius.circular(5),
           ),
           labelStyle: const TextStyle(color: Colors.white),
-
         ),
       ),
       const SizedBox(height: 10),
@@ -383,7 +415,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         style: TextStyle(color: Colors.white),
         cursorColor: Colors.white,
         decoration: InputDecoration(
-            labelText: 'E-mail',
+          labelText: 'E-mail',
           focusedBorder: OutlineInputBorder(
             borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
             borderRadius: BorderRadius.circular(5),
@@ -393,7 +425,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             borderRadius: BorderRadius.circular(5),
           ),
           labelStyle: const TextStyle(color: Colors.white),
-
         ),
       ),
       const SizedBox(height: 10),
@@ -402,7 +433,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         style: TextStyle(color: Colors.white),
         cursorColor: Colors.white,
         decoration: InputDecoration(
-            labelText: 'Şifre',
+          labelText: 'Şifre',
           focusedBorder: OutlineInputBorder(
             borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
             borderRadius: BorderRadius.circular(5),
@@ -412,7 +443,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
             borderRadius: BorderRadius.circular(5),
           ),
           labelStyle: const TextStyle(color: Colors.white),
-
         ),
         obscureText: true,
       ),
@@ -423,7 +453,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
           style: TextStyle(color: Colors.white),
           cursorColor: Colors.white,
           decoration: InputDecoration(
-              labelText: 'Referans Kodu (Opsiyonel)',
+            labelText: 'Referans Kodu (Opsiyonel)',
             focusedBorder: OutlineInputBorder(
               borderSide: const BorderSide(width: 2, color: Color(0xFF76ABAE)),
               borderRadius: BorderRadius.circular(5),
@@ -433,7 +463,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
               borderRadius: BorderRadius.circular(5),
             ),
             labelStyle: const TextStyle(color: Colors.white),
-
           ),
         ),
       ],
@@ -453,7 +482,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
               borderRadius: BorderRadius.circular(5),
             ),
             labelStyle: const TextStyle(color: Colors.white),
-
           ),
         ),
         const SizedBox(height: 10),
@@ -473,13 +501,10 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
               borderRadius: BorderRadius.circular(5),
             ),
             labelStyle: const TextStyle(color: Colors.white),
-
           ),
         ),
       ],
       const SizedBox(height: 20),
-      //BirthdateInputWidget(dateController: _dateController),
-      const SizedBox(height: 20.0),
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
@@ -501,54 +526,27 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         ],
       ),
       const SizedBox(height: 20),
-
       ElevatedButton(
-        onPressed: () async
-        {
+        onPressed: () async {
           await _signup();
         },
         style: ElevatedButton.styleFrom(
-        backgroundColor: Color(0xFF222831),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(3),
-          side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+          backgroundColor: Color(0xFF222831),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(3),
+            side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+          ),
         ),
-      ),
         child: const Text('Kayıt Ol', style: TextStyle(color: Colors.white),),
       ),
-
     ];
-  }
-
-  Widget _buildGoogleSignInButton() {
-    return ElevatedButton.icon(
-      onPressed: _loginWithGoogle,
-      icon: Image.network(
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
-        height: 24.0,
-        width: 24.0,
-      ),
-      label: const Text('Google ile Giriş Yap'),
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.black,
-        backgroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 50),
-        // Set the button to fill the width
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        side: const BorderSide(color: Colors.grey),
-      ),
-    );
   }
 
   Future<void> _login() async {
     try {
       User? user = await AuthService().signInWithEmail(_emailController.text, _passwordController.text);
-      // Login başarılı, ana sayfaya yönlendir
       context.go("/profile/" + user!.uid);
     } on FirebaseAuthException catch (e) {
-      // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Giriş hatası')),
       );
@@ -566,10 +564,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       } else {
         await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, _studentNameController.text, _problemController.text, 21, "Ankara", "", _referenceController.text);
       }
-      // Kayıt başarılı, giriş ekranına yönlendir
       context.go("/profile/" + user.uid);
     } on FirebaseAuthException catch (e) {
-      // Hata mesajını göster
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Kayıt hatası')),
       );
@@ -577,16 +573,15 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   }
 
   Future<void> _showChangePasswordDialog(BuildContext context, String email) async {
-    TextEditingController emailController =
-    TextEditingController(text: email);
+    TextEditingController emailController = TextEditingController(text: email);
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (BuildContext context) {
         return Container(
           decoration: BoxDecoration(
-            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
+            color: Color(0xFF222831),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           padding: EdgeInsets.only(
@@ -639,25 +634,64 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       },
     );
   }
-
 }
 
-class HeaderSection extends StatelessWidget {
+class HeaderButton extends StatelessWidget {
+  final String title;
+  final String route;
+
+  const HeaderButton({required this.title, required this.route});
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF222831),
-      child: const Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(height: 15,),
-            Text("Vitament'e Giriş Yap", style: TextStyle(color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 25),),
-            SizedBox(height: 5,),
+    return TextButton(
+      onPressed: () => context.go(route),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: Color(0xFF0344A3),
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
 
-          ],
+class RoleButton extends StatelessWidget {
+  final String role;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  RoleButton({required this.role, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFF76ABAE) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12.0),
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.5),
+              spreadRadius: 2,
+              blurRadius: 10,
+            ),
+          ]
+              : [],
+        ),
+        child: Text(
+          role,
+          style: TextStyle(
+            fontSize: 18.0,
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -762,42 +796,3 @@ class _BirthdateInputExampleState extends State<BirthdateInputExample> {
   }
 }
 
-class RoleButton extends StatelessWidget {
-  final String role;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  RoleButton({required this.role, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        decoration: BoxDecoration(
-          color: isSelected ? Color(0xFF76ABAE) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12.0),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.5),
-              spreadRadius: 2,
-              blurRadius: 10,
-            ),
-          ]
-              : [],
-        ),
-        child: Text(
-          role,
-          style: TextStyle(
-            fontSize: 18.0,
-            color: isSelected ? Colors.white : Colors.black,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-}

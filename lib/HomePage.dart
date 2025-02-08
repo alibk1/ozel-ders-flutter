@@ -199,8 +199,7 @@ class _HomePageState extends State<HomePage> {
     return Row(
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
-        HeaderButton(title: 'Kategoriler', route: '/categories'),
-        HeaderButton(title: 'Terapiler', route: '/courses'),
+        HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
         HeaderButton(title: 'Blog', route: '/blogs'),
         if (isLoggedIn)
           HeaderButton(
@@ -243,7 +242,7 @@ class _HomePageState extends State<HomePage> {
             ).animate().fadeIn(delay: 300.ms),
             SizedBox(height: 20),
             Text(
-              'Lisanslı terapistlerle online çözümler',
+              'Lisanslı danışmanlarla online çözümler',
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 color: Colors.white70,
@@ -429,8 +428,7 @@ class HeaderMenu extends StatelessWidget implements PreferredSizeWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           HeaderMenuItem(title: 'Ana Sayfa', route: '/'),
-          HeaderMenuItem(title: 'Kategoriler', route: '/categories'),
-          HeaderMenuItem(title: 'Terapiler', route: '/courses'),
+          HeaderMenuItem(title: 'Danışmanlıklar', route: '/courses'),
           HeaderMenuItem(title: 'Blog', route: '/blogs'),
           if (isLoggedIn)
             HeaderMenuItem(
@@ -682,8 +680,8 @@ class FeatureGrid extends StatelessWidget {
         children: [
           FeatureCard(
             icon: FontAwesomeIcons.userMd,
-            title: 'Uzman\nTerapistler',
-            description: 'Alanında uzman terapistlerimizle hizmetinizdeyiz.',
+            title: 'Uzman\nDanışmanlar',
+            description: 'Alanında uzman danışmanlarımızla hizmetinizdeyiz.',
           ),
           FeatureCard(
             icon: FontAwesomeIcons.stethoscope,
@@ -713,8 +711,8 @@ class FeatureGrid extends StatelessWidget {
         children: [
           FeatureCard(
             icon: FontAwesomeIcons.userMd,
-            title: 'Uzman\nTerapistler',
-            description: 'Alanında uzman terapistlerimizle hizmetinizdeyiz.',
+            title: 'Uzman\nDanışmanlar',
+            description: 'Alanında uzman danışmanlarımızla hizmetinizdeyiz.',
           ),
           FeatureCard(
             icon: FontAwesomeIcons.stethoscope,

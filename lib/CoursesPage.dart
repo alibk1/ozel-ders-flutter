@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/HomePage.dart';
@@ -101,6 +102,43 @@ class _CoursesPageState extends State<CoursesPage> {
       courses = filteredCourses;
       isLoading = false;
     });
+  }
+
+  Widget _buildHeaderSection() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_primaryColor, _darkColor],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Danışmanlıklar",
+            style: GoogleFonts.poppins(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          // İsteğe bağlı: kısa açıklama ekleyebilirsiniz
+          SizedBox(height: 10),
+          Text(
+            "İhtiyacınız olan her şey burada...",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showFilterModal(BuildContext context) {
@@ -397,6 +435,7 @@ class _CoursesPageState extends State<CoursesPage> {
         child: CustomScrollView(
           slivers: [
             _buildAppBar(isMobile),
+            SliverToBoxAdapter(child: _buildHeaderSection()),
             SliverPadding(
               padding: EdgeInsets.symmetric(
                 horizontal: isMobile ? 20 : screenWidth * 0.2, // Ekran genişliğinin 3/5'i
@@ -519,8 +558,7 @@ class _CoursesPageState extends State<CoursesPage> {
     return Row(
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
-        HeaderButton(title: 'Kategoriler', route: '/categories'),
-        HeaderButton(title: 'Terapiler', route: '/courses'),
+        HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
         HeaderButton(title: 'Blog', route: '/blogs'),
         if (isLoggedIn)
           HeaderButton(

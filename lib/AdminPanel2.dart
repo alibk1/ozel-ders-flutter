@@ -118,7 +118,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: 'Terapiler'),
+            Tab(text: 'Danışmanlıklar'),
             Tab(text: 'Bloglar'),
             Tab(text: 'Kategoriler'),
           ],

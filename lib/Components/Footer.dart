@@ -80,8 +80,8 @@ class FooterSection extends StatelessWidget {
           runSpacing: 12,
           children: [
             _FooterLink(text: 'Ana Sayfa', route: '/', hoverColor: _lightColor.withOpacity(0.2)),
-            _FooterLink(text: 'Kategoriler', route: '/categories', hoverColor: _lightColor.withOpacity(0.2)),
-            _FooterLink(text: 'Terapiler', route: '/courses', hoverColor: _lightColor.withOpacity(0.2)),
+            _FooterLink(text: 'Danışmanlıklar', route: '/courses', hoverColor: _lightColor.withOpacity(0.2)),
+            _FooterLink(text: 'Blog', route: '/blogs', hoverColor: _lightColor.withOpacity(0.2)),
           ],
         ),
         SizedBox(height: 20),
@@ -190,8 +190,8 @@ class FooterSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _FooterLink(text: 'Ana Sayfa', route: '/', hoverColor: _lightColor.withOpacity(0.2)),
-                  _FooterLink(text: 'Kategoriler', route: '/categories', hoverColor: _lightColor.withOpacity(0.2)),
-                  _FooterLink(text: 'Terapiler', route: '/courses', hoverColor: _lightColor.withOpacity(0.2)),
+                  _FooterLink(text: 'Danışmanlıklar', route: '/courses', hoverColor: _lightColor.withOpacity(0.2)),
+                  _FooterLink(text: 'Blog', route: '/blogs', hoverColor: _lightColor.withOpacity(0.2)),
                 ],
               ),
             ],

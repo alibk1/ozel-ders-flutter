@@ -118,7 +118,7 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'En İyi Terapiler',
+                'En İyi Danışmanlıklar',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

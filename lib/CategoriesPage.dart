@@ -113,7 +113,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
             onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: Text('Terapiler', style: TextStyle(
+            child: Text('Danışmanlıklar', style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(

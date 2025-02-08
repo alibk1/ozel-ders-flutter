@@ -8,31 +8,41 @@ import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' 
 import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
-import 'package:ozel_ders/Components/LoadingIndicator.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
+import 'package:ozel_ders/Components/BlogCard.dart';
+import 'package:ozel_ders/Components/Drawer.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'Components/BlogCard.dart';
-import 'Components/Drawer.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'Components/LoadingIndicator.dart';
 
 class ProfilePage extends StatefulWidget {
   final String uid;
-
   ProfilePage({required this.uid});
-
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  // Renk teması – HomePage ve CoursesPage’de kullandığınız renkler:
+  final Color _primaryColor = const Color(0xFFA7D8DB);
+  final Color _backgroundColor = const Color(0xFFEEEEEE);
+  final Color _darkColor = const Color(0xFF3C72C2);
+  final Color _headerTextColor = const Color(0xFF222831);
+  final Color _bodyTextColor = const Color(0xFF393E46);
+
   bool isTeacher = false;
   bool isLoading = true;
   Map<String, dynamic> userInfo = {};
   bool isLoggedIn = false;
   bool isSelf = false;
   bool isCurrentTeam = false;
+  bool _isAppBarExpanded = true;
+
   String teamUidIfCurrent = "";
   String teamNameIfCurrent = "";
   List<Map<String, dynamic>> categories = [];
@@ -63,28 +73,27 @@ class _ProfilePageState extends State<ProfilePage> {
     initData();
   }
 
-
+  /// Veritabanı ve kimlik kontrollerini yapıyoruz
   Future<void> initData() async {
     isLoggedIn = await AuthService().isUserSignedIn();
-  if (isLoggedIn) {
-    String currentUID = AuthService().userUID();
-    var teamCheck = await FirestoreService().getTeamByUID(currentUID);
-    if (teamCheck.isNotEmpty) {
-      isCurrentTeam = true;
-      teamUidIfCurrent = teamCheck["uid"];
-      teamNameIfCurrent = teamCheck["name"];
+    if (isLoggedIn) {
+      String currentUID = AuthService().userUID();
+      var teamCheck = await FirestoreService().getTeamByUID(currentUID);
+      if (teamCheck.isNotEmpty) {
+        isCurrentTeam = true;
+        teamUidIfCurrent = teamCheck["uid"];
+        teamNameIfCurrent = teamCheck["name"];
+      }
+      if (widget.uid == AuthService().userUID()) {
+        isSelf = true;
+      }
     }
-    if (widget.uid == AuthService().userUID()) {
-      isSelf = true;
-    }
-  }
     var teamCheck = await FirestoreService().getTeamByUID(widget.uid);
     if (teamCheck.isNotEmpty) {
       String uid = teamCheck["uid"];
       context.go("/team/$uid");
     }
     userInfo = await FirestoreService().getTeacherByUID(widget.uid);
-
     if (userInfo.isNotEmpty) {
       isTeacher = true;
       notifications = await FirestoreService().getNotificationsForTeacher(widget.uid);
@@ -94,20 +103,18 @@ class _ProfilePageState extends State<ProfilePage> {
       isTeacher = false;
     }
     appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
-    print(notifications);
     categories = await FirestoreService().getCategories();
 
-    if(isSelf && !isTeacher && userInfo["hasPersonalCheck"] == false)
-    {
+    if (isSelf && !isTeacher && userInfo["hasPersonalCheck"] == false) {
       AwesomeDialog(
-          context: context,
-          dialogType: DialogType.warning,
-          animType: AnimType.bottomSlide,
-          btnOkText: "Tamam",
-          title: 'Bireysel Değerlendirme',
-          desc: 'Başka Terapi Almadan Önce "Bireysel Değerlendirme" Terapisi Almanız Gerekmektedir. Terapiler Sayfasından Bireysel Değerlendirme Terapisi Alabilirsiniz.',
-          btnOkOnPress: () {
-          },
+        context: context,
+        dialogType: DialogType.warning,
+        animType: AnimType.bottomSlide,
+        btnOkText: "Tamam",
+        title: 'Bireysel Değerlendirme',
+        desc:
+        'Başka Terapi Almadan Önce "Bireysel Değerlendirme" Terapisi Almanız Gerekmektedir. Danışmanlıklar Sayfasından Bireysel Değerlendirme Terapisi Alabilirsiniz.',
+        btnOkOnPress: () {},
       ).show();
     }
 
@@ -116,232 +123,205 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-
-  Future<void> _showChangePhotoDialog(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
+  /// build() – Ekran genişliğine göre mobil / masaüstü versiyonlarını ayırıyoruz.
+  @override
+  Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 800;
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: _backgroundColor,
+      // AppBar’da HomePage ve CoursesPage’deki gibi sade, şeffaf arka plan ve logo animasyonu
+      drawer: isMobile ? DrawerMenu(isLoggedIn: isLoggedIn) : null,
+      body: isLoading
+          ? Center(
+        child: LoadingAnimationWidget.dotsTriangle(
+            color: _darkColor, size: 200),
+      )
+          : SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(isMobile),   // SliverAppBar
+            SliverToBoxAdapter(
+              child: isMobile
+                  ? _buildMobileProfile()
+                  : _buildDesktopProfile(),
+            ),
+          ],
+        ),
+      ),
     );
+  }
 
-    if (result != null && result.files.single.bytes != null) {
-      final fileBytes = result.files.single.bytes!;
-      final fileName = result.files.single.name;
-
-      // Yükleniyor animasyonu
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Center(
-            child: LoadingAnimationWidget.twistingDots(
-                leftDotColor: Color(0xFF222831),
-                rightDotColor: Color(0xFF663366),
-                size: 100),
+  SliverAppBar _buildSliverAppBar(bool isMobile) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      pinned: true,
+      expandedHeight: 120,
+      centerTitle: isMobile || _isAppBarExpanded,
+      leading: isMobile
+          ? IconButton(
+        icon: Icon(Icons.menu, color: Colors.white),
+        onPressed: () => _scaffoldKey.currentState!.openDrawer(),
+      )
+          : null,
+      title: AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        child: _isAppBarExpanded
+            ? Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 50 : 70,
+          key: ValueKey('expanded-logo'),
+        ).animate().fadeIn(duration: 500.ms)
+            : Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 50,
+            key: ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
+      actions: isMobile ? null : _buildDesktopMenuActions(),
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final isExpanded = constraints.maxHeight > kToolbarHeight;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_isAppBarExpanded != isExpanded) {
+              setState(() {
+                _isAppBarExpanded = isExpanded;
+              });
+            }
+          });
+          return FlexibleSpaceBar(
+            background: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _backgroundColor,
+                    _primaryColor.withOpacity(0.1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
           );
         },
-      );
-
-      try {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('profile_photos')
-            .child(widget.uid)
-            .child(fileName);
-
-        final uploadTask = storageRef.putData(fileBytes);
-        final snapshot = await uploadTask.whenComplete(() => null);
-        final downloadUrl = await snapshot.ref.getDownloadURL();
-
-        await FirestoreService()
-            .changeUserPhoto(widget.uid, downloadUrl, isTeacher);
-        setState(() {
-          userInfo['profilePictureUrl'] = downloadUrl;
-        });
-
-        // Yükleniyor animasyonunu kapat
-        Navigator.of(context).pop();
-      } catch (e) {
-        // Yükleniyor animasyonunu kapat
-        Navigator.of(context).pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profil fotoğrafı yüklenirken hata oluştu')),
-        );
-      }
-    }
-  }
-
-  Future<void> _showChangeDescDialog(BuildContext context) async {
-    TextEditingController descController =
-    TextEditingController(text: userInfo['desc']);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
-          ),
-          child: Wrap(
-            children: [
-              Text('Açıklamayı Değiştir',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              SizedBox(height: 10),
-              TextField(
-                controller: descController,
-                maxLines: 5,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Yeni Açıklama',
-                  hintStyle: TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Color(0xFF393E46),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  await FirestoreService().changeUserDesc(
-                      widget.uid, descController.text, isTeacher);
-                  setState(() {
-                    userInfo['desc'] = descController.text;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Text('Kaydet'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF76ABAE),
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
-                ),
-              ),
-              SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
+      ),
     );
   }
 
-  Future<void> _showChangeNameDialog(BuildContext context) async {
-    TextEditingController nameController =
-    TextEditingController(text: userInfo['name']);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+
+  List<Widget> _buildDesktopMenuActions() {
+    return [
+      TextButton(
+        onPressed: () => context.go('/'),
+        child: Text(
+          'Ana Sayfa',
+          style: GoogleFonts.poppins(
+              color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      TextButton(
+        onPressed: () => context.go('/courses'),
+        child: Text(
+          'Danışmanlıklar',
+          style: GoogleFonts.poppins(
+              color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      TextButton(
+        onPressed: () => context.go('/blogs'),
+        child: Text(
+          'Blog',
+          style: GoogleFonts.poppins(
+              color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      if (isLoggedIn)
+        TextButton(
+          onPressed: () =>
+              context.go('/appointments/${AuthService().userUID()}'),
+          child: Text(
+            'Randevularım',
+            style: GoogleFonts.poppins(
+                color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
-          ),
-          child: Wrap(
-            children: [
-              Text('İsmi Değiştir',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              SizedBox(height: 10),
-              TextField(
-                controller: nameController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Yeni İsim',
-                  hintStyle: TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Color(0xFF393E46),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  await FirestoreService()
-                      .changeUserName(widget.uid, nameController.text, isTeacher);
-                  setState(() {
-                    userInfo['name'] = nameController.text;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Text('Kaydet'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF76ABAE),
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
-                ),
-              ),
-              SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
+        ),
+      TextButton(
+        onPressed: () => context.go(isLoggedIn
+            ? '/profile/${AuthService().userUID()}'
+            : '/login'),
+        child: Text(
+          isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
+          style: GoogleFonts.poppins(
+              color: isSelf ? _primaryColor : Colors.white,
+              fontWeight: FontWeight.bold),
+        ),
+      ),
+    ];
+  }
+
+  // ************************ Mobil Versiyon ************************
+
+  Widget _buildMobileProfile() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildProfileHeader(),
+          const SizedBox(height: 16),
+          _buildAboutSection(isExpanded: true),
+          const SizedBox(height: 16),
+          _buildCoursesSection(isExpanded: true),
+          const SizedBox(height: 16),
+          _buildBlogsSection(isExpanded: true),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
-  Future<void> _showLogOutDialog(BuildContext context) async {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
-      builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: EdgeInsets.all(16.0),
-          child: Wrap(
+  // ************************ Masaüstü Versiyon ************************
+
+// Masaüstü:
+  Widget _buildDesktopProfile() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 1200),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Çıkış Yapmak İstiyor Musunuz?',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  bool a = await AuthService().signOut();
-                  if (a)
-                    context.go("/login");
-                  else
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),
-                    );
-                },
-                child: Text('Evet, Çıkış Yap'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
-                ),
+              _buildProfileHeader(),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Soldaki 'Hakkında' bölümü
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: _buildAboutSection(isExpanded: false),
+                  ),
+                  const SizedBox(width: 16),
+                  // Sağ tarafta kurslar/blog
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildCoursesSection(isExpanded: false),
+                        SizedBox(height: 16),
+                        _buildBlogsSection(isExpanded: false),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -584,20 +564,20 @@ class _ProfilePageState extends State<ProfilePage> {
                                   else if(firstSelectedDate.isAfter(secondSelectedDate))
                                   {
                                     AwesomeDialog(
-                                      context: context,
-                                      dialogType: DialogType.error,
-                                      animType: AnimType.bottomSlide,
-                                      body: const Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: Text(
-                                          'Hatalı veya Eksik Bilgi (Tarihleri Kontrol Ediniz)',
-                                          style: TextStyle(fontSize: 16),
+                                        context: context,
+                                        dialogType: DialogType.error,
+                                        animType: AnimType.bottomSlide,
+                                        body: const Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: Text(
+                                            'Hatalı veya Eksik Bilgi (Tarihleri Kontrol Ediniz)',
+                                            style: TextStyle(fontSize: 16),
+                                          ),
                                         ),
-                                      ),
-                                      dismissOnTouchOutside: false,
-                                      dismissOnBackKeyPress: false,
-                                      btnOkText: "Tamam",
-                                      btnOkOnPress: () {}
+                                        dismissOnTouchOutside: false,
+                                        dismissOnBackKeyPress: false,
+                                        btnOkText: "Tamam",
+                                        btnOkOnPress: () {}
                                     ).show();
                                   }
                                   await initData();
@@ -610,12 +590,12 @@ class _ProfilePageState extends State<ProfilePage> {
                               ).show();
                             },
                             style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF222831),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(3),
-                              side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+                              backgroundColor: Color(0xFF222831),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(3),
+                                side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+                              ),
                             ),
-                          ),
                             child: const Text('Çoklu Müsaitlik Ayarlama', style: TextStyle(color: Colors.white),),
                           ),
                         ),
@@ -825,7 +805,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     "Randevuya Ayırdığın Saati İptal Et",
                                     style: TextStyle(color: Colors.red),),
                                 ) :
-                                    ElevatedButton(
+                                ElevatedButton(
                                   onPressed: () async {
                                     AwesomeDialog(
                                       context: context,
@@ -860,7 +840,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         userInfo = await FirestoreService().getTeacherByUID(widget.uid);
                                         setState((){});
                                         setState2((){});
-                                        },
+                                      },
                                       btnCancelOnPress: () {},
                                     ).show();
 
@@ -891,45 +871,581 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildProfileHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_darkColor, _primaryColor.withOpacity(0.6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 50,
+            backgroundImage: userInfo['profilePictureUrl'] != null
+                ? NetworkImage(userInfo['profilePictureUrl'])
+                : const AssetImage('assets/default_profile.png')
+            as ImageProvider,
+          ).animate().fadeIn(duration: 500.ms),
+          if (isSelf)
+            TextButton(
+              onPressed: () => _showChangePhotoDialog(context),
+              child: Text(
+                "Profil Fotoğrafını Değiştir",
+                style: GoogleFonts.poppins(
+                    color: Colors.white, fontStyle: FontStyle.italic),
+              ),
+            ),
+          const SizedBox(height: 5),
+          // İsim ve düzenleme / çıkış seçenekleri:
+          isSelf
+              ? Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: "İsmi Düzenle",
+                onPressed: () => _showChangeNameDialog(context),
+                icon: const Icon(Icons.edit_note, color: Colors.white),
+              ),
+              const SizedBox(width: 15),
+              Text(
+                userInfo['name'] ?? '',
+                style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: _headerTextColor),
+              ).animate().fadeIn(duration: 500.ms),
+              const SizedBox(width: 15),
+              IconButton(
+                tooltip: "Çıkış Yap",
+                onPressed: () => _showLogOutDialog(context),
+                icon: const Icon(Icons.logout, color: Colors.red),
+              ),
+            ],
+          )
+              : (!isSelf && !isCurrentTeam
+              ? Text(
+            userInfo['name'] ?? '',
+            style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _headerTextColor),
+          ).animate().fadeIn(duration: 500.ms)
+              : Column(
+            children: [
+              Text(
+                userInfo['name'] ?? '',
+                style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: _headerTextColor),
+              ).animate().fadeIn(duration: 500.ms),
+              TextButton(
+                onPressed: () => _showOurEmployeeDialog(context),
+                child: Text(
+                  "Bu Kişi Benim Ekibimden",
+                  style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.white),
+                ),
+              )
+            ],
+          )),
+          const SizedBox(height: 10),
+          if (isSelf)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                NotificationIconButtonWithBadge(
+                  userType: isTeacher ? UserType.teacher : UserType.student,
+                  userUID: widget.uid,
+                ),
+                if (isTeacher)
+                  IconButton(
+                    onPressed: () => showAppointmentsBottomSheet(context),
+                    icon: const Icon(Icons.calendar_month, color: Colors.white),
+                  ),
+                const SizedBox(width: 4),
+                Text(
+                  isTeacher ? 'Eğitimci' : 'Öğrenci',
+                  style: GoogleFonts.poppins(fontSize: 18, color: Colors.white),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  // **************** Hakkında (About) Bölümü ****************
+
+  Widget _buildAboutSection({required bool isExpanded}) {
+    Widget content = Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        userInfo['desc'] ?? '',
+        style: GoogleFonts.poppins(fontSize: 15, color: _bodyTextColor),
+      ),
+    );
+    return isExpanded
+        ? Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        title: Text(
+          'Hakkında',
+          style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: _headerTextColor),
+        ),
+        trailing: isSelf
+            ? IconButton(
+          tooltip: "Hakkında'yı Düzenle",
+          onPressed: () => _showChangeDescDialog(context),
+          icon: const Icon(Icons.edit_note, color: Colors.black),
+        )
+            : null,
+        children: [content],
+      ),
+    )
+        : Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: content,
+    );
+  }
+
+  // **************** Kurslar (Danışmanlıklar) Bölümü ****************
+
+  Widget _buildCoursesSection({required bool isExpanded}) {
+    Widget content = Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isTeacher ? 'Verdiği Danışmanlıklar' : 'Aldığı Danışmanlıklar',
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _headerTextColor),
+            ),
+            if (isSelf ||
+                (isCurrentTeam && teamUidIfCurrent == userInfo["reference"]))
+              IconButton(
+                onPressed: () => _showCreateCourseDialog(context),
+                icon: const Icon(Icons.add_circle, color: Colors.black),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        CarouselSlider(
+          options: CarouselOptions(
+            aspectRatio: 1,
+            enlargeCenterPage: true,
+            enableInfiniteScroll: false,
+            scrollDirection: Axis.vertical,
+          ),
+          items: (userInfo['courses'] as List<dynamic>?)
+              ?.map<Widget>((courseId) {
+            return FutureBuilder<Map<String, dynamic>>(
+              future: FirestoreService().getCourseByUID(courseId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(
+                      child: Text('Hata: ${snapshot.error}',
+                          style: GoogleFonts.poppins(color: _bodyTextColor)));
+                } else if (!snapshot.hasData) {
+                  return Center(
+                      child: Text('Veri yok',
+                          style: GoogleFonts.poppins(color: _bodyTextColor)));
+                } else {
+                  final courseData = snapshot.data!;
+                  return FutureBuilder<Map<String, dynamic>>(
+                    future: FirestoreService().getTeacherByUID(courseData["author"]),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(
+                            child: Text('Hata: ${snapshot.error}',
+                                style: GoogleFonts.poppins(color: _bodyTextColor)));
+                      } else if (!snapshot.hasData) {
+                        return Center(
+                            child: Text('Veri yok',
+                                style: GoogleFonts.poppins(color: _bodyTextColor)));
+                      } else {
+                        final authorData = snapshot.data!;
+                        return CourseCard(course: courseData, author: authorData);
+                      }
+                    },
+                  );
+                }
+              },
+            );
+          }).toList() ??
+              [],
+        ),
+      ],
+    ).animate().fadeIn(duration: 500.ms);
+    return isExpanded
+        ? Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: content,
+      ),
+    )
+        : content;
+  }
+
+  // **************** Bloglar Bölümü ****************
+
+  Widget _buildBlogsSection({required bool isExpanded}) {
+    Widget content = Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Yazdığı Bloglar',
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _headerTextColor),
+            ),
+            if (isSelf)
+              IconButton(
+                onPressed: () {
+                  context.go("/blog-create/${userInfo["uid"]}");
+                },
+                icon: const Icon(Icons.add_circle, color: Colors.black),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder<List<Map<String, dynamic>>>(
+          future: isTeacher
+              ? FirestoreService().getTeacherBlogs(widget.uid)
+              : Future.value([]),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                  height: 50,
+                  child: Center(child: CircularProgressIndicator()));
+            } else if (snapshot.hasError) {
+              return Text('Hata: ${snapshot.error}',
+                  style: GoogleFonts.poppins(color: _bodyTextColor));
+            } else {
+              final blogs = snapshot.data ?? [];
+              if (blogs.isEmpty) {
+                return Text('Henüz blog yok.',
+                    style: GoogleFonts.poppins(color: _bodyTextColor));
+              } else {
+                return CarouselSlider(
+                  options: CarouselOptions(
+                    aspectRatio: 3,
+                    height: 300.0,
+                    enableInfiniteScroll: false,
+                    enlargeCenterPage: true,
+                    scrollDirection: Axis.horizontal,
+                  ),
+                  items: blogs.map((blog) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 300,
+                          width: 500,
+                          child: BlogCard(blog: blog),
+                        ),
+                        if (isSelf)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: IconButton(
+                              icon: const Icon(Icons.build_circle,
+                                  color: Colors.black, size: 35),
+                              onPressed: () {
+                                context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
+                              },
+                            ),
+                          ),
+                      ],
+                    );
+                  }).toList(),
+                );
+              }
+            }
+          },
+        ),
+      ],
+    ).animate().fadeIn(duration: 500.ms);
+    return isExpanded
+        ? Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: content,
+      ),
+    )
+        : content;
+  }
+
+  // **************** Diyalog ve Yardımcı Metotlar ****************
+  Future<void> _showChangePhotoDialog(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+    if (result != null && result.files.single.bytes != null) {
+      final fileBytes = result.files.single.bytes!;
+      final fileName = result.files.single.name;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: LoadingAnimationWidget.twistingDots(
+                leftDotColor: _darkColor,
+                rightDotColor: Colors.deepPurple,
+                size: 100),
+          );
+        },
+      );
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_photos')
+            .child(widget.uid)
+            .child(fileName);
+        final uploadTask = storageRef.putData(fileBytes);
+        final snapshot = await uploadTask.whenComplete(() => null);
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        await FirestoreService().changeUserPhoto(widget.uid, downloadUrl, isTeacher);
+        setState(() {
+          userInfo['profilePictureUrl'] = downloadUrl;
+        });
+        Navigator.of(context).pop();
+      } catch (e) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil fotoğrafı yüklenirken hata oluştu')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showChangeDescDialog(BuildContext context) async {
+    TextEditingController descController = TextEditingController(text: userInfo['desc']);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _backgroundColor,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              left: 16,
+              right: 16,
+              top: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Açıklamayı Değiştir',
+                  style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _headerTextColor)),
+              const SizedBox(height: 10),
+              TextField(
+                controller: descController,
+                maxLines: 5,
+                style: GoogleFonts.poppins(color: _bodyTextColor),
+                decoration: InputDecoration(
+                  hintText: 'Yeni Açıklama',
+                  hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  await FirestoreService().changeUserDesc(widget.uid, descController.text, isTeacher);
+                  setState(() {
+                    userInfo['desc'] = descController.text;
+                  });
+                  Navigator.pop(context);
+                },
+                child: Text('Kaydet', style: GoogleFonts.poppins()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showChangeNameDialog(BuildContext context) async {
+    TextEditingController nameController = TextEditingController(text: userInfo['name']);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _backgroundColor,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              left: 16,
+              right: 16,
+              top: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('İsmi Değiştir',
+                  style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _headerTextColor)),
+              const SizedBox(height: 10),
+              TextField(
+                controller: nameController,
+                style: GoogleFonts.poppins(color: _bodyTextColor),
+                decoration: InputDecoration(
+                  hintText: 'Yeni İsim',
+                  hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
+                  setState(() {
+                    userInfo['name'] = nameController.text;
+                  });
+                  Navigator.pop(context);
+                },
+                child: Text('Kaydet', style: GoogleFonts.poppins()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showLogOutDialog(BuildContext context) async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _backgroundColor,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Wrap(
+            children: [
+              Text('Çıkış Yapmak İstiyor Musunuz?',
+                  style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _headerTextColor)),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  bool a = await AuthService().signOut();
+                  if (a)
+                    context.go("/login");
+                  else
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Çıkış Yapılırken Hata Oluştu')),
+                    );
+                },
+                child: Text('Evet, Çıkış Yap', style: GoogleFonts.poppins()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showOurEmployeeDialog(BuildContext context) async {
     String type = isTeacher ? "Eğitimci" : "Öğrenci";
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      backgroundColor: _backgroundColor,
       builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: EdgeInsets.all(16.0),
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Wrap(
             children: [
               Text('Bu $type Sizin Ekibinizden Mi?',
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              SizedBox(height: 20),
+                      color: _headerTextColor)),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   if (isTeacher) {
-                    await FirestoreService().sendRFromTeamToTeacher(
-                        widget.uid, teamUidIfCurrent, teamNameIfCurrent);
+                    await FirestoreService().sendRFromTeamToTeacher(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
                   } else {
-                    await FirestoreService().sendRFromTeamToStudent(
-                        widget.uid, teamUidIfCurrent, teamNameIfCurrent);
+                    await FirestoreService().sendRFromTeamToStudent(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
                   }
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Katılma isteği gönderildi')),
+                    const SnackBar(content: Text('Katılma isteği gönderildi')),
                   );
                 },
-                child: Text('Evet, Katılma İsteği Gönder'),
+                child: Text('Evet, Katılma İsteği Gönder', style: GoogleFonts.poppins()),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF76ABAE),
+                  backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size(double.infinity, 50),
                 ),
               ),
             ],
@@ -950,10 +1466,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     void updateSubCategories() {
       if (selectedCategory != null) {
-        final category = categories.firstWhere(
-                (category) => category['uid'] == selectedCategory);
-        subCategories =
-        List<Map<String, dynamic>>.from(category['subCategories']);
+        final category = categories.firstWhere((cat) => cat['uid'] == selectedCategory);
+        subCategories = List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
         subCategories = [];
       }
@@ -962,70 +1476,63 @@ class _ProfilePageState extends State<ProfilePage> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent, // Arka planı saydam yapıyoruz
+      backgroundColor: _backgroundColor,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Color(0xFF222831), // Arka plan rengini ayarlıyoruz
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                left: 16.0,
-                right: 16.0,
-                top: 16.0,
-              ),
-              child: SingleChildScrollView(
+        return Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              left: 16,
+              right: 16,
+              top: 16),
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              return SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('Yeni Kurs Oluştur',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white)),
-                    SizedBox(height: 16),
+                            color: _headerTextColor)),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: nameController,
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.poppins(color: _bodyTextColor),
                       decoration: InputDecoration(
                         hintText: 'Kurs Adı',
-                        hintStyle: TextStyle(color: Colors.white70),
+                        hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
                         filled: true,
-                        fillColor: Color(0xFF393E46),
+                        fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: descController,
                       maxLines: 5,
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.poppins(color: _bodyTextColor),
                       decoration: InputDecoration(
                         hintText: 'Kurs Açıklaması',
-                        hintStyle: TextStyle(color: Colors.white70),
+                        hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
                         filled: true,
-                        fillColor: Color(0xFF393E46),
+                        fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      dropdownColor: Color(0xFF393E46),
+                      dropdownColor: Colors.white,
                       value: selectedCategory,
-                      hint: Text('Kategori Seç',
-                          style: TextStyle(color: Colors.white70)),
-                      iconEnabledColor: Colors.white70,
+                      hint: Text('Kategori Seç', style: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7))),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: Color(0xFF393E46),
+                        fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1036,25 +1543,22 @@ class _ProfilePageState extends State<ProfilePage> {
                           updateSubCategories();
                         });
                       },
-                      items: categories.map<DropdownMenuItem<String>>((category) {
+                      items: categories.map<DropdownMenuItem<String>>((cat) {
                         return DropdownMenuItem<String>(
-                          value: category['uid'],
-                          child: Text(category['name'],
-                              style: TextStyle(color: Colors.white)),
+                          value: cat['uid'],
+                          child: Text(cat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
                         );
                       }).toList(),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     if (selectedCategory != null)
                       DropdownButtonFormField<String>(
-                        dropdownColor: Color(0xFF393E46),
+                        dropdownColor: Colors.white,
                         value: selectedSubCategory,
-                        hint: Text('Alt Kategori Seç',
-                            style: TextStyle(color: Colors.white70)),
-                        iconEnabledColor: Colors.white70,
+                        hint: Text('Alt Kategori Seç', style: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7))),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Color(0xFF393E46),
+                          fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -1064,44 +1568,39 @@ class _ProfilePageState extends State<ProfilePage> {
                             selectedSubCategory = newValue;
                           });
                         },
-                        items: subCategories
-                            .map<DropdownMenuItem<String>>((subCategory) {
+                        items: subCategories.map<DropdownMenuItem<String>>((subCat) {
                           return DropdownMenuItem<String>(
-                            value: subCategory['uid'],
-                            child: Text(subCategory['name'],
-                                style: TextStyle(color: Colors.white)),
+                            value: subCat['uid'],
+                            child: Text(subCat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
                           );
                         }).toList(),
                       ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.poppins(color: _bodyTextColor),
                       decoration: InputDecoration(
                         hintText: 'Saatlik Ücret',
-                        hintStyle: TextStyle(color: Colors.white70),
+                        hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
                         filled: true,
-                        fillColor: Color(0xFF393E46),
+                        fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         final result = await FilePicker.platform.pickFiles(
                           type: FileType.image,
                           allowMultiple: true,
                         );
-
                         if (result != null) {
                           if (result.files.length > 4) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      'En fazla 4 fotoğraf seçebilirsiniz')),
+                              const SnackBar(content: Text('En fazla 4 fotoğraf seçebilirsiniz')),
                             );
                           } else {
                             setModalState(() {
@@ -1110,14 +1609,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           }
                         }
                       },
-                      child: Text('Fotoğrafları Seç (${photos.length})'),
+                      child: Text('Fotoğrafları Seç (${photos.length})', style: GoogleFonts.poppins()),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,
-                        minimumSize: Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 50),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     if (photos.isNotEmpty)
                       CarouselSlider(
                         options: CarouselOptions(
@@ -1139,7 +1638,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 top: 8.0,
                                 right: 8.0,
                                 child: IconButton(
-                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete, color: Colors.red),
                                   onPressed: () {
                                     setModalState(() {
                                       photos.remove(file);
@@ -1151,7 +1650,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
                         }).toList(),
                       ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () async {
                         try {
@@ -1161,33 +1660,30 @@ class _ProfilePageState extends State<ProfilePage> {
                               selectedSubCategory != null &&
                               priceController.text.isNotEmpty &&
                               photos.isNotEmpty) {
-                            // Yükleniyor animasyonu
                             showDialog(
                               context: context,
                               barrierDismissible: false,
                               builder: (BuildContext context) {
                                 return Center(
                                   child: LoadingAnimationWidget.twistingDots(
-                                      leftDotColor: Color(0xFF222831),
-                                      rightDotColor: Color(0xFF663366),
+                                      leftDotColor: _darkColor,
+                                      rightDotColor: Colors.deepPurple,
                                       size: 100),
                                 );
                               },
                             );
-
                             final photoUrls = await Future.wait(
-                                photos.map((photo) async {
-                                  final storageRef = FirebaseStorage.instance
-                                      .ref()
-                                      .child('course_photos')
-                                      .child(widget.uid)
-                                      .child(photo.name);
-                                  final uploadTask = storageRef.putData(photo.bytes!);
-                                  final snapshot =
-                                  await uploadTask.whenComplete(() => null);
-                                  return await snapshot.ref.getDownloadURL();
-                                }).toList());
-
+                              photos.map((photo) async {
+                                final storageRef = FirebaseStorage.instance
+                                    .ref()
+                                    .child('course_photos')
+                                    .child(widget.uid)
+                                    .child(photo.name);
+                                final uploadTask = storageRef.putData(photo.bytes!);
+                                final snapshot = await uploadTask.whenComplete(() => null);
+                                return await snapshot.ref.getDownloadURL();
+                              }).toList(),
+                            );
                             await FirestoreService().createCourse(
                               nameController.text,
                               descController.text,
@@ -1197,829 +1693,55 @@ class _ProfilePageState extends State<ProfilePage> {
                               double.parse(priceController.text),
                               photoUrls,
                             );
-
                             Navigator.pop(context); // Yükleniyor animasyonunu kapat
                             Navigator.pop(context); // Modal'ı kapat
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Kurs Onaya Gönderildi')),
+                              const SnackBar(content: Text('Kurs Onaya Gönderildi')),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      'Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
+                              const SnackBar(content: Text('Lütfen tüm alanları doldurun ve en az bir fotoğraf seçin')),
                             );
                           }
                         } catch (e) {
-                          Navigator.pop(context); // Yükleniyor animasyonunu kapat
+                          Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Kurs oluşturulurken bir hata oluştu')),
+                            const SnackBar(content: Text('Kurs oluşturulurken bir hata oluştu')),
                           );
                         }
                       },
-                      child: Text('Oluştur'),
+                      child: Text('Oluştur', style: GoogleFonts.poppins()),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,
-                        minimumSize: Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 50),
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                   ],
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: Color(0xFF222831),
-        title: Image.asset('assets/vitament1.png',
-            height: MediaQuery
-                .of(context)
-                .size
-                .width < 800 ? 60 : 80),
-        centerTitle: MediaQuery
-            .of(context)
-            .size
-            .width < 800 ? true : false,
-        leading: MediaQuery
-            .of(context)
-            .size
-            .width < 800
-            ? IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: () {
-            _scaffoldKey.currentState!.openDrawer();
-          },
-        )
-            : null,
-        actions: MediaQuery
-            .of(context)
-            .size
-            .width >= 800
-            ? [
-          TextButton(
-            onPressed: () {
-              context.go('/');
-            },
-            child: Text('Ana Sayfa',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/categories'); // CategoriesPage'e yönlendirme
-            },
-            child: Text('Kategoriler',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/courses');
-            },
-            child: Text('Terapiler',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.go('/blogs');
-            },
-            child: Text('Blog',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold)),
-          ),
-          isLoggedIn ? TextButton(
-            onPressed: () {
-              context.go('/appointments/' + AuthService().userUID());
-            },
-            child: Text('Randevularım', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ) : SizedBox.shrink(),
-          TextButton(
-            onPressed: isLoggedIn
-                ? () {
-              print("anan");
-              context.go('/profile/' + AuthService().userUID());
-            }
-                : () {
-              context.go('/login');
-            },
-            child: Text(isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
-                style: TextStyle(
-                    color: isSelf ? Color(0xFF76ABAE) : Colors.white,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ]
-            : null,
-      ),
-      drawer: MediaQuery
-          .of(context)
-          .size
-          .width < 800
-          ? DrawerMenu(isLoggedIn: isLoggedIn)
-          : null,
-      body: isLoading
-          ? Center(
-          child: LoadingAnimationWidget.dotsTriangle(
-              color: Color(0xFF222831), size: 200))
-          : SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Container(
-              padding: EdgeInsets.all(2.0),
-              color: Color(0xFF222831),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 16),
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: userInfo['profilePictureUrl'] != null
-                        ? NetworkImage(userInfo['profilePictureUrl'])
-                        : AssetImage('assets/default_profile.png')
-                    as ImageProvider,
-                  ),
-                  if (isSelf) SizedBox(height: 4),
-                  if (isSelf) TextButton(
-                      onPressed: () {
-                        _showChangePhotoDialog(context);
-                      },
-                      child: Text("Profil Fotoğrafını Değiştir",
-                        style: TextStyle(
-                            color: Colors.white, fontStyle: FontStyle.italic),)
-                  ),
-                  SizedBox(height: 5),
-                  !isSelf
-                      ? !isCurrentTeam ? Text(
-                    userInfo['name'] ?? '',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ) : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        userInfo['name'] ?? '',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          _showOurEmployeeDialog(context);
-                        },
-                        child: Text(
-                          "Bu Kişi Benim Ekibimden",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
-                    ],
-                  )
-                      : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                          tooltip: "İsmi Düzenle",
-                          onPressed: () {
-                            _showChangeNameDialog(context);
-                          },
-                          icon: Icon(
-                            Icons.edit_note,
-                            color: Colors.white,
-                          )
-                      ),
-                      SizedBox(
-                        width: 15,
-                      ),
-                      Text(
-                        userInfo['name'] ?? '',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 15,
-                      ),
-                      IconButton(
-                          tooltip: "Çıkış Yap",
-                          onPressed: () {
-                            _showLogOutDialog(context);
-                          },
-                          icon: Icon(
-                            Icons.logout,
-                            color: Colors.red,
-                          )
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isSelf) SizedBox(height: 4),
-                      if (isSelf) NotificationIconButtonWithBadge(
-                          userType: isTeacher ? UserType.teacher : UserType
-                              .student,
-                          userUID: widget.uid),
-                      if (isSelf && isTeacher) IconButton(onPressed: (){
-                        showAppointmentsBottomSheet(context);
-                      }, icon: Icon(Icons.calendar_month), color: Colors.white,),
-                      if (isSelf && isTeacher) SizedBox(width: 4),
-                      Text(
-                        isTeacher ? 'Eğitimci' : 'Öğrenci',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10,),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: MediaQuery
-                  .of(context)
-                  .size
-                  .width >= 800
-                  ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left side
-                  Expanded(
-                    flex: 4,
-                    child: Card(
-                      color: Color(0xFF222831),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Hakkında',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white),
-                                ),
-                                if (isSelf)
-                                  SizedBox(
-                                    width: 20,
-                                  ),
-                                if (isSelf)
-                                  IconButton(
-                                      tooltip: "Hakkında'yı Düzenle",
-                                      onPressed: () {
-                                        _showChangeDescDialog(
-                                            context);
-                                      },
-                                      icon: Icon(Icons.edit_note,
-                                          color: Colors.white))
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Divider(
-                                thickness: 2, color: Colors.white),
-                            SizedBox(height: 8),
-                            Text(
-                              userInfo['desc'] ?? '',
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  // Right side
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Card(
-                                color: Color(0xFF50727B),
-                                child: Padding(
-                                  padding:
-                                  const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.center,
-                                    children: [
-                                      Column(
-                                        children: [
-                                          !isTeacher ? Text(
-                                            'Aldığı Terapiler',
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight:
-                                                FontWeight
-                                                    .bold,
-                                                color:
-                                                Colors.white),
-                                          )
-                                              : Row(
-                                            mainAxisAlignment: MainAxisAlignment
-                                                .center,
-                                            children: [
-                                              Text(
-                                                'Verdiği Terapiler',
-                                                style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight:
-                                                    FontWeight
-                                                        .bold,
-                                                    color:
-                                                    Colors.white),
-                                              ),
-                                              if(isSelf || isCurrentTeam && teamUidIfCurrent == userInfo["reference"]) SizedBox(width: 10,),
-                                              if(isSelf || isCurrentTeam && teamUidIfCurrent == userInfo["reference"]) IconButton(
-                                                onPressed: () {
-                                                  _showCreateCourseDialog(
-                                                      context);
-                                                },
-                                                icon: Icon(Icons.add_circle,
-                                                  color: Colors.white,),
-                                              ),
-                                            ],
-                                          ),
-                                          CarouselSlider(
-                                            options: CarouselOptions(
-                                              aspectRatio: 5 / 5,
-                                              enlargeCenterPage: true,
-                                              enableInfiniteScroll: false,
-                                              scrollDirection: Axis.vertical,
-                                            ),
-                                            items: userInfo['courses']?.map<
-                                                Widget>((courseId) {
-                                              return FutureBuilder<
-                                                  Map<String, dynamic>>(
-                                                future: FirestoreService()
-                                                    .getCourseByUID(courseId),
-                                                builder: (BuildContext context,
-                                                    AsyncSnapshot<Map<
-                                                        String,
-                                                        dynamic>> snapshot) {
-                                                  if (snapshot
-                                                      .connectionState ==
-                                                      ConnectionState.waiting) {
-                                                    return Center(
-                                                        child: CircularProgressIndicator());
-                                                  } else
-                                                  if (snapshot.hasError) {
-                                                    return Center(child: Text(
-                                                        'Hata: ${snapshot
-                                                            .error}'));
-                                                  } else if (!snapshot
-                                                      .hasData) {
-                                                    return Center(child: Text(
-                                                        'Veri yok'));
-                                                  } else {
-                                                    final courseData = snapshot
-                                                        .data!;
-                                                    return FutureBuilder<
-                                                        Map<String, dynamic>>(
-                                                      future: FirestoreService()
-                                                          .getTeacherByUID(
-                                                          courseData["author"]),
-                                                      builder: (
-                                                          BuildContext context,
-                                                          AsyncSnapshot<Map<
-                                                              String,
-                                                              dynamic>> snapshot) {
-                                                        if (snapshot
-                                                            .connectionState ==
-                                                            ConnectionState
-                                                                .waiting) {
-                                                          return Center(
-                                                              child: CircularProgressIndicator());
-                                                        } else
-                                                        if (snapshot.hasError) {
-                                                          return Center(
-                                                              child: Text(
-                                                                  'Hata: ${snapshot
-                                                                      .error}'));
-                                                        } else
-                                                        if (!snapshot.hasData) {
-                                                          return Center(
-                                                              child: Text(
-                                                                  'Veri yok'));
-                                                        } else {
-                                                          final authorData = snapshot
-                                                              .data!;
-                                                          return CourseCard(
-                                                              course: courseData,
-                                                              author: authorData);
-                                                        }
-                                                      },
-                                                    );
-                                                  }
-                                                },
-                                              );
-                                            }).toList() ?? [],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Terapiler gösteren bölümün hemen altına, geniş ekran için (flex:2 bölmesinin altına ya da yanına):
-                          ],
-                        ),
-                        SizedBox(height: 16),
-                        Card(
-                          color: Color(0xFF50727B),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              // İçeriğe göre min boy
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Yazdığı Bloglar',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    if (isSelf) ...[
-                                      SizedBox(width: 10),
-                                      IconButton(
-                                        onPressed: () {
-                                          context.go("/blog-create/${userInfo["uid"]}");
-                                        },
-                                        icon: Icon(Icons.add_circle,
-                                            color: Colors.white),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                SizedBox(height: 16),
-                                FutureBuilder<List<Map<String, dynamic>>>(
-                                  future: isTeacher ? FirestoreService()
-                                      .getTeacherBlogs(widget.uid) : Future
-                                      .value([]),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return SizedBox(height: 50,
-                                          child: Center(
-                                              child: CircularProgressIndicator()));
-                                    } else if (snapshot.hasError) {
-                                      return Text('Hata: ${snapshot.error}',
-                                          style: TextStyle(
-                                              color: Colors.white));
-                                    } else {
-                                      final blogs = snapshot.data ?? [];
-                                      if (blogs.isEmpty) {
-                                        return Text('Henüz blog yok.',
-                                            style: TextStyle(
-                                                color: Colors.white));
-                                      } else {
-                                        // CarouselSlider ile blogları yatayda kaydırıyoruz.
-                                        return CarouselSlider(
-                                          options: CarouselOptions(
-                                            aspectRatio: 3,
-                                            height: 300.0,
-                                            enableInfiniteScroll: false,
-                                            enlargeCenterPage: true,
-                                            scrollDirection: Axis.horizontal,
-                                          ),
-                                          items: blogs.map((blog) {
-                                            return Stack(
-                                              children: [
-                                                Container(
-                                                    height: 300,
-                                                    width: 500,
-                                                    child: BlogCard(blog: blog)
-                                                ),
-                                                if (isSelf)
-                                                  Positioned(
-                                                    top: 8,
-                                                    right: 8,
-                                                    child: IconButton(
-                                                      icon: Icon(Icons.build_circle,
-                                                        color: Colors.black, size: 35,),
-                                                      onPressed: () {
-                                                        context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
-                                                      },
-                                                    ),
-                                                  ),
-                                              ],
-                                            );
-                                          }).toList(),
-                                        );
-                                      }
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+}
 
-                      ],
-                    ),
-                  ),
-                ],
-              )
-                  : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: 16),
-                  Card(
-                    color: Color(0xFF222831),
-                    child: ExpansionTile(
-                      initiallyExpanded: true,
-                      title: !isSelf
-                          ? Text(
-                        'Hakkında',
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
-                      )
-                          : Row(
-                        children: [
-                          Text('Hakkında',
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                          SizedBox(
-                            width: 20,
-                          ),
-                          IconButton(
-                              tooltip: "Hakkında'yı Düzenle",
-                              onPressed: () {
-                                _showChangeDescDialog(context);
-                              },
-                              icon: Icon(
-                                Icons.edit_note,
-                                color: Colors.white,
-                              ))
-                        ],
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            userInfo['desc'] ?? '',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Card(
-                    color: Color(0xFF50727B),
-                    child: ExpansionTile(
-                      initiallyExpanded: false,
-                      title: !isTeacher ? Text(
-                        'Aldığı Terapiler',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight:
-                            FontWeight
-                                .bold,
-                            color:
-                            Colors.white),
-                      )
-                          : Row(
-                        children: [
-                          Text(
-                            'Verdiği Terapiler',
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight:
-                                FontWeight
-                                    .bold,
-                                color:
-                                Colors.white),
-                          ),
-                          if(isSelf) SizedBox(width: 10,),
-                          if(isSelf) IconButton(
-                            onPressed: () {
-                              _showCreateCourseDialog(context);
-                            },
-                            icon: Icon(Icons.add_circle, color: Colors.white,),
-                          ),
-                        ],
-                      ),
-                      children: [
-                        CarouselSlider(
-                          options: CarouselOptions(
-                            aspectRatio: 1,
-                            enlargeCenterPage: true,
-                            enableInfiniteScroll: false,
-                            scrollDirection: Axis.vertical,
-                          ),
-                          items: userInfo['courses']?.map<Widget>((courseId) {
-                            return FutureBuilder<Map<String, dynamic>>(
-                              future: FirestoreService().getCourseByUID(
-                                  courseId),
-                              builder: (BuildContext context, AsyncSnapshot<
-                                  Map<String, dynamic>> snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return Center(
-                                      child: CircularProgressIndicator());
-                                } else if (snapshot.hasError) {
-                                  return Center(
-                                      child: Text('Hata: ${snapshot.error}'));
-                                } else if (!snapshot.hasData) {
-                                  return Center(child: Text('Veri yok'));
-                                } else {
-                                  final courseData = snapshot.data!;
-                                  return FutureBuilder<Map<String, dynamic>>(
-                                    future: FirestoreService().getTeacherByUID(
-                                        courseData["author"]),
-                                    builder: (BuildContext context,
-                                        AsyncSnapshot<
-                                            Map<String, dynamic>> snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return Center(
-                                            child: CircularProgressIndicator());
-                                      } else if (snapshot.hasError) {
-                                        return Center(child: Text(
-                                            'Hata: ${snapshot.error}'));
-                                      } else if (!snapshot.hasData) {
-                                        return Center(child: Text('Veri yok'));
-                                      } else {
-                                        final authorData = snapshot.data!;
-                                        return CourseCard(course: courseData,
-                                            author: authorData);
-                                      }
-                                    },
-                                  );
-                                }
-                              },
-                            );
-                          }).toList() ?? [],
-                        ),
-
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Card(
-                    color: Color(0xFF50727B),
-                    child: ExpansionTile(
-                      initiallyExpanded: false,
-                      title: Row(
-                        children: [
-                          Text(
-                            'Yazdığı Bloglar',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if (isSelf) SizedBox(width: 10),
-                          if (isSelf) IconButton(
-                            onPressed: () {
-                              context.go("/blog-create/${userInfo["uid"]}");
-                            },
-                            icon: Icon(Icons.add_circle, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                      children: [
-                        FutureBuilder<List<Map<String, dynamic>>>(
-                          future: isTeacher ? FirestoreService()
-                              .getTeacherBlogs(widget.uid) : Future.value([]),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: SizedBox(height: 50,
-                                    child: Center(
-                                        child: CircularProgressIndicator())),
-                              );
-                            } else if (snapshot.hasError) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text('Hata: ${snapshot.error}',
-                                    style: TextStyle(color: Colors.white)),
-                              );
-                            } else {
-                              final blogs = snapshot.data ?? [];
-                              if (blogs.isEmpty) {
-                                return Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text('Henüz blog yok.',
-                                      style: TextStyle(color: Colors.white)),
-                                );
-                              } else {
-                                // Dar ekranda da CarouselSlider kullanıyoruz
-                                return Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: CarouselSlider(
-                                    options: CarouselOptions(
-                                      height: 300.0,
-                                      enableInfiniteScroll: false,
-                                      enlargeCenterPage: true,
-                                      scrollDirection: Axis.horizontal,
-                                    ),
-                                    items: blogs.map((blog) {
-                                      return Stack(
-                                        children: [
-                                          BlogCard(blog: blog),
-                                          if (isSelf)
-                                            Positioned(
-                                              top: 8,
-                                              right: 8,
-                                              child: IconButton(
-                                                icon: Icon(Icons.build_circle,
-                                                    color: Colors.black, size: 35,),
-                                                onPressed: () {
-                                                  context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
-                                                },
-                                              ),
-                                            ),
-                                        ],
-                                      );
-                                    }).toList(),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+ThemeData _customDatePickerTheme() {
+  return ThemeData.dark().copyWith(
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF76ABAE),       // Seçili tarih & header
+      surface: Color(0xFF222831),       // Header arkaplan
+      onSurface: Colors.white,          // Metin renkleri
+    ),
+    dialogBackgroundColor: const Color(0xFF393E46), // Ana arkaplan
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.redAccent, // İptal butonu
       ),
-      backgroundColor: Color(0xFFEEEEEE),
-    );
-  }
-
-
-  ThemeData _customDatePickerTheme() {
-    return ThemeData.dark().copyWith(
-      colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF76ABAE),       // Seçili tarih & header
-        surface: Color(0xFF222831),       // Header arkaplan
-        onSurface: Colors.white,          // Metin renkleri
-      ),
-      dialogBackgroundColor: const Color(0xFF393E46), // Ana arkaplan
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.redAccent, // İptal butonu
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }

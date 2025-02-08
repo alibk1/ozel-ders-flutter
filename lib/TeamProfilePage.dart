@@ -619,18 +619,9 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
           ),
           TextButton(
             onPressed: () {
-              context.go('/categories');
-            },
-            child: const Text('Kategoriler',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)
-            ),
-          ),
-          TextButton(
-            onPressed: () {
               context.go('/courses');
             },
-            child: const Text('Terapiler',
+            child: const Text('Danışmanlıklar',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)
             ),
