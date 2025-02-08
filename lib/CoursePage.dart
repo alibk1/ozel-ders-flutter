@@ -370,16 +370,9 @@ class _CoursePageState extends State<CoursePage> {
           ),
           TextButton(
             onPressed: () {
-              context.go('/categories'); // CategoriesPage'e yönlendirme
-            },
-            child: const Text('Kategoriler', style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () {
               context.go('/courses'); // CategoriesPage'e yönlendirme
             },
-            child: const Text('Terapiler', style: TextStyle(
+            child: const Text('Danışmanlıklar', style: TextStyle(
                 color: Color(0xFF76ABAE), fontWeight: FontWeight.bold)),
           ),
           TextButton(

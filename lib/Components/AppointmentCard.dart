@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,11 +9,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/LoadingIndicator.dart';
-import 'package:ozel_ders/services/FirebaseController.dart';
 import 'dart:html' as html;
-
 import 'package:ozel_ders/services/JitsiService.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:glassmorphism/glassmorphism.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 
 class AppointmentCard extends StatefulWidget {
   final String appointmentUID;
@@ -42,11 +42,17 @@ class _AppointmentCardState extends State<AppointmentCard> {
   bool isAccepted = false;
   bool isPersonalCheck = false;
   bool hasStudentPersonalCheck = false;
+
+  // Tasarım şeması renkleri
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
+  final Color _darkColor = Color(0xFF3C72C2);
+  final Color _textColor = Color(0xFF222831);
+
   @override
   void initState() {
-    // TODO: implement initState
-    getData();
     super.initState();
+    getData();
   }
 
   Future<void> getData() async {
@@ -65,20 +71,43 @@ class _AppointmentCardState extends State<AppointmentCard> {
     setState(() {});
   }
 
+  // ===================== MODAL & DİĞER YARDIMCI METODLAR =====================
+
+  Widget _buildListTile(IconData icon, String title, String subtitle,
+      {Color? subtitleColor, VoidCallback? onTap}) {
+    return ListTile(
+      leading: Icon(icon, color: _primaryColor),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(fontSize: 16, color: _textColor.withOpacity(0.8)),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.poppins(fontSize: 18, color: subtitleColor ?? _textColor),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildListTileWithTap(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return _buildListTile(icon, title, subtitle, onTap: onTap);
+  }
+
+  // ===================== MODAL GÖSTERİMLERİ =====================
+
   void _showAppointmentDetails(BuildContext context) {
     String enterButtonText = "";
     DateTime date = time.toDate();
     DateTime maxDate = date.add(Duration(hours: 1));
-    DateTime minDate = date.add(Duration(minutes: -10));
+    DateTime minDate = date.subtract(Duration(minutes: 10));
     bool canEnter = true;
     bool shouldCreate = false;
-    bool editNote = false;
 
     String noteButtonText = "";
     String homeworkButtonText = "";
-    String note = appData["note"];
-    String homework = appData["homework"];
-    List<dynamic> homeworkFiles = appData["homeworkFiles"];
+    String note = appData["note"] ?? "";
+    String homework = appData["homework"] ?? "";
+    List<dynamic> homeworkFiles = appData["homeworkFiles"] ?? [];
 
     if (isAccepted) {
       if (DateTime.now().isBefore(minDate)) {
@@ -87,7 +116,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
       } else {
         if (widget.isTeacher) {
           if (DateTime.now().isBefore(maxDate)) {
-            if (appData["meetingURL"] != "") {
+            if ((appData["meetingURL"] ?? "").toString().isNotEmpty) {
               enterButtonText = "Randevuya Katıl";
             } else {
               enterButtonText = "Randevu Oluştur";
@@ -99,7 +128,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
           }
         } else {
           if (DateTime.now().isBefore(maxDate)) {
-            if (appData["meetingURL"] != "") {
+            if ((appData["meetingURL"] ?? "").toString().isNotEmpty) {
               enterButtonText = "Randevuya Katıl";
             } else {
               canEnter = false;
@@ -111,56 +140,43 @@ class _AppointmentCardState extends State<AppointmentCard> {
           }
         }
       }
-    }
-    else {
+    } else {
       canEnter = false;
       enterButtonText = "Bu Randevu Henüz Onaylanmadı";
     }
 
-    if (homework
-        .trim()
-        .isNotEmpty || homeworkFiles.isNotEmpty) {
-      if (widget.isTeacher) {
-        homeworkButtonText = "Ödevi Düzenle";
-      }
-      else {
-        homeworkButtonText = "Ödevi Görüntüle";
-      }
-    }
-    else {
-      if (widget.isTeacher) {
-        homeworkButtonText = "Ödev Ekle";
-      }
-      else {
-        homeworkButtonText = "Ödev Yok";
-      }
+    if (homework.trim().isNotEmpty || homeworkFiles.isNotEmpty) {
+      homeworkButtonText = widget.isTeacher ? "Ödevi Düzenle" : "Ödevi Görüntüle";
+    } else {
+      homeworkButtonText = widget.isTeacher ? "Ödev Ekle" : "Ödev Yok";
     }
 
-    if(note.trim().isEmpty){
-      noteButtonText = "Randevuya Not Ekle";
-    }
-    else{
-      noteButtonText = "Randevu Notunu Düzenle";
-    }
+    noteButtonText = note.trim().isEmpty ? "Randevuya Not Ekle" : "Randevu Notunu Düzenle";
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        return GlassmorphicContainer(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.8,
+          borderRadius: 20,
+          blur: 30,
+          border: 0,
+          linearGradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderGradient: LinearGradient(
+            colors: [Colors.white24, Colors.white12],
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery
-                .of(context)
-                .viewInsets
-                .bottom + 16,
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -168,240 +184,140 @@ class _AppointmentCardState extends State<AppointmentCard> {
               children: [
                 Text(
                   'Randevu Bilgileri',
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 16),
-                Divider(color: Colors.white54),
+                Divider(color: _textColor.withOpacity(0.5)),
                 SizedBox(height: 16),
-                // Kurs Bilgileri
-                ListTile(
-                  leading: Icon(Icons.book, color: Color(0xFF76ABAE)),
-                  title: Text(
-                    'Kurs',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
-                  ),
-                  subtitle: Text(
-                    courseData['name'],
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                ListTile(
-                  leading: Icon(Icons.person, color: Color(0xFF76ABAE)),
-                  title: Text(
-                    'Eğitmen',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
-                  ),
-                  subtitle: Text(
-                    authorData['name'],
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                  onTap: () {
-                    context.go('/profile/${authorData["uid"]}');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.person_outline, color: Color(0xFF76ABAE)),
-                  title: Text(
-                    'Öğrenci',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
-                  ),
-                  subtitle: Text(
-                    studentData['name'],
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                  onTap: () {
-                    context.go('/profile/${studentData["uid"]}');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.calendar_today, color: Color(0xFF76ABAE)),
-                  title: Text(
-                    'Tarih ve Saat',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
-                  ),
-                  subtitle: Text(
-                    isAccepted ? dateStr : "Eğitimci Henüz Tarih Seçmedi",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                ListTile(
-                  leading: Icon(Icons.check_circle, color: Color(0xFF76ABAE)),
-                  title: Text(
-                    'Onaylanma Durumu',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
-                  ),
-                  subtitle: Text(
-                    isAccepted ? "Onaylandı" : "Henüz Onaylanmadı",
-                    style: TextStyle(fontSize: 18,
-                        color: isAccepted ? Colors.green : Colors.red),
-                  ),
-                ),
-                ListTile(
-                  leading: Icon(Icons.poll, color: Color(0xFF76ABAE)),
-                  title: Text(
-                    'Anketler',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
-                  ),
-                  subtitle: Text(
-                    surveys.isEmpty
-                        ? widget.isTeacher
-                        ? "Anket Ekle"
-                        : "Henüz Anket Yok"
-                        : widget.isTeacher
-                        ? "Anketi Gör"
-                        : surveys.any((survey) => survey["answers"].isEmpty)
-                        ? "Anketi Cevaplamak İçin Tıkla"
-                        : "Anket Cevaplarını Düzenle",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: surveys.isEmpty
-                          ? Colors.grey
-                          : widget.isTeacher
-                          ? Colors.blue
-                          : surveys.any((survey) => survey["answers"].isEmpty)
-                          ? Colors.orange
-                          : Colors.green,
-                    ),
-                  ),
+                _buildListTile(Icons.book, 'Kurs', courseData['name'] ?? ''),
+                _buildListTileWithTap(Icons.person, 'Eğitmen', authorData['name'] ?? '', () {
+                  context.go('/profile/${authorData["uid"]}');
+                }),
+                _buildListTileWithTap(Icons.person_outline, 'Öğrenci', studentData['name'] ?? '', () {
+                  context.go('/profile/${studentData["uid"]}');
+                }),
+                _buildListTile(Icons.calendar_today, 'Tarih ve Saat', isAccepted ? dateStr : "Eğitmen Henüz Tarih Seçmedi"),
+                _buildListTile(Icons.check_circle, 'Onaylanma Durumu', isAccepted ? "Onaylandı" : "Henüz Onaylanmadı",
+                    subtitleColor: isAccepted ? Colors.green : Colors.red),
+                _buildListTile(
+                  Icons.poll,
+                  'Anketler',
+                  surveys.isEmpty
+                      ? (widget.isTeacher ? "Anket Ekle" : "Henüz Anket Yok")
+                      : (widget.isTeacher
+                      ? "Anketi Gör"
+                      : surveys.any((survey) => (survey["answers"] as List).isEmpty)
+                      ? "Anketi Cevaplamak İçin Tıkla"
+                      : "Anket Cevaplarını Düzenle"),
                   onTap: surveys.isEmpty
-                      ? widget.isTeacher
-                      ? () => _showAppointmentSurveyDetails(context)
-                      : null
+                      ? (widget.isTeacher ? () => _showAppointmentSurveyDetails(context) : null)
                       : () => _showAppointmentSurveyDetails(context),
                 ),
-                isPersonalCheck ? ListTile(
-                  leading: Icon(Icons.check_circle, color: Colors.green),
-                  title: Text(
+                if (isPersonalCheck)
+                  _buildListTile(
+                    Icons.check_circle,
                     "Bireysel Değerlendirme",
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                    widget.isTeacher
+                        ? "Danışanı 'Bireysel Değerlendirme Aldı' Olarak İşaretle"
+                        : (hasStudentPersonalCheck ? "Bireysel Değerlendirmeniz Onaylandı" : "Bireysel Değerlendirmeniz Henüz Onaylanmadı"),
+                    onTap: () async {
+                      AwesomeDialog(
+                        context: context,
+                        dialogType: DialogType.noHeader,
+                        animType: AnimType.bottomSlide,
+                        btnCancelText: "Hayır",
+                        btnOkText: "Evet",
+                        title: 'Bireysel Değerlendirmeyi Onaylıyor Musunuz?',
+                        desc:
+                        "Lütfen bireysel değerlendirme tamamlanmadıysa onaylamayınız. Hatalı veya kasıtlı yanlış kullanımlar cezai sonuçlar doğurabilir.",
+                        btnOkOnPress: () async {
+                          LoadingIndicator(context).showLoading();
+                          await FirestoreService().studentHadPersonalCheck(studentData["uid"]);
+                          Navigator.pop(context);
+                        },
+                        btnCancelOnPress: () {},
+                      ).show();
+                    },
                   ),
-                    subtitle: Text(
-                      widget.isTeacher
-                          ? "Danışanı 'Bireysel Değerlendirme Aldı' Olarak İşaretle"
-                          : hasStudentPersonalCheck
-                          ? "Bireysel Değerlendirmeniz Onaylandı"
-                          : "Bireysel Değerlendirmeniz Henüz Onaylanmadı" ,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color:  widget.isTeacher
-                            ? Colors.grey
-                            : hasStudentPersonalCheck
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    ),
-                  onTap: () async
-                  {
-                    AwesomeDialog(
-                      context: context,
-                      dialogType: DialogType.noHeader,
-                      animType: AnimType.bottomSlide,
-                      btnCancelText: "Hayır",
-                      btnOkText: "Evet",
-                      title: 'Bireysel Değerlendirmeyi Onaylıyor Musunuz?',
-                      desc: "Lütfen bireysel değerlendirme tamamlanmadıysa onaylamayınız. Hatalı veya kasıtlı yanlış kullanımlar cezai sonuçlar doğurabilir.",
-                      btnOkOnPress: () async {
-                        LoadingIndicator(context).showLoading();
-                        await FirestoreService().studentHadPersonalCheck(studentData["uid"]);
-                        Navigator.pop(context);
-                      },
-                      btnCancelOnPress: ()
-                      {
-                      }
-                    ).show();
-                  }
-                ) : SizedBox.shrink(),
                 SizedBox(height: 16),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                    canEnter ? Color(0xFF76ABAE) : Colors.grey[600],
+                    backgroundColor: canEnter ? _primaryColor : Colors.grey[600],
                     foregroundColor: Colors.white,
                     minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: canEnter
                       ? () async {
                     String url = "";
                     if (shouldCreate) {
-                      // Yükleniyor animasyonu
                       showDialog(
                         context: context,
                         barrierDismissible: false,
                         builder: (BuildContext context) {
                           return Center(
                             child: LoadingAnimationWidget.twistingDots(
-                                leftDotColor: Color(0xFF222831),
-                                rightDotColor: Color(0xFF663366),
-                                size: 100),
+                              leftDotColor: _backgroundColor,
+                              rightDotColor: _darkColor,
+                              size: 100,
+                            ),
                           );
                         },
                       );
-
                       url = (await JitsiService().createMeeting())!;
-                      await FirestoreService().updateAppointmentUrl(
-                          widget.appointmentUID, url);
+                      await FirestoreService().updateAppointmentUrl(widget.appointmentUID, url);
                       appData["meetingURL"] = url;
-                      Navigator.pop(context); // Yükleniyor animasyonunu kapat
-                      Navigator.pop(context); // Modal'ı kapat
+                      Navigator.pop(context); // yüklenme animasyonunu kapat
+                      Navigator.pop(context); // modalı kapat
                       html.window.open(url, "Redirecting...");
                     } else {
                       url = appData["meetingURL"];
-                      Navigator.pop(context); // Modal'ı kapat
+                      Navigator.pop(context);
                       html.window.open(url, "Redirecting...");
                     }
                   }
                       : null,
                   child: Text(
                     enterButtonText,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 SizedBox(height: 16),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                    homeworkButtonText == "Ödev Yok"
-                        ? Color(0xFF76ABAE)
-                        : Colors.grey[600],
+                    backgroundColor: homeworkButtonText == "Ödev Yok" ? _primaryColor : Colors.grey[600],
                     foregroundColor: Colors.white,
                     minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
                     _showHomeworkDetails(context);
                   },
                   child: Text(
                     homeworkButtonText,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
-                if(widget.isTeacher)...[
+                if (widget.isTeacher) ...[
                   SizedBox(height: 16),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF76ABAE),
+                      backgroundColor: _primaryColor,
                       foregroundColor: Colors.white,
                       minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
                       _showNoteDetails(context);
                     },
                     child: Text(
                       noteButtonText,
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -422,15 +338,9 @@ class _AppointmentCardState extends State<AppointmentCard> {
     for (var file in homeworkFiles) {
       if (file is String && file.contains('https://firebasestorage.googleapis.com')) {
         String fileName = Uri.decodeComponent(file.split('/').last.split('?').first.split('%2F').last);
-        existingFiles.add(ExistingFile(
-          name: fileName,
-          url: file,
-        ));
+        existingFiles.add(ExistingFile(name: fileName, url: file));
       } else if (file is Map<String, dynamic>) {
-        existingFiles.add(ExistingFile(
-          name: file['name'] ?? 'Unknown',
-          url: file['url'] ?? '',
-        ));
+        existingFiles.add(ExistingFile(name: file['name'] ?? 'Unknown', url: file['url'] ?? ''));
       }
     }
 
@@ -440,7 +350,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         if (widget.isTeacher) {
-          return _buildTeacherView(context, homework, existingFiles, setState);
+          return _buildTeacherView(context, homework, existingFiles);
         } else {
           return _buildStudentView(context, homework, existingFiles);
         }
@@ -448,12 +358,12 @@ class _AppointmentCardState extends State<AppointmentCard> {
     );
   }
 
-  Widget _buildTeacherView(BuildContext context, String homework, List<ExistingFile> existingFiles, StateSetter setModalState) {
+  Widget _buildTeacherView(BuildContext context, String homework, List<ExistingFile> existingFiles) {
     TextEditingController _homeworkController = TextEditingController(text: homework);
     List<PlatformFile> newFiles = [];
     List<String> deletedFiles = [];
 
-    Future<void> _pickFiles() async {
+    Future<void> _pickFiles(StateSetter setModalState) async {
       LoadingIndicator(context).showLoading();
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
@@ -461,19 +371,16 @@ class _AppointmentCardState extends State<AppointmentCard> {
         type: FileType.custom,
         allowedExtensions: ['pdf', 'docx', 'xlsx', 'png', 'jpg'],
       );
-
       if (result != null) {
-        List<PlatformFile> selectedFiles = result.files.where((file) =>
-        file.size <= 20 * 1024 * 1024).toList();
+        List<PlatformFile> selectedFiles =
+        result.files.where((file) => file.size <= 20 * 1024 * 1024).toList();
         newFiles.addAll(selectedFiles);
-
         if (selectedFiles.length < result.files.length) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("20MB'dan büyük dosyalar atlandı.")),
-          );
+              SnackBar(content: Text("20MB'dan büyük dosyalar atlandı.")));
         }
       }
-      setModalState((){});
+      setModalState(() {});
       Navigator.pop(context);
     }
 
@@ -484,18 +391,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
         LoadingIndicator(context).showLoading();
 
         for (var file in newFiles) {
-          print("ANAN");
           try {
             String fileName = DateTime.now().millisecondsSinceEpoch.toString() + "_" + file.name;
-            print(fileName);
             Reference ref = FirebaseStorage.instance.ref().child('$storageFolder$fileName');
             UploadTask uploadTask;
-
             if (kIsWeb) {
               if (file.bytes != null) {
                 uploadTask = ref.putData(file.bytes!);
               } else {
-                print('Web platformunda bytes null. Dosya atlanıyor: ${file.name}');
                 continue;
               }
             } else {
@@ -503,17 +406,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 File fileToUpload = File(file.path!);
                 uploadTask = ref.putFile(fileToUpload);
               } else {
-                // Mobil veya masaüstü platformlarda path null ise atla veya hata bildir
-                print('Path null. Dosya atlanıyor: ${file.name}');
                 continue;
               }
             }
             TaskSnapshot snapshot = await uploadTask;
             String downloadUrl = await snapshot.ref.getDownloadURL();
             uploadedFileUrls.add(downloadUrl);
-            print('Yüklenen dosya URL: $downloadUrl');
           } catch (e) {
-            print('Dosya yüklenirken hata oluştu: $e');
+            print('Dosya yüklenirken hata: $e');
           }
         }
 
@@ -521,50 +421,51 @@ class _AppointmentCardState extends State<AppointmentCard> {
           try {
             Reference ref = FirebaseStorage.instance.refFromURL(fileUrl);
             await ref.delete();
-            print('Silinen dosya URL: $fileUrl');
           } catch (e) {
-            print('Dosya silinirken hata oluştu: $e');
+            print('Dosya silinirken hata: $e');
           }
         }
 
-        // allFiles listesini oluştur
         List<String> allFiles = existingFiles
             .map((file) => file.url)
             .toList()
             .where((url) => !deletedFiles.contains(url))
             .toList();
-
         allFiles.addAll(uploadedFileUrls);
 
-        print('Tüm Dosyaların URL\'leri:');
-        allFiles.forEach((url) => print(url));
-        await FirestoreService().addHomeworkToAppointment(widget.appointmentUID, appData["author"], appData["student"], _homeworkController.text, allFiles);
+        await FirestoreService().addHomeworkToAppointment(
+            widget.appointmentUID, appData["author"], appData["student"], _homeworkController.text, allFiles);
         await getData();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Ödev güncellendi ve dosyalar yüklendi.")),
-        );
+            SnackBar(content: Text("Ödev güncellendi ve dosyalar yüklendi.")));
       } catch (e) {
-        print('Dosya yüklenirken genel bir hata oluştu: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Dosya yüklenirken hata oluştu: $e")),
-        );
-      } finally {
+            SnackBar(content: Text("Dosya yüklenirken hata: $e")));
       }
     }
 
     return StatefulBuilder(
-      builder: (BuildContext context, StateSetter setState) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (BuildContext context, StateSetter setModalState) {
+        return GlassmorphicContainer(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.8,
+          borderRadius: 20,
+          blur: 30,
+          border: 0,
+          linearGradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderGradient: LinearGradient(
+            colors: [Colors.white24, Colors.white12],
           ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
+            left: 16,
+            right: 16,
+            top: 16,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -572,10 +473,11 @@ class _AppointmentCardState extends State<AppointmentCard> {
               children: [
                 Text(
                   'Ödev Ekleme / Düzenleme',
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 16),
@@ -585,47 +487,45 @@ class _AppointmentCardState extends State<AppointmentCard> {
                   decoration: InputDecoration(
                     hintText: "Ödevinizi buraya girin...",
                     filled: true,
-                    fillColor: Color(0xFF393E46),
+                    fillColor: _backgroundColor.withOpacity(0.8),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.0),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: EdgeInsets.all(16.0),
+                    contentPadding: EdgeInsets.all(16),
                   ),
-                  style: TextStyle(color: Colors.white),
+                  style: GoogleFonts.poppins(color: _textColor),
                 ),
                 SizedBox(height: 16),
                 Container(
-                  padding: EdgeInsets.all(12.0),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Color(0xFF393E46),
-                    borderRadius: BorderRadius.circular(12.0),
+                    color: _backgroundColor.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: Icon(Icons.attach_file, color: Colors.white),
-                        onPressed: _pickFiles,
+                        icon: Icon(Icons.attach_file, color: _darkColor),
+                        onPressed: () => _pickFiles(setModalState),
                       ),
                       SizedBox(width: 8),
                       Text(
                         "Belge Ekle",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        style: GoogleFonts.poppins(color: _darkColor, fontSize: 16),
                       ),
                     ],
                   ),
                 ),
                 SizedBox(height: 16),
-                _buildFileList(context, existingFiles, newFiles, deletedFiles, setState),
+                _buildFileList(context, existingFiles, newFiles, deletedFiles, setModalState),
                 SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF76ABAE),
+                    backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
                     minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () async {
                     await _uploadFiles();
@@ -633,8 +533,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
                   },
                   child: Text(
                     "Ödevi Güncelle",
-                    style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 SizedBox(height: 16),
@@ -647,24 +546,33 @@ class _AppointmentCardState extends State<AppointmentCard> {
   }
 
   Widget _buildStudentView(BuildContext context, String homework, List<ExistingFile> existingFiles) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFF222831),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return GlassmorphicContainer(
+      width: double.infinity,
+      height: MediaQuery.of(context).size.height * 0.5,
+      borderRadius: 20,
+      blur: 30,
+      border: 0,
+      linearGradient: LinearGradient(
+        colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      padding: EdgeInsets.all(16.0),
+      borderGradient: LinearGradient(
+        colors: [Colors.white24, Colors.white12],
+      ),
+      padding: EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Ödev Detayları',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
           ),
           SizedBox(height: 16),
           Text(
             homework,
-            style: TextStyle(color: Colors.white, fontSize: 16),
+            style: GoogleFonts.poppins(color: _textColor, fontSize: 16),
           ),
           SizedBox(height: 16),
           if (existingFiles.isNotEmpty)
@@ -673,7 +581,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               children: [
                 Text(
                   "Eklenen Belgeler",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(color: _darkColor, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 ...existingFiles.map((file) => InkWell(
@@ -682,7 +590,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
                   },
                   child: Text(
                     file.name,
-                    style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                    style: GoogleFonts.poppins(color: _primaryColor, decoration: TextDecoration.underline),
                   ),
                 )),
               ],
@@ -692,7 +600,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
     );
   }
 
-  Widget _buildFileList(BuildContext context, List<ExistingFile> existingFiles, List<PlatformFile> newFiles, List<String> deletedFiles, StateSetter setState) {
+  Widget _buildFileList(BuildContext context, List<ExistingFile> existingFiles, List<PlatformFile> newFiles,
+      List<String> deletedFiles, StateSetter setModalState) {
     return Container(
       width: double.infinity,
       child: Column(
@@ -700,7 +609,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
         children: [
           Text(
             "Eklenen Belgeler",
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(color: _darkColor, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
           Wrap(
@@ -708,11 +617,11 @@ class _AppointmentCardState extends State<AppointmentCard> {
             runSpacing: 8.0,
             children: [
               ...existingFiles.map((file) => Chip(
-                label: Text(file.name),
-                backgroundColor: Colors.grey[700],
-                deleteIcon: Icon(Icons.close, color: Colors.white),
+                label: Text(file.name, style: GoogleFonts.poppins(color: _textColor)),
+                backgroundColor: _backgroundColor,
+                deleteIcon: Icon(Icons.close, color: _darkColor),
                 onDeleted: () {
-                  setState(() {
+                  setModalState(() {
                     if (file.url.isNotEmpty) {
                       deletedFiles.add(file.url);
                     }
@@ -721,11 +630,11 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 },
               )),
               ...newFiles.map((file) => Chip(
-                label: Text(file.name),
-                backgroundColor: Colors.blueGrey,
-                deleteIcon: Icon(Icons.close, color: Colors.white),
+                label: Text(file.name, style: GoogleFonts.poppins(color: _textColor)),
+                backgroundColor: _backgroundColor,
+                deleteIcon: Icon(Icons.close, color: _darkColor),
                 onDeleted: () {
-                  setState(() {
+                  setModalState(() {
                     newFiles.remove(file);
                   });
                 },
@@ -738,102 +647,103 @@ class _AppointmentCardState extends State<AppointmentCard> {
   }
 
   void _showNoteDetails(BuildContext context) {
-    String note = appData["note"].trim().isNotEmpty ? appData["note"] : "Bu randevuya not eklemediniz.";
+    String note = (appData["note"] ?? "").trim().isNotEmpty ? appData["note"] : "Bu randevuya not eklemediniz.";
     bool editNote = false;
 
     showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              TextEditingController _noteController =
-              TextEditingController(text: note);
-              return Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF222831),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                  left: 16.0,
-                  right: 16.0,
-                  top: 16.0,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Randevu Notu',
-                        style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 16),
-                      !editNote ? Text(
-                        note,
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ) :
-                      TextFormField(
-                        controller: _noteController,
-                        maxLines: 7,
-                        decoration: InputDecoration(
-                          hintText: "Notunuzu buraya girin...",
-                          filled: true,
-                          fillColor: Color(0xFF393E46),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: EdgeInsets.all(16.0),
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            TextEditingController _noteController = TextEditingController(text: note);
+            return GlassmorphicContainer(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.4,
+              borderRadius: 20,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Randevu Notu',
+                      style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16),
+                    !editNote
+                        ? Text(
+                      note,
+                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: _textColor),
+                      textAlign: TextAlign.center,
+                    )
+                        : TextFormField(
+                      controller: _noteController,
+                      maxLines: 7,
+                      decoration: InputDecoration(
+                        hintText: "Notunuzu buraya girin...",
+                        filled: true,
+                        fillColor: _backgroundColor.withOpacity(0.8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        style: TextStyle(color: Colors.white),
+                        contentPadding: EdgeInsets.all(16),
                       ),
-                      SizedBox(height: 16),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF76ABAE),
-                          foregroundColor: Colors.white,
-                          minimumSize: Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () async {
-                          if(editNote){
-                            LoadingIndicator(context).showLoading();
-                            await FirestoreService().addNoteToAppointment(widget.appointmentUID, appData["author"], appData["student"], _noteController.text);
-                            await getData();
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                          }
-                          else {
-                            editNote = true;
-                          }
-                          setState((){});
-                        },
-                        child: Text(
-                          editNote ? "Kaydet" : "Notu Güncelle",
-                          style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
+                      style: GoogleFonts.poppins(color: _textColor),
+                    ),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primaryColor,
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      SizedBox(height: 16),
-                    ],
-                  ),
+                      onPressed: () async {
+                        if (editNote) {
+                          LoadingIndicator(context).showLoading();
+                          await FirestoreService().addNoteToAppointment(
+                              widget.appointmentUID, appData["author"], appData["student"], _noteController.text);
+                          await getData();
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        } else {
+                          editNote = true;
+                        }
+                        setState(() {});
+                      },
+                      child: Text(
+                        editNote ? "Kaydet" : "Notu Güncelle",
+                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  ],
                 ),
-              );
-            },
-          );
-        });
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showAppointmentSurveyDetails(BuildContext context) {
@@ -850,42 +760,50 @@ class _AppointmentCardState extends State<AppointmentCard> {
   Widget _buildSurveyListView(BuildContext context) {
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setModalState) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        return GlassmorphicContainer(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.8,
+          borderRadius: 20,
+          blur: 30,
+          border: 0,
+          linearGradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          padding: EdgeInsets.all(16.0),
+          borderGradient: LinearGradient(
+            colors: [Colors.white24, Colors.white12],
+          ),
+          padding: EdgeInsets.all(16),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   widget.isTeacher ? 'Anketler' : 'Anketler',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
                 ),
                 SizedBox(height: 16),
                 if (surveys.isEmpty)
                   Text(
                     widget.isTeacher ? "Henüz anket eklenmedi." : "Bu randevuya ait anket yok.",
-                    style: TextStyle(fontSize: 18, color: Colors.white70),
+                    style: GoogleFonts.poppins(fontSize: 18, color: _textColor.withOpacity(0.7)),
                     textAlign: TextAlign.center,
                   ),
                 if (surveys.isNotEmpty)
                   ...surveys.map((survey) {
-                    String surveyTitle = survey["surveyName"];
+                    String surveyTitle = survey["surveyName"] ?? "";
                     bool isAnswered = (survey["answers"] as List).isNotEmpty;
-
                     return ListTile(
                       title: Text(
                         surveyTitle,
-                        style: TextStyle(color: Colors.white, fontSize: 18),
+                        style: GoogleFonts.poppins(color: _textColor, fontSize: 18),
                       ),
                       subtitle: Text(
                         widget.isTeacher
                             ? (isAnswered ? "Anket cevaplanmış" : "Anket düzenlenebilir")
                             : (isAnswered ? "Cevapları düzenle" : "Anketi cevapla"),
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: isAnswered ? Colors.green : Colors.orange,
                           fontSize: 16,
                         ),
@@ -902,17 +820,16 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 if (widget.isTeacher)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF76ABAE),
+                      backgroundColor: _primaryColor,
                       foregroundColor: Colors.white,
                       minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () => _createNewSurvey(context),
-                    child: Text("Yeni Anket Oluştur",
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),),
+                    child: Text(
+                      "Yeni Anket Oluştur",
+                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                   ),
               ],
             ),
@@ -934,10 +851,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
 
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-
             void addQuestion() {
               _questionControllers.add(TextEditingController());
-              print(_questionControllers.length);
               _isMandatory.add(false);
               setModalState(() {});
             }
@@ -969,16 +884,25 @@ class _AppointmentCardState extends State<AppointmentCard> {
               Navigator.pop(context);
             }
 
-            return Container(
-              decoration: BoxDecoration(
-                color: Color(0xFF222831),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            return GlassmorphicContainer(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.8,
+              borderRadius: 20,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
               ),
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                left: 16.0,
-                right: 16.0,
-                top: 16.0,
+                left: 16,
+                right: 16,
+                top: 16,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -986,7 +910,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
                   children: [
                     Text(
                       'Yeni Anket Oluştur',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
                     ),
                     SizedBox(height: 16),
                     TextFormField(
@@ -994,13 +918,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
                       decoration: InputDecoration(
                         hintText: "Anket İsmi",
                         filled: true,
-                        fillColor: Color(0xFF393E46),
+                        fillColor: _backgroundColor.withOpacity(0.8),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
+                        contentPadding: EdgeInsets.all(16),
                       ),
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.poppins(color: _textColor),
                     ),
                     SizedBox(height: 16),
                     Column(
@@ -1013,13 +938,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
                                 decoration: InputDecoration(
                                   hintText: "Soru ${index + 1}",
                                   filled: true,
-                                  fillColor: Color(0xFF393E46),
+                                  fillColor: _backgroundColor.withOpacity(0.8),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12.0),
+                                    borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide.none,
                                   ),
+                                  contentPadding: EdgeInsets.all(16),
                                 ),
-                                style: TextStyle(color: Colors.white),
+                                style: GoogleFonts.poppins(color: _textColor),
                               ),
                             ),
                             Checkbox(
@@ -1036,32 +962,30 @@ class _AppointmentCardState extends State<AppointmentCard> {
                     SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,
                         minimumSize: Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: addQuestion,
-                      child: Text("Soru Ekle",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),),
+                      child: Text(
+                        "Soru Ekle",
+                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
                     SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,
                         minimumSize: Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: saveSurvey,
-                      child: Text("Anketi Kaydet",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),),
+                      child: Text(
+                        "Anketi Kaydet",
+                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
@@ -1087,23 +1011,31 @@ class _AppointmentCardState extends State<AppointmentCard> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter innerSetState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Color(0xFF222831),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            return GlassmorphicContainer(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.8,
+              borderRadius: 20,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              padding: EdgeInsets.all(16.0),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+              padding: EdgeInsets.all(16),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       "Anket Detayları",
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
                     ),
                     SizedBox(height: 16),
                     if (answers.isNotEmpty) ...[
-                      // Cevaplanmış anketlerin cevaplarını göster
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: List.generate(_questionControllers.length, (index) {
@@ -1112,12 +1044,12 @@ class _AppointmentCardState extends State<AppointmentCard> {
                             children: [
                               Text(
                                 "Soru ${index + 1}: ${_questionControllers[index].text}",
-                                style: TextStyle(color: Colors.white, fontSize: 16),
+                                style: GoogleFonts.poppins(color: _textColor, fontSize: 16),
                               ),
                               SizedBox(height: 8),
                               Text(
                                 "Cevap: ${answers[index] ?? 'Cevap yok'}",
-                                style: TextStyle(color: Colors.green, fontSize: 14),
+                                style: GoogleFonts.poppins(color: Colors.green, fontSize: 14),
                               ),
                               SizedBox(height: 16),
                             ],
@@ -1125,7 +1057,6 @@ class _AppointmentCardState extends State<AppointmentCard> {
                         }),
                       ),
                     ] else ...[
-                      // Cevaplanmamış anketleri düzenleme görünümü
                       Column(
                         children: List.generate(_questionControllers.length, (index) {
                           return Row(
@@ -1136,13 +1067,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
                                   decoration: InputDecoration(
                                     hintText: "Soru ${index + 1}",
                                     filled: true,
-                                    fillColor: Color(0xFF393E46),
+                                    fillColor: _backgroundColor.withOpacity(0.8),
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12.0),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
+                                    contentPadding: EdgeInsets.all(16),
                                   ),
-                                  style: TextStyle(color: Colors.white),
+                                  style: GoogleFonts.poppins(color: _textColor),
                                 ),
                               ),
                               Checkbox(
@@ -1160,12 +1092,10 @@ class _AppointmentCardState extends State<AppointmentCard> {
                       SizedBox(height: 16),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF76ABAE),
+                          backgroundColor: _primaryColor,
                           foregroundColor: Colors.white,
                           minimumSize: Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () {
                           innerSetState(() {
@@ -1175,19 +1105,16 @@ class _AppointmentCardState extends State<AppointmentCard> {
                         },
                         child: Text(
                           "Soru Ekle",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                       SizedBox(height: 16),
-                      //Bir daha aynı dersi almayı düşünüyor musunuz?
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF76ABAE),
+                          backgroundColor: _primaryColor,
                           foregroundColor: Colors.white,
                           minimumSize: Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () async {
                           List<String> questions = [];
@@ -1196,20 +1123,20 @@ class _AppointmentCardState extends State<AppointmentCard> {
                             questions.add("${_questionControllers[i].text} $suffix");
                           }
                           LoadingIndicator(context).showLoading();
-
                           await FirestoreService().updateAppointmentSurveyQuestions(
-                              widget.appointmentUID,
-                              survey["UID"],
-                              appData["author"],
-                              appData["student"],
-                              questions);
+                            widget.appointmentUID,
+                            survey["UID"],
+                            appData["author"],
+                            appData["student"],
+                            questions,
+                          );
                           await getData();
                           Navigator.pop(context);
                           Navigator.pop(context);
                         },
                         child: Text(
                           "Kaydet",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -1227,21 +1154,17 @@ class _AppointmentCardState extends State<AppointmentCard> {
     List<TextEditingController> _answerControllers = (survey["questions"] as List)
         .map((_) => TextEditingController())
         .toList();
-    List<dynamic> mandatoryQuestions = (survey["questions"] as List)
-        .where((q) => q.contains("(-*)"))
-        .toList();
+    List<dynamic> mandatoryQuestions =
+    (survey["questions"] as List).where((q) => q.contains("(-*)")).toList();
 
     Future<void> saveAnswers() async {
       LoadingIndicator(context).showLoading();
-
       List<String> answers = _answerControllers.map((controller) => controller.text).toList();
 
-      // Zorunlu sorular kontrolü
       for (int i = 0; i < mandatoryQuestions.length; i++) {
         if (answers[i].trim().isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Zorunlu soruları doldurmanız gerekiyor.")),
-          );
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text("Zorunlu soruları doldurmanız gerekiyor.")));
           return;
         }
       }
@@ -1263,19 +1186,28 @@ class _AppointmentCardState extends State<AppointmentCard> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF222831),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        return GlassmorphicContainer(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.8,
+          borderRadius: 20,
+          blur: 30,
+          border: 0,
+          linearGradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          padding: EdgeInsets.all(16.0),
+          borderGradient: LinearGradient(
+            colors: [Colors.white24, Colors.white12],
+          ),
+          padding: EdgeInsets.all(16),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "Anketi Doldur",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
                 ),
                 SizedBox(height: 16),
                 Column(
@@ -1285,7 +1217,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
                       children: [
                         Text(
                           survey["questions"][index].split(" (-")[0],
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          style: GoogleFonts.poppins(color: _textColor, fontSize: 16),
                         ),
                         SizedBox(height: 8),
                         TextFormField(
@@ -1294,13 +1226,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
                           decoration: InputDecoration(
                             hintText: "Cevabınızı yazın",
                             filled: true,
-                            fillColor: Color(0xFF393E46),
+                            fillColor: _backgroundColor.withOpacity(0.8),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.0),
+                              borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
+                            contentPadding: EdgeInsets.all(16),
                           ),
-                          style: TextStyle(color: Colors.white),
+                          style: GoogleFonts.poppins(color: _textColor),
                         ),
                         SizedBox(height: 16),
                       ],
@@ -1309,17 +1242,16 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF76ABAE),
+                    backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
                     minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: saveAnswers,
-                  child: Text("Cevapları Kaydet",
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),),
+                  child: Text(
+                    "Cevapları Kaydet",
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -1329,25 +1261,32 @@ class _AppointmentCardState extends State<AppointmentCard> {
     );
   }
 
+  // ===================== APPOINTMENT CARD =====================
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => _showAppointmentDetails(context),
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(25), // Yuvarlak köşe
-            topRight: Radius.circular(25), // Yuvarlak köşe
-            bottomLeft: Radius.circular(25), // Sivri köşe
-            bottomRight: Radius.circular(25),
-          ),
-          side: BorderSide(
-            width: 2,
-            color: Color(int.parse("#31363F".substring(1, 7), radix: 16) + 0xFF000000),
-          ),
+      child: isLoading
+          ? Center(
+        child: LoadingAnimationWidget.inkDrop(color: _primaryColor, size: 50),
+      )
+          : GlassmorphicContainer(
+        width: double.infinity,
+        height: 300,
+        borderRadius: 25,
+        blur: 20,
+        border: 2,
+        // Kart arka planında modern ve hafif renk geçişi kullanılıyor.
+        linearGradient: LinearGradient(
+          colors: [_primaryColor.withOpacity(0.2), _backgroundColor.withOpacity(0.2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        color: Color(int.parse("#222831".substring(1, 7), radix: 16) + 0xFF000000),
-        child: isLoading ? Center(child: LoadingAnimationWidget.inkDrop(color: Colors.white, size: 50),): Column(
+        borderGradient: LinearGradient(
+          colors: [Colors.white24, Colors.white12],
+        ),
+        child: Column(
           children: <Widget>[
             Expanded(
               child: ClipRRect(
@@ -1358,51 +1297,53 @@ class _AppointmentCardState extends State<AppointmentCard> {
                   bottomRight: Radius.circular(15),
                 ),
                 child: PageView(
-                  children: courseData['photos'].map<Widget>((photoUrl) {
+                  children: (courseData['photos'] as List<dynamic>?)?.map<Widget>((photoUrl) {
                     return Image.network(photoUrl, fit: BoxFit.cover);
-                  }).toList(),
+                  }).toList() ??
+                      [],
                 ),
               ),
             ),
             SizedBox(height: 4),
             TextButton(
               child: Text(
-                courseData['name'],
-                style: TextStyle(
+                courseData['name'] ?? '',
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   fontSize: MediaQuery.of(context).size.width >= 800 ? 20 : 15,
-                  color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
+                  color: _darkColor,
                 ),
               ),
               onPressed: () {
-                context.go('/courses/' + courseData["uid"]); // CategoriesPage'e yönlendirme
+                context.go('/courses/' + (courseData["uid"] ?? ''));
               },
             ),
             Text(
-              authorData["name"],
-              style: TextStyle(
+              authorData["name"] ?? '',
+              style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: MediaQuery.of(context).size.width >= 800 ? 15 : 12,
-                color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
+                color: _darkColor,
               ),
             ),
-            if(MediaQuery.of(context).size.width >= 800) SizedBox(height: 8,),
-            if(MediaQuery.of(context).size.width >= 800) Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(Icons.calendar_month, color: Color(0xFFEEEEEE),),
-                SizedBox(width: 10,),
-                Text(
-                  dateStr,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Color(int.parse("#EEEEEE".substring(1, 7), radix: 16) + 0xFF000000),
+            if (MediaQuery.of(context).size.width >= 800) SizedBox(height: 8),
+            if (MediaQuery.of(context).size.width >= 800)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(Icons.calendar_month, color: _darkColor),
+                  SizedBox(width: 10),
+                  Text(
+                    dateStr,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: _darkColor,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8,),
+                ],
+              ),
+            SizedBox(height: 8),
           ],
         ),
       ),
@@ -1410,7 +1351,6 @@ class _AppointmentCardState extends State<AppointmentCard> {
   }
 }
 
-// Mevcut dosyaları temsil etmek için özel bir sınıf
 class ExistingFile {
   final String name;
   final String url;

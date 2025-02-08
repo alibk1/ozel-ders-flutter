@@ -203,6 +203,44 @@ class _BlogsPageState extends State<BlogsPage> {
     );
   }
 
+  Widget _buildHeaderSection() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_primaryColor, _darkColor],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Blog",
+            style: GoogleFonts.poppins(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          // İsteğe bağlı: kısa açıklama ekleyebilirsiniz
+          SizedBox(height: 10),
+          Text(
+            "Bilgilendirici İçerikler Burada...",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -235,6 +273,7 @@ class _BlogsPageState extends State<BlogsPage> {
         child: CustomScrollView(
           slivers: [
             _buildAppBar(isMobile),
+            SliverToBoxAdapter(child: _buildHeaderSection()),
             SliverPadding(
               padding: EdgeInsets.symmetric(
                 horizontal: isMobile ? 16 : screenWidth * 0.2, // Masaüstünde sağdan ve soldan boşluk
@@ -387,8 +426,7 @@ class _BlogsPageState extends State<BlogsPage> {
     return Row(
       children: [
         _HeaderButton(title: 'Ana Sayfa', route: '/'),
-        _HeaderButton(title: 'Kategoriler', route: '/categories'),
-        _HeaderButton(title: 'Terapiler', route: '/courses'),
+        _HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
         _HeaderButton(title: 'Blog', route: '/blogs'),
         if (isLoggedIn)
           _HeaderButton(

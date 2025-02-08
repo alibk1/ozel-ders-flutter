@@ -67,15 +67,8 @@ class DrawerMenu extends StatelessWidget {
               darkColor: darkColor,
             ),
             _buildDrawerItem(
-              icon: Icons.category,
-              text: 'Kategoriler',
-              onTap: () => context.go('/categories'),
-              primaryColor: primaryColor,
-              darkColor: darkColor,
-            ),
-            _buildDrawerItem(
               icon: Icons.school,
-              text: 'Terapiler',
+              text: 'Danışmanlıklar',
               onTap: () => context.go('/courses'),
               primaryColor: primaryColor,
               darkColor: darkColor,

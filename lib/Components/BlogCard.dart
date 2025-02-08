@@ -77,7 +77,7 @@ class _BlogCardState extends State<BlogCard> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            context.go('/blog/${widget.blog["uid"]}');
+            context.go('/blog/${widget.blog["UID"]}');
           },
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
