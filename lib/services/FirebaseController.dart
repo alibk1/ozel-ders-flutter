@@ -1198,6 +1198,22 @@ class FirestoreService {
       print('Popularity alanı bu dökümanda mevcut değil.');
     }
   }
+  Future<List<Map<String, dynamic>>> getCoursesByPopularity(int firstIndex, int lastIndex) async {
+    // Firestore referansı
+    final CollectionReference coursesRef = _db.collection('courses');
 
+    // Popülerlik alanına göre azalan şekilde tüm belgeleri çek
+    QuerySnapshot querySnapshot = await coursesRef
+        .orderBy('popularity', descending: true)
+        .limit(lastIndex) // Son indexe kadar veri çekiyoruz
+        .get();
 
+    // Belgeleri Map listesine çevir
+    List<Map<String, dynamic>> allCourses = querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .toList();
+
+    // İstenen aralığı keserek döndür
+    return allCourses.sublist(firstIndex, lastIndex);
+  }
 }
