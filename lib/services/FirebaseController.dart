@@ -1165,5 +1165,39 @@ class FirestoreService {
       return {...data, 'uid': doc.id};
     }).toList();
   }
+  Future<void> updateCoursePopularity(courseUid,int updatePopularity) async {
+
+    Map<String, dynamic> data = await getCourseByUID(courseUid);// bu data firebase serviceye al
+
+    if (data['popularity'] != null) {
+        print('Popularity: ${data['popularity']}');
+        // Popularityi güncelle
+        int currentPopularity = data['popularity'];
+        int newPopularity = currentPopularity + updatePopularity;
+        await _db.collection("courses").doc(courseUid).update({'popularity': newPopularity});
+        print('Popularity güncellendi: $newPopularity');
+      } else {
+        print('Popularity alanı bu dökümanda mevcut değil.');
+      }
+
+  }
+  Future<void> updateTeacherPopularity(teacherUid,int updatePopularity) async {
+    getTeacherByUID(teacherUid);// bu data firebase serviceye al
+
+    Map<String, dynamic> data = await getTeacherByUID(teacherUid);// bu data firebase serviceye al
+
+
+    if (data['popularity'] != null) {
+      print('Popularity: ${data['popularity']}');
+      // Popularityi güncelle
+      int currentPopularity = data['popularity'];
+      int newPopularity = currentPopularity + updatePopularity;
+      await _db.collection("teachers").doc(teacherUid).update({'popularity': newPopularity});
+      print('Popularity güncellendi: $newPopularity');
+    } else {
+      print('Popularity alanı bu dökümanda mevcut değil.');
+    }
+  }
+
 
 }

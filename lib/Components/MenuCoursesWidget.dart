@@ -89,30 +89,6 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
 
     return courseCountScore + ratingSum + appointmentCount + (blogCount * 2);
   }
-  Future<void> _updatePopularity(courseUid,int updatePopularity) async {
-    final db = FirebaseFirestore.instance;
-
-    final docRef = db.collection("courses").doc(courseUid);
-    final courseSnapshot = await docRef.get();
-    if (courseSnapshot.exists) {
-      Map<String, dynamic> data = courseSnapshot.data()!;
-      if (data['popularity'] != null) {
-        print('Popularity: ${data['popularity']}');
-        // Popularityi güncelle
-        int currentPopularity = data['popularity'];
-        int newPopularity = currentPopularity + updatePopularity;
-        await docRef.update({'popularity': newPopularity});
-        print('Popularity güncellendi: $newPopularity');
-      } else {
-        print('Popularity alanı bu dökümanda mevcut değil.');
-      }
-
-    }
-     else {
-      print('Document does not exist.');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
