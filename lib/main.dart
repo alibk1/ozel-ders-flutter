@@ -10,8 +10,10 @@ import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
-import 'package:ozel_ders/Login3.dart';
+import 'package:ozel_ders/auth.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
+import 'package:ozel_ders/Login3.dart';
+
 
 import 'ProfilePage.dart';
 //import 'auth.dart';
@@ -91,8 +93,14 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => LoginRegisterScreen()//LoginSignupPage(reference: "",),
+        builder: (context, state) => LoginRegisterScreen(),
       ),
+      GoRoute(path: '/oldlogin',
+        builder: (context, state) => LoginSignupPage(reference: '',),),
+
+
+
+
       /*GoRoute(
         path: '/newuser/:uid',
         builder: (context, state) {
@@ -136,6 +144,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: "Vitament",
       routerConfig: _router,
       localizationsDelegates: const [
