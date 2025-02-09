@@ -108,6 +108,8 @@ flutter:
     - assets/therapy.jpg
     - assets/default_profile.png
     - assets/therapy-login.jpg
+    - assets/therapy-login2.jpg
+    - assets/therapy-login3.jpg
     - assets/therapy-main.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see

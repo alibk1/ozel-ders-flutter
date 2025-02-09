@@ -9,7 +9,7 @@ class FooterSection extends StatelessWidget {
   final Color _darkColor = Color(0xFF3C72C2); // Koyu arka plan
   final Color _lightColor = Color(0xFFEEEEEE); // Açık metin rengi
   final Gradient _gradientBackground = LinearGradient(
-    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkler
+    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
