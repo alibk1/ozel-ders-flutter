@@ -11,6 +11,7 @@ import 'package:ozel_ders/Components/CourseCard.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
 import 'package:ozel_ders/Components/BlogCard.dart';
 import 'package:ozel_ders/Components/Drawer.dart';
+import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -73,7 +74,6 @@ class _ProfilePageState extends State<ProfilePage> {
     initData();
   }
 
-  /// Veritabanı ve kimlik kontrollerini yapıyoruz
   Future<void> initData() async {
     isLoggedIn = await AuthService().isUserSignedIn();
     if (isLoggedIn) {
@@ -140,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
           : SafeArea(
         child: CustomScrollView(
           slivers: [
-            _buildSliverAppBar(isMobile),   // SliverAppBar
+            _buildSliverAppBar(isMobile),
             SliverToBoxAdapter(
               child: isMobile
                   ? _buildMobileProfile()
@@ -181,7 +181,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-      actions: isMobile ? null : _buildDesktopMenuActions(),
+      actions: isMobile ? null : [_buildDesktopMenuActions()],
       flexibleSpace: LayoutBuilder(
         builder: (context, constraints) {
           final isExpanded = constraints.maxHeight > kToolbarHeight;
@@ -212,54 +212,23 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
 
-  List<Widget> _buildDesktopMenuActions() {
-    return [
-      TextButton(
-        onPressed: () => context.go('/'),
-        child: Text(
-          'Ana Sayfa',
-          style: GoogleFonts.poppins(
-              color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-      TextButton(
-        onPressed: () => context.go('/courses'),
-        child: Text(
-          'Danışmanlıklar',
-          style: GoogleFonts.poppins(
-              color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-      TextButton(
-        onPressed: () => context.go('/blogs'),
-        child: Text(
-          'Blog',
-          style: GoogleFonts.poppins(
-              color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-      if (isLoggedIn)
-        TextButton(
-          onPressed: () =>
-              context.go('/appointments/${AuthService().userUID()}'),
-          child: Text(
-            'Randevularım',
-            style: GoogleFonts.poppins(
-                color: Colors.white, fontWeight: FontWeight.bold),
+  Widget _buildDesktopMenuActions() {
+    return Row(
+      children: [
+        HeaderButton(title: 'Ana Sayfa', route: '/'),
+        HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
+        HeaderButton(title: 'Blog', route: '/blogs'),
+        if (isLoggedIn)
+          HeaderButton(
+            title: 'Randevularım',
+            route: '/appointments/${AuthService().userUID()}',
           ),
+        HeaderButton(
+          title: isLoggedIn ? 'Profilim' : 'Giriş Yap',
+          route: isLoggedIn ? '/profile/${AuthService().userUID()}' : '/login',
         ),
-      TextButton(
-        onPressed: () => context.go(isLoggedIn
-            ? '/profile/${AuthService().userUID()}'
-            : '/login'),
-        child: Text(
-          isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
-          style: GoogleFonts.poppins(
-              color: isSelf ? _primaryColor : Colors.white,
-              fontWeight: FontWeight.bold),
-        ),
-      ),
-    ];
+      ],
+    );
   }
 
   // ************************ Mobil Versiyon ************************
@@ -287,42 +256,229 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildDesktopProfile() {
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 1200),
+        constraints: const BoxConstraints(maxWidth: 1100),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildProfileHeader(),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Soldaki 'Hakkında' bölümü
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: _buildAboutSection(isExpanded: false),
-                  ),
-                  const SizedBox(width: 16),
-                  // Sağ tarafta kurslar/blog
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildCoursesSection(isExpanded: false),
-                        SizedBox(height: 16),
-                        _buildBlogsSection(isExpanded: false),
-                      ],
-                    ),
-                  ),
-                ],
+              // SOL SÜTUN: Profil Header + Hakkında
+              Expanded( // 🔹 Expanded ile sol alan sabit
+                flex: 1,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildProfileHeader(),
+                    const SizedBox(height: 16),
+                    _buildAboutSection(isExpanded: false),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // SAĞ SÜTUN: Danışmanlıklar (Kurslar) + Bloglar
+              Expanded( // 🔹 Expanded ile sağ alan sabit
+                flex: 1,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildCoursesSection(isExpanded: false),
+                    const SizedBox(height: 16),
+                    _buildBlogsSection(isExpanded: false),
+                  ],
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // **************** Kurslar (Danışmanlıklar) Bölümü ****************
+
+  Widget _buildCoursesSection({required bool isExpanded}) {
+    Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isTeacher ? 'Verdiği Danışmanlıklar' : 'Aldığı Danışmanlıklar',
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _headerTextColor),
+            ),
+            if (isSelf || (isCurrentTeam && teamUidIfCurrent == userInfo["reference"]))
+              IconButton(
+                onPressed: () => _showCreateCourseDialog(context),
+                icon: const Icon(Icons.add_circle, color: Colors.black),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container( // 🔹 Genişliği zorunlu tutuyoruz
+          width: double.infinity,
+          child: CarouselSlider(
+            options: CarouselOptions(
+              aspectRatio: 1.2,
+              enlargeCenterPage: true,
+              enableInfiniteScroll: false,
+              scrollDirection: Axis.horizontal, // 🔹 Dikeyden yataya çevirdik
+            ),
+            items: (userInfo['courses'] as List<dynamic>?)
+                ?.map<Widget>((courseId) {
+              return FutureBuilder<Map<String, dynamic>>(
+                future: FirestoreService().getCourseByUID(courseId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Hata: ${snapshot.error}',
+                        style: GoogleFonts.poppins(color: _bodyTextColor)));
+                  } else if (!snapshot.hasData) {
+                    return Center(child: Text('Veri yok',
+                        style: GoogleFonts.poppins(color: _bodyTextColor)));
+                  } else {
+                    final courseData = snapshot.data!;
+                    return FutureBuilder<Map<String, dynamic>>(
+                      future: FirestoreService().getTeacherByUID(courseData["author"]),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Hata: ${snapshot.error}',
+                              style: GoogleFonts.poppins(color: _bodyTextColor)));
+                        } else if (!snapshot.hasData) {
+                          return Center(child: Text('Veri yok',
+                              style: GoogleFonts.poppins(color: _bodyTextColor)));
+                        } else {
+                          final authorData = snapshot.data!;
+                          return Container(
+                            width: double.infinity, // 🔹 Genişliği zorla
+                            child: CourseCard(course: courseData, author: authorData),
+                          );
+                        }
+                      },
+                    );
+                  }
+                },
+              );
+            }).toList() ?? [],
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 500.ms);
+
+    return isExpanded
+        ? Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: content,
+      ),
+    )
+        : content;
+  }
+
+  // **************** Bloglar Bölümü ****************
+
+  Widget _buildBlogsSection({required bool isExpanded}) {
+    Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Yazdığı Bloglar',
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _headerTextColor),
+            ),
+            if (isSelf)
+              IconButton(
+                onPressed: () {
+                  context.go("/blog-create/${userInfo["uid"]}");
+                },
+                icon: const Icon(Icons.add_circle, color: Colors.black),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container( // 🔹 Genişliği zorunlu tutuyoruz
+          width: double.infinity,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: isTeacher
+                ? FirestoreService().getTeacherBlogs(widget.uid)
+                : Future.value([]),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                    height: 50,
+                    child: Center(child: CircularProgressIndicator()));
+              } else if (snapshot.hasError) {
+                return Text('Hata: ${snapshot.error}',
+                    style: GoogleFonts.poppins(color: _bodyTextColor));
+              } else {
+                final blogs = snapshot.data ?? [];
+                if (blogs.isEmpty) {
+                  return Text('Henüz blog yok.',
+                      style: GoogleFonts.poppins(color: _bodyTextColor));
+                } else {
+                  return CarouselSlider(
+                    options: CarouselOptions(
+                      aspectRatio: 1.3,
+                      enableInfiniteScroll: false,
+                      enlargeCenterPage: true,
+                      scrollDirection: Axis.horizontal,
+                    ),
+                    items: blogs.map((blog) {
+                      return Container( // 🔹 Genişliği zorla
+                        width: double.infinity,
+                        child: Stack(
+                          children: [
+                            BlogCard(blog: blog),
+                            if (isSelf)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  icon: const Icon(Icons.build_circle,
+                                      color: Colors.black, size: 35),
+                                  onPressed: () {
+                                    context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }
+              }
+            },
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 500.ms);
+
+    return isExpanded
+        ? Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: content,
+      ),
+    )
+        : content;
   }
 
   void showAppointmentsBottomSheet(BuildContext context,) {
@@ -876,8 +1032,9 @@ class _ProfilePageState extends State<ProfilePage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [_darkColor, _primaryColor.withOpacity(0.6)],
+          colors: [_primaryColor.withOpacity(0.6), _darkColor, _primaryColor.withOpacity(0.6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1025,190 +1182,6 @@ class _ProfilePageState extends State<ProfilePage> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: content,
     );
-  }
-
-  // **************** Kurslar (Danışmanlıklar) Bölümü ****************
-
-  Widget _buildCoursesSection({required bool isExpanded}) {
-    Widget content = Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              isTeacher ? 'Verdiği Danışmanlıklar' : 'Aldığı Danışmanlıklar',
-              style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _headerTextColor),
-            ),
-            if (isSelf ||
-                (isCurrentTeam && teamUidIfCurrent == userInfo["reference"]))
-              IconButton(
-                onPressed: () => _showCreateCourseDialog(context),
-                icon: const Icon(Icons.add_circle, color: Colors.black),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        CarouselSlider(
-          options: CarouselOptions(
-            aspectRatio: 1,
-            enlargeCenterPage: true,
-            enableInfiniteScroll: false,
-            scrollDirection: Axis.vertical,
-          ),
-          items: (userInfo['courses'] as List<dynamic>?)
-              ?.map<Widget>((courseId) {
-            return FutureBuilder<Map<String, dynamic>>(
-              future: FirestoreService().getCourseByUID(courseId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(
-                      child: Text('Hata: ${snapshot.error}',
-                          style: GoogleFonts.poppins(color: _bodyTextColor)));
-                } else if (!snapshot.hasData) {
-                  return Center(
-                      child: Text('Veri yok',
-                          style: GoogleFonts.poppins(color: _bodyTextColor)));
-                } else {
-                  final courseData = snapshot.data!;
-                  return FutureBuilder<Map<String, dynamic>>(
-                    future: FirestoreService().getTeacherByUID(courseData["author"]),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        return Center(
-                            child: Text('Hata: ${snapshot.error}',
-                                style: GoogleFonts.poppins(color: _bodyTextColor)));
-                      } else if (!snapshot.hasData) {
-                        return Center(
-                            child: Text('Veri yok',
-                                style: GoogleFonts.poppins(color: _bodyTextColor)));
-                      } else {
-                        final authorData = snapshot.data!;
-                        return CourseCard(course: courseData, author: authorData);
-                      }
-                    },
-                  );
-                }
-              },
-            );
-          }).toList() ??
-              [],
-        ),
-      ],
-    ).animate().fadeIn(duration: 500.ms);
-    return isExpanded
-        ? Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: content,
-      ),
-    )
-        : content;
-  }
-
-  // **************** Bloglar Bölümü ****************
-
-  Widget _buildBlogsSection({required bool isExpanded}) {
-    Widget content = Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Yazdığı Bloglar',
-              style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _headerTextColor),
-            ),
-            if (isSelf)
-              IconButton(
-                onPressed: () {
-                  context.go("/blog-create/${userInfo["uid"]}");
-                },
-                icon: const Icon(Icons.add_circle, color: Colors.black),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        FutureBuilder<List<Map<String, dynamic>>>(
-          future: isTeacher
-              ? FirestoreService().getTeacherBlogs(widget.uid)
-              : Future.value([]),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(
-                  height: 50,
-                  child: Center(child: CircularProgressIndicator()));
-            } else if (snapshot.hasError) {
-              return Text('Hata: ${snapshot.error}',
-                  style: GoogleFonts.poppins(color: _bodyTextColor));
-            } else {
-              final blogs = snapshot.data ?? [];
-              if (blogs.isEmpty) {
-                return Text('Henüz blog yok.',
-                    style: GoogleFonts.poppins(color: _bodyTextColor));
-              } else {
-                return CarouselSlider(
-                  options: CarouselOptions(
-                    aspectRatio: 3,
-                    height: 300.0,
-                    enableInfiniteScroll: false,
-                    enlargeCenterPage: true,
-                    scrollDirection: Axis.horizontal,
-                  ),
-                  items: blogs.map((blog) {
-                    return Stack(
-                      children: [
-                        Container(
-                          height: 300,
-                          width: 500,
-                          child: BlogCard(blog: blog),
-                        ),
-                        if (isSelf)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: IconButton(
-                              icon: const Icon(Icons.build_circle,
-                                  color: Colors.black, size: 35),
-                              onPressed: () {
-                                context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
-                              },
-                            ),
-                          ),
-                      ],
-                    );
-                  }).toList(),
-                );
-              }
-            }
-          },
-        ),
-      ],
-    ).animate().fadeIn(duration: 500.ms);
-    return isExpanded
-        ? Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: content,
-      ),
-    )
-        : content;
   }
 
   // **************** Diyalog ve Yardımcı Metotlar ****************

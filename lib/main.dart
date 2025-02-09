@@ -10,10 +10,11 @@ import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
+import 'package:ozel_ders/Login3.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
 
 import 'ProfilePage.dart';
-import 'auth.dart';
+//import 'auth.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -90,15 +91,17 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => LoginSignupPage(reference: "",),
+        builder: (context, state) => LoginRegisterScreen()//LoginSignupPage(reference: "",),
       ),
-      GoRoute(
+      /*GoRoute(
         path: '/newuser/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
           return LoginSignupPage(reference: uid);
         },
       ),
+
+       */
       GoRoute(
         path: '/profile/:uid',
         builder: (context, state) {

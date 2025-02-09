@@ -2,17 +2,12 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:ozel_ders/BlogCreatePage.dart';
 import 'package:ozel_ders/Components/LoadingIndicator.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:ozel_ders/Components/comment.dart';
-import 'package:ozel_ders/services/JitsiService.dart';
-import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' as dt_picker;
-
 import 'Components/Drawer.dart';
 
 class CoursePage extends StatefulWidget {

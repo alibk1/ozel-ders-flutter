@@ -40,6 +40,11 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     clientId: '619520758342-mc02si573tea3f48n429fmbkngnpd38c.apps.googleusercontent.com',
   );
 
+  final Gradient _gradientBackground = LinearGradient(
+    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
   final Color _primaryColor = Color(0xFFA7D8DB);
   final Color _backgroundColor = Color(0xFFEEEEEE);
   final Color _darkColor = Color(0xFF3C72C2);
@@ -75,59 +80,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       _selectedRole = role;
     });
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
-
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: _backgroundColor,
-      drawer: isMobile ? DrawerMenu(isLoggedIn: false) : null,
-      body: _buildMainContent(isMobile),
-    );
-  }
-
-  Widget _buildMainContent(bool isMobile) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(isMobile),
-            SliverToBoxAdapter(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Container(
-                    height: MediaQuery.of(context).size.height,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        if (constraints.maxWidth < 800) {
-                          return _buildMobileLayout();
-                        } else {
-                          return _buildDesktopLayout();
-                        }
-                      },
-                    ),
-                  ),
-                  FooterSection(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
       backgroundColor: Colors.transparent,
@@ -183,6 +135,52 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: _backgroundColor,
+      drawer: isMobile ? DrawerMenu(isLoggedIn: false) : null,
+      body: _buildMainContent(isMobile),
+    );
+  }
+
+  Widget _buildMainContent(bool isMobile) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: _gradientBackground
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(isMobile),
+            SliverToBoxAdapter(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 800) {
+                          return _buildMobileLayout();
+                        } else {
+                          return _buildDesktopLayout();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDesktopMenu() {
     return Row(
       children: [
@@ -197,44 +195,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     );
   }
 
-  Widget _buildMobileLayout() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Color(0xFF222831),
-          border: Border.all(color: Color(0xFF76ABAE), width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: _buildForm(),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _isLogin = !_isLogin;
-                });
-              },
-              child: Text(_isLogin
-                  ? 'Hala kayıt olmadın mı? Kayıt Ol'
-                  : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildDesktopLayout() {
     return Expanded(
@@ -274,24 +234,21 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
 
   Widget _buildFormContainer({required Widget child, required String imagePath}) {
     return Container(
+      height: MediaQuery.of(context).size.height / 1.5,
+      width: MediaQuery.of(context).size.width / 3,
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Color(0xFF222831),
         border: Border.all(color: Color(0xFF76ABAE), width: 2),
         borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          SizedBox(width: 16),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -319,16 +276,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
     );
   }
 
-  Widget _buildForm() {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      child: Column(
-        key: ValueKey<bool>(_isLogin),
-        children: _isLogin ? _buildLoginFields() : _buildSignupFields(),
-      ),
-    );
-  }
 
   List<Widget> _buildLoginFields() {
     return [
@@ -541,6 +488,57 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       ),
     ];
   }
+
+  Widget _buildForm() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: Column(
+        key: ValueKey<bool>(_isLogin),
+        children: _isLogin ? _buildLoginFields() : _buildSignupFields(),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Color(0xFF222831),
+          border: Border.all(color: Color(0xFF76ABAE), width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: _buildForm(),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isLogin = !_isLogin;
+                });
+              },
+              child: Text(_isLogin
+                  ? 'Hala kayıt olmadın mı? Kayıt Ol'
+                  : 'Zaten hesabın var mı? Giriş Yap', style: TextStyle(color: Color(0xFF76ABAE)),),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Future<void> _login() async {
     try {
