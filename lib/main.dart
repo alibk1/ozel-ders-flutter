@@ -13,8 +13,7 @@ import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/auth.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
 import 'package:ozel_ders/Login3.dart';
-
-
+import 'Components/Navbar.dart';
 import 'ProfilePage.dart';
 //import 'auth.dart';
 import 'firebase_options.dart';
@@ -79,6 +78,13 @@ class MyApp extends StatelessWidget {
         path: '/blogs',
         builder: (context, state) => BlogsPage(),
       ),
+
+      //NAvbar deneme route yeri
+      GoRoute(
+        path: '/navbar',
+        builder: (context, state) => Navbar(),
+      ),
+
       GoRoute(
         path: '/courses/:category/:subcategory',
         builder: (context, state) {

@@ -9,6 +9,7 @@ import 'package:ozel_ders/Components/LoadingIndicator.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:ozel_ders/Components/comment.dart';
 import 'Components/Drawer.dart';
+import 'Components/Navbar.dart';
 
 class CoursePage extends StatefulWidget {
   final String uid;

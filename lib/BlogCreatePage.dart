@@ -14,6 +14,7 @@ class BlogWritePage extends StatefulWidget {
   final bool isUpdate;
   final String? blogUID;
 
+
   BlogWritePage({
     required this.uid,
     this.isUpdate = false,
@@ -32,6 +33,11 @@ class _BlogWritePageState extends State<BlogWritePage> {
   bool inited = false;
   String oldText = "";
   String oldTitle = "";
+
+
+  final Color _primaryColor = Color(0xFFA7D8DB);
+  final Color _backgroundColor = Color(0xFFEEEEEE);
+  final Color _darkColor = Color(0xFF3C72C2);
 
   // Seçilen resimleri geçici olarak saklamak için bir harita
   Map<String, XFile> _localImages = {};
@@ -236,13 +242,14 @@ class _BlogWritePageState extends State<BlogWritePage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF222831),
+        backgroundColor: Color(0xFF76ABAE),
         title: Text(
-          widget.isUpdate ? 'Blog Yazısını Düzenle' : 'Yeni Blog Yazısı',
+          widget.isUpdate ? 'BLOG YAZISINI DÜZENLE' : 'YENİ BLOG YAZISI',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.white70,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 26,
+            letterSpacing: 1.1
           ),
         ),
         centerTitle: true,
@@ -255,7 +262,7 @@ class _BlogWritePageState extends State<BlogWritePage> {
       )
           : SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(vertical: 26.0, horizontal: 96.0),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: screenWidth - 20),
@@ -265,16 +272,16 @@ class _BlogWritePageState extends State<BlogWritePage> {
                   // Başlık Alanı
                   TextField(
                     controller: _titleController,
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.black),
                     decoration: InputDecoration(
                       labelText: 'Başlık',
-                      labelStyle: TextStyle(color: Colors.white70),
+                      labelStyle: TextStyle(color: Colors.black),
                       filled: true,
-                      fillColor: Color(0xFF393E46),
+                      fillColor: Color(0xF2FFFFFF),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.0),
                         borderSide: BorderSide(
-                            color: Colors.white70, width: 1.0),
+                            color: Colors.black12, width: 2.0),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.0),
@@ -290,43 +297,43 @@ class _BlogWritePageState extends State<BlogWritePage> {
                   // Zengin Metin Düzenleyici
                   Container(
                     decoration: BoxDecoration(
-                      color: Color(0xFF393E46),
+                      color: Color(0xF2FFFFFF),
                       borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: Colors.white70),
+                      border: Border.all(color: Colors.black12),
                     ),
                     child:inited
                         ? ZefyrTheme(
                         data : ZefyrThemeData(
                           bold: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                           italic: TextStyle(
                             fontStyle: FontStyle.italic,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                           underline: TextStyle(
                             decoration: TextDecoration.underline,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                           strikethrough: TextStyle(
                             decoration: TextDecoration.lineThrough,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                           link: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black,
                             decoration: TextDecoration.underline,
                           ),
                           paragraph: TextBlockTheme(
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontSize: 16,
                             ),
                             spacing: VerticalSpacing(),
                           ),
                           heading1: TextBlockTheme(
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 24,
                             ),
@@ -334,7 +341,7 @@ class _BlogWritePageState extends State<BlogWritePage> {
                           ),
                           heading2: TextBlockTheme(
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
                             ),
@@ -342,7 +349,7 @@ class _BlogWritePageState extends State<BlogWritePage> {
                           ),
                           heading3: TextBlockTheme(
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontWeight: FontWeight.w600,
                               fontSize: 18,
                             ),
@@ -350,14 +357,14 @@ class _BlogWritePageState extends State<BlogWritePage> {
                           ),
                           lists: TextBlockTheme(
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontSize: 16,
                             ),
                             spacing: VerticalSpacing(),
                           ),
                           quote: TextBlockTheme(
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontSize: 16,
                               fontStyle: FontStyle.italic,
                             ),
@@ -400,53 +407,61 @@ class _BlogWritePageState extends State<BlogWritePage> {
                   ),
                   SizedBox(height: 24.0),
                   // Resim Ekleme Butonu
-                  ElevatedButton.icon(
-                    onPressed: _pickImage,
-                    icon: Icon(Icons.image),
-                    label: Text(
-                      'Resim Ekle',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF76ABAE),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _pickImage,
+                          icon: Icon(Icons.image),
+                          label: Text(
+                            'Resim Ekle',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF76ABAE),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            textStyle: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                      textStyle: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      SizedBox(width: 16), // Butonlar arasındaki boşluk
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _saveBlogPost,
+                          child: Text(
+                            'Gönder',
+                            style: TextStyle(
+                              fontSize: screenWidth < 800 ? 16.0 : 18.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF76ABAE),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16.0), // Aynı yükseklik
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 24.0),
-                  // Gönder Butonu
-                  ElevatedButton(
-                    onPressed: _saveBlogPost,
-                    child: Text(
-                      'Gönder',
-                      style: TextStyle(
-                        fontSize: screenWidth < 800 ? 16.0 : 18.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF76ABAE),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
-                  ),
+                    ],
+                  )
+
                 ],
               ),
             ),
           ),
         ),
       ),
-      backgroundColor: Color(0xFF222831),
+      backgroundColor: Color(0xFFA7D8DB),
     );
   }
 }
