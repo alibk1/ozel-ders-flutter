@@ -16,9 +16,9 @@ class Navbar extends StatefulWidget {
 
 class _NavbarState extends State<Navbar> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final Color _primaryColor = Color(0xFFA7D8DB);
-  final Color _backgroundColor = Color(0xFFEEEEEE);
-  final Color _darkColor = Color(0xFF3C72C2);
+  final Color _primaryColor = const Color(0xFFA7D8DB);
+  final Color _backgroundColor = const Color(0xFFEEEEEE);
+  final Color _darkColor = const Color(0xFF3C72C2);
   bool _isAppBarExpanded = true;
 
   bool isLoggedIn = false;
@@ -82,7 +82,7 @@ class _NavbarState extends State<Navbar> {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
+          colors: [_backgroundColor, _primaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -96,9 +96,9 @@ class _NavbarState extends State<Navbar> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
 
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                 ]),
               ),
@@ -112,20 +112,20 @@ class _NavbarState extends State<Navbar> {
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
       backgroundColor: Colors.transparent,
-      title: isLoading ? SizedBox.shrink() : isMobile ? Image.asset(
+      title: isLoading ? const SizedBox.shrink() : isMobile ? Image.asset(
         'assets/vitament1.png',
         height: isMobile ? 50 : 70,
-        key: ValueKey('expanded-logo'),
+        key: const ValueKey('expanded-logo'),
       ).animate()
           .fadeIn(duration: 1000.ms)
           :
       AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
           'assets/vitament1.png',
           height: isMobile ? 50 : 70,
-          key: ValueKey('expanded-logo'),
+          key: const ValueKey('expanded-logo'),
         ).animate()
             .fadeIn(duration: 1000.ms)
             : Align(
@@ -133,7 +133,7 @@ class _NavbarState extends State<Navbar> {
           child: Image.asset(
             'assets/vitament1.png',
             height: isMobile ? 40 : 50,
-            key: ValueKey('collapsed-logo'),
+            key: const ValueKey('collapsed-logo'),
           ),
         ),
       ),
@@ -158,11 +158,11 @@ class _NavbarState extends State<Navbar> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                colors: [Colors.white, Colors.white],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderGradient: LinearGradient(
+              borderGradient: const LinearGradient(
                 colors: [Colors.white24, Colors.white12],
               ),
             ),
@@ -182,9 +182,9 @@ class _NavbarState extends State<Navbar> {
   Widget _buildDesktopMenu() {
     return Row(
       children: [
-        HeaderButton(title: 'Ana Sayfa', route: '/'),
-        HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        const HeaderButton(title: 'Ana Sayfa', route: '/'),
+        const HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
+        const HeaderButton(title: 'Blog', route: '/blogs'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',
@@ -210,17 +210,8 @@ class _NavbarState extends State<Navbar> {
       ),
     );
   }
-
-  void _handleSearch() {
-    if (selectedCategoryId != null) {
-      final params = {
-        'category': selectedCategoryId!,
-        if (selectedSubCategoryId != null) 'subCategory': selectedSubCategoryId!,
-      };
-      context.go('/search', extra: params);
-    }
-  }
 }
+
 
 class HeaderButton extends StatelessWidget {
   final String title;
@@ -235,31 +226,11 @@ class HeaderButton extends StatelessWidget {
       child: Text(
         title,
         style: GoogleFonts.poppins(
-          color: Color(0xFF0344A3),
+          color: const Color(0xFF0344A3),
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
-    );
-  }
-}
-
-
-class ContentText extends StatelessWidget {
-  final String text;
-
-  ContentText({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 18,
-        color: Color(0xFF393E46),
-        height: 1.6,
-      ),
-      textAlign: TextAlign.justify,
     );
   }
 }
