@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -88,7 +89,6 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
 
     return courseCountScore + ratingSum + appointmentCount + (blogCount * 2);
   }
-
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;

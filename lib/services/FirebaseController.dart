@@ -1165,5 +1165,55 @@ class FirestoreService {
       return {...data, 'uid': doc.id};
     }).toList();
   }
+  Future<void> updateCoursePopularity(courseUid,int updatePopularity) async {
 
+    Map<String, dynamic> data = await getCourseByUID(courseUid);// bu data firebase serviceye al
+
+    if (data['popularity'] != null) {
+        print('Popularity: ${data['popularity']}');
+        // Popularityi güncelle
+        int currentPopularity = data['popularity'];
+        int newPopularity = currentPopularity + updatePopularity;
+        await _db.collection("courses").doc(courseUid).update({'popularity': newPopularity});
+        print('Popularity güncellendi: $newPopularity');
+      } else {
+        print('Popularity alanı bu dökümanda mevcut değil.');
+      }
+
+  }
+  Future<void> updateTeacherPopularity(teacherUid,int updatePopularity) async {
+    getTeacherByUID(teacherUid);// bu data firebase serviceye al
+
+    Map<String, dynamic> data = await getTeacherByUID(teacherUid);// bu data firebase serviceye al
+
+
+    if (data['popularity'] != null) {
+      print('Popularity: ${data['popularity']}');
+      // Popularityi güncelle
+      int currentPopularity = data['popularity'];
+      int newPopularity = currentPopularity + updatePopularity;
+      await _db.collection("teachers").doc(teacherUid).update({'popularity': newPopularity});
+      print('Popularity güncellendi: $newPopularity');
+    } else {
+      print('Popularity alanı bu dökümanda mevcut değil.');
+    }
+  }
+  Future<List<Map<String, dynamic>>> getCoursesByPopularity(int firstIndex, int lastIndex) async {
+    // Firestore referansı
+    final CollectionReference coursesRef = _db.collection('courses');
+
+    // Popülerlik alanına göre azalan şekilde tüm belgeleri çek
+    QuerySnapshot querySnapshot = await coursesRef
+        .orderBy('popularity', descending: true)
+        .limit(lastIndex) // Son indexe kadar veri çekiyoruz
+        .get();
+
+    // Belgeleri Map listesine çevir
+    List<Map<String, dynamic>> allCourses = querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .toList();
+
+    // İstenen aralığı keserek döndür
+    return allCourses.sublist(firstIndex, lastIndex);
+  }
 }
