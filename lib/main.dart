@@ -11,6 +11,7 @@ import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/Login3.dart';
+import 'package:ozel_ders/LoginPage2.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
 
 import 'ProfilePage.dart';
@@ -91,7 +92,7 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => LoginRegisterScreen()//LoginSignupPage(reference: "",),
+        builder: (context, state) => LoginSignupPage()//LoginSignupPage(reference: "",),
       ),
       /*GoRoute(
         path: '/newuser/:uid',
