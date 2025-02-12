@@ -18,6 +18,7 @@ import 'Components/YoutubeCard.dart';
 import 'package:ozel_ders/Login3.dart';
 import 'Components/Navbar.dart';
 import 'ProfilePage.dart';
+
 //import 'auth.dart';
 import 'firebase_options.dart';
 
@@ -53,7 +54,10 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => AdminPanel2()// CoursesPage(category: '', subCategory: '',) ,
+        builder: (context, state) => CoursesPage(
+          category: '',
+          subCategory: '',
+        ),
       ),
       GoRoute(
         path: '/blog-update/:uid/:blogUID',
@@ -67,40 +71,39 @@ class MyApp extends StatelessWidget {
         path: '/blog-create/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
-          return BlogWritePage(uid: uid,);
+          return BlogWritePage(
+            uid: uid,
+          );
         },
       ),
       GoRoute(
         path: '/blog/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
-          return BlogPage(blogUID: uid,);
+          return BlogPage(
+            blogUID: uid,
+          );
         },
       ),
       GoRoute(
         path: '/video/:url',
         builder: (context, state) {
           final url = state.pathParameters['url']!;
-          return YoutubeVideoPlayerScreen(videoUrl: url,);
+          return YoutubeVideoPlayerScreen(
+            videoUrl: url,
+          );
         },
       ),
       GoRoute(
         path: '/blogs',
         builder: (context, state) => BlogsPage(),
       ),
-
-      //NAvbar deneme route yeri
-      GoRoute(
-        path: '/navbar',
-        builder: (context, state) => Navbar(),
-      ),
-
       GoRoute(
         path: '/courses/:category/:subcategory',
         builder: (context, state) {
           final category = state.pathParameters['category']!;
           final subcategory = state.pathParameters['subcategory']!;
-          return  CoursesPage(category: category, subCategory: subcategory);
+          return CoursesPage(category: category, subCategory: subcategory);
         },
       ),
       GoRoute(
@@ -111,11 +114,6 @@ class MyApp extends StatelessWidget {
         path: '/login',
         builder: (context, state) => LoginRegisterScreen(),
       ),
-      GoRoute(path: '/oldlogin',
-        builder: (context, state) => LoginSignupPage(reference: '',),),
-
-
-
 
       /*GoRoute(
         path: '/newuser/:uid',
@@ -197,4 +195,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }*/
-

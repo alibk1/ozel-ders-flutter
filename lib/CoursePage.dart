@@ -65,7 +65,7 @@ class _CoursePageState extends State<CoursePage> {
     course = await FirestoreService().getCourseByUID(widget.uid);
     teacher = await FirestoreService().getTeacherByUID(course["author"]);
     teacherApps =
-        await FirestoreService().getUserAppointments(course["author"], true);
+    await FirestoreService().getUserAppointments(course["author"], true);
     teacherAvailableHours = teacher["availableHours"];
     setState(() {
       isLoading = false; // Yüklenme işlemi tamamlandığında false yapıyoruz
@@ -109,7 +109,10 @@ class _CoursePageState extends State<CoursePage> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                bottom: MediaQuery
+                    .of(context)
+                    .viewInsets
+                    .bottom + 16,
                 left: 16.0,
                 right: 16.0,
                 top: 16.0,
@@ -146,17 +149,18 @@ class _CoursePageState extends State<CoursePage> {
                           context: context,
                           initialDate: selectedDate,
                           firstDate:
-                              DateTime.now().add(const Duration(days: 2)),
+                          DateTime.now().add(const Duration(days: 2)),
                           // minTime → 2 gün sonrası
                           lastDate:
-                              DateTime.now().add(const Duration(days: 365)),
+                          DateTime.now().add(const Duration(days: 365)),
                           // maxTime → 365 gün sonrası
                           locale: const Locale('tr', 'TR'),
                           // Türkçe takvim
-                          builder: (context, child) => Theme(
-                            data: _customDatePickerTheme(),
-                            child: child!,
-                          ),
+                          builder: (context, child) =>
+                              Theme(
+                                data: _customDatePickerTheme(),
+                                child: child!,
+                              ),
                         );
                         if (picked != null) {
                           setModalState(() {
@@ -166,7 +170,8 @@ class _CoursePageState extends State<CoursePage> {
                         }
                       },
                       child: Text(
-                        'Tarih Seç (${DateFormat('dd/MM/yyyy').format(selectedDate)})',
+                        'Tarih Seç (${DateFormat('dd/MM/yyyy').format(
+                            selectedDate)})',
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
@@ -206,7 +211,7 @@ class _CoursePageState extends State<CoursePage> {
                         }
 
                         bool isSelected = selectedTimes.any((dateTime) =>
-                            dateTime.year == slotDateTime.year &&
+                        dateTime.year == slotDateTime.year &&
                             dateTime.month == slotDateTime.month &&
                             dateTime.day == slotDateTime.day &&
                             dateTime.hour == slotDateTime.hour);
@@ -214,21 +219,21 @@ class _CoursePageState extends State<CoursePage> {
                         return GestureDetector(
                           onTap: canReserve
                               ? () {
-                                  if (!isSelected && selectedTimes.length < 3) {
-                                    setModalState(() {
-                                      selectedTimes.add(slotDateTime);
-                                    });
-                                  } else if (isSelected) {
-                                    setModalState(() {
-                                      selectedTimes.removeWhere((dateTime) =>
-                                          dateTime.year == slotDateTime.year &&
-                                          dateTime.month ==
-                                              slotDateTime.month &&
-                                          dateTime.day == slotDateTime.day &&
-                                          dateTime.hour == slotDateTime.hour);
-                                    });
-                                  }
-                                }
+                            if (!isSelected && selectedTimes.length < 3) {
+                              setModalState(() {
+                                selectedTimes.add(slotDateTime);
+                              });
+                            } else if (isSelected) {
+                              setModalState(() {
+                                selectedTimes.removeWhere((dateTime) =>
+                                dateTime.year == slotDateTime.year &&
+                                    dateTime.month ==
+                                        slotDateTime.month &&
+                                    dateTime.day == slotDateTime.day &&
+                                    dateTime.hour == slotDateTime.hour);
+                              });
+                            }
+                          }
                               : null,
                           child: Container(
                             width: 120,
@@ -237,8 +242,8 @@ class _CoursePageState extends State<CoursePage> {
                               color: isSelected
                                   ? Color(0xFF76ABAE)
                                   : canReserve
-                                      ? Color(0xFF393E46)
-                                      : Colors.red,
+                                  ? Color(0xFF393E46)
+                                  : Colors.red,
                               borderRadius: BorderRadius.circular(8),
                               border: isSelected
                                   ? Border.all(color: Colors.white, width: 2)
@@ -260,35 +265,35 @@ class _CoursePageState extends State<CoursePage> {
                     // Seçilen Randevuların Gösterimi
                     selectedTimes.isNotEmpty
                         ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Seçilen Randevular:',
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Seçilen Randevular:',
+                          style: TextStyle(
+                              fontSize: 18, color: Colors.white70),
+                        ),
+                        SizedBox(height: 8),
+                        Column(
+                          children: selectedTimes.map((dateTime) {
+                            String formatted =
+                            DateFormat('dd/MM/yyyy - HH:mm')
+                                .format(dateTime);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 2.0),
+                              child: Text(
+                                formatted,
                                 style: TextStyle(
-                                    fontSize: 18, color: Colors.white70),
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
                               ),
-                              SizedBox(height: 8),
-                              Column(
-                                children: selectedTimes.map((dateTime) {
-                                  String formatted =
-                                      DateFormat('dd/MM/yyyy - HH:mm')
-                                          .format(dateTime);
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 2.0),
-                                    child: Text(
-                                      formatted,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                              SizedBox(height: 16),
-                            ],
-                          )
+                            );
+                          }).toList(),
+                        ),
+                        SizedBox(height: 16),
+                      ],
+                    )
                         : SizedBox(),
                     // Randevu Al Butonu
                     ElevatedButton(
@@ -299,45 +304,45 @@ class _CoursePageState extends State<CoursePage> {
                       ),
                       onPressed: selectedTimes.isNotEmpty
                           ? () async {
-                              LoadingIndicator(context).showLoading();
-                              User? user = FirebaseAuth.instance.currentUser;
+                        LoadingIndicator(context).showLoading();
+                        User? user = FirebaseAuth.instance.currentUser;
 
-                              if (user != null) {
-                                teacher = await FirestoreService()
-                                    .getTeacherByUID(course["author"]);
+                        if (user != null) {
+                          teacher = await FirestoreService()
+                              .getTeacherByUID(course["author"]);
 
-                                String appUID =
-                                    await FirestoreService().createAppointment(
-                                  course["author"],
-                                  user.uid,
-                                  course["uid"],
-                                  "",
-                                  selectedTimes, // Liste olarak gönderiyoruz
-                                );
-                                Map<String, dynamic> userMap =
-                                    await FirestoreService()
-                                        .getStudentByUID(user.uid);
-                                await FirestoreService()
-                                    .sendAppointmentToTeacher(
-                                        appUID,
-                                        course["author"],
-                                        user.uid,
-                                        userMap["name"]);
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'Randevular başarıyla oluşturuldu')),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text('Lütfen Giriş Yapınız.')),
-                                );
-                              }
+                          String appUID =
+                          await FirestoreService().createAppointment(
+                            course["author"],
+                            user.uid,
+                            course["uid"],
+                            "",
+                            selectedTimes, // Liste olarak gönderiyoruz
+                          );
+                          Map<String, dynamic> userMap =
+                          await FirestoreService()
+                              .getStudentByUID(user.uid);
+                          await FirestoreService()
+                              .sendAppointmentToTeacher(
+                              appUID,
+                              course["author"],
+                              user.uid,
+                              userMap["name"]);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Randevular başarıyla oluşturuldu')),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('Lütfen Giriş Yapınız.')),
+                          );
+                        }
 
-                              Navigator.pop(context);
-                            }
+                        Navigator.pop(context);
+                      }
                           : null,
                       child: Text(
                         'Randevu Al',
@@ -360,448 +365,487 @@ class _CoursePageState extends State<CoursePage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery
+        .of(context)
+        .size
+        .width;
     final isMobile = screenWidth < 800;
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: _backgroundColor,
-      drawer: MediaQuery.of(context).size.width < 800
+      drawer: MediaQuery
+          .of(context)
+          .size
+          .width < 800
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
           ? Center(
-              child: LoadingAnimationWidget.dotsTriangle(
-                  color: const Color(0xFF222831), size: 200))
+          child: LoadingAnimationWidget.dotsTriangle(
+              color: const Color(0xFF222831), size: 200))
           : SafeArea(
-              child: CustomScrollView(slivers: [
-                _buildAppBar(isMobile),
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(
-                      vertical: 30, horizontal: isMobile ? 5 : 60),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Header
-                          Container(
-                            padding: const EdgeInsets.all(2.0),
-                            // round the corners also add linear gradient
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  spreadRadius: 5,
-                                  blurRadius: 7,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                              borderRadius: BorderRadius.circular(25),
-                              gradient: LinearGradient(
-                                colors: [_darkColor, _primaryColor],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 16),
-                                Text(
-                                  course['name'] ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  height: MediaQuery.of(context).size.width >= 800
-                                      ? MediaQuery.of(context).size.height * 2 / 4
-                                      : MediaQuery.of(context).size.height * 1 / 4,
-                                  child: Stack(
-                                    children: [
-                                      CarouselSlider(
-                                        carouselController: _carouselController,
-                                        options: CarouselOptions(
-                                          aspectRatio: 22 / 9,
-                                          enlargeCenterPage: true,
-                                          enableInfiniteScroll: true,
-                                          onPageChanged: (index, reason) {
-                                            setState(() {
-                                              _currentPage = index;
-                                            });
-                                          },
-                                        ),
-                                        items: course['photos']?.map<Widget>((photoUrl) {
-                                          return Builder(
-                                            builder: (BuildContext context) {
-                                              return Image.network(
-                                                photoUrl,
-                                                fit: BoxFit.fill,
-                                                scale: 0.6,
-                                              );
-                                            },
-                                          );
-                                        }).toList() ?? [],
-                                      ),
-                                      Positioned(
-                                        left: 16,
-                                        top: 0,
-                                        bottom: 0,
-                                        child: IconButton(
-                                          icon: Icon(Icons.arrow_back, color: Colors.white),
-                                          onPressed: () {
-                                            _carouselController.previousPage(
-                                              duration: Duration(milliseconds: 300),
-                                              curve: Curves.easeInOut,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      Positioned(
-                                        right: 16,
-                                        top: 0,
-                                        bottom: 0,
-                                        child: IconButton(
-                                          icon: Icon(Icons.arrow_forward, color: Colors.white),
-                                          onPressed: () {
-                                            _carouselController.nextPage(
-                                              duration: Duration(milliseconds: 300),
-                                              curve: Curves.easeInOut,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+        child: CustomScrollView(slivers: [
+            _buildAppBar(isMobile),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(
+              vertical: isMobile ? 0 : 30, horizontal: isMobile ? 12 : 60),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+            Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+            // Header
+            Container(
+            padding: const EdgeInsets.all(2.0),
+            // round the corners also add linear gradient
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  spreadRadius: 5,
+                  blurRadius: 7,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              borderRadius: BorderRadius.circular(25),
+              gradient: LinearGradient(
+                colors: [_darkColor, _primaryColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  course['name'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  height: MediaQuery
+                      .of(context)
+                      .size
+                      .width >= 800
+                      ? MediaQuery
+                      .of(context)
+                      .size
+                      .height * 2 / 4
+                      : MediaQuery
+                      .of(context)
+                      .size
+                      .height * 1 / 4,
+                  child: Stack(
+                    children: [
+                      CarouselSlider(
+                        carouselController: _carouselController,
+                        options: CarouselOptions(
+                          aspectRatio: 22 / 9,
+                          enlargeCenterPage: true,
+                          enableInfiniteScroll: true,
+                          onPageChanged: (index, reason) {
+                            setState(() {
+                              _currentPage = index;
+                            });
+                          },
+                        ),
+                        items: course['photos']?.map<Widget>((photoUrl) {
+                          return Builder(
+                            builder: (BuildContext context) {
+                              return Image.network(
+                                photoUrl,
+                                fit: BoxFit.fill,
+                                scale: 0.6,
+                              );
+                            },
+                          );
+                        }).toList() ?? [],
+                      ),
+                      Positioned(
+                        left: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () {
+                            _carouselController.previousPage(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        right: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_forward, color: Colors.white),
+                          onPressed: () {
+                            _carouselController.nextPage(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                              ],
-                            ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                vertical: 46.0, horizontal: 0),
+            child: MediaQuery
+                .of(context)
+                .size
+                .width >= 800
+                ? Row(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                // Left side
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius:
+                      BorderRadius.circular(25),
+                      gradient: LinearGradient(
+                        colors: [
+                          _darkColor,
+                          _primaryColor
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.topRight,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            mainAxisAlignment:
+                            MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Kurs Açıklaması',
+                                style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight:
+                                    FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                            ],
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 46.0, horizontal: 0),
-                            child: MediaQuery.of(context).size.width >= 800
-                                ? Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Left side
-                                      Expanded(
-                                        flex: 4,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(25),
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                _darkColor,
-                                                _primaryColor
-                                              ],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.topRight,
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(16.0),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      'Kurs Açıklaması',
-                                                      style: TextStyle(
-                                                          fontSize: 24,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Colors.white),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 8),
-                                                const Divider(
-                                                    thickness: 2,
-                                                    color: Colors.white),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  course['desc'] ?? '',
-                                                  style: const TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      // Right side
-                                      Expanded(
-                                        flex: 2,
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: ElevatedButton(
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          Colors.blueGrey,
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(20.0),
-                                                      ),
-                                                    ),
-                                                    onPressed: () {
-                                                      if (isLoggedIn)
-                                                        _showDateTimePicker(
-                                                            context);
-                                                      else
-                                                        context.go('/login');
-                                                    },
-                                                    child: Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          const Icon(
-                                                            Icons.shopping_cart,
-                                                            color: Colors.white,
-                                                            size: 29.0,
-                                                          ),
-                                                          const SizedBox(
-                                                              width: 8),
-                                                          Text(
-                                                            '\n Bu Kursu Satın Al : ${course['hourlyPrice']} TL \n',
-                                                            style: const TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 24),
-                                                          ),
-                                                        ]),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Card(
-                                                    color:
-                                                        const Color(0xFF50727B),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              16.0),
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          CircleAvatar(
-                                                            foregroundColor:
-                                                                Colors.white,
-                                                            radius: 60,
-                                                            backgroundImage:
-                                                                NetworkImage(
-                                                                    teacher['profilePictureUrl'] ??
-                                                                        ''),
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 16),
-                                                          TextButton(
-                                                            child: Text(
-                                                              teacher['name'] ??
-                                                                  '',
-                                                              style: const TextStyle(
-                                                                  fontSize: 18,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  color: Colors
-                                                                      .white),
-                                                            ),
-                                                            onPressed: () {
-                                                              context.go(
-                                                                  "/profile/" +
-                                                                      teacher[
-                                                                          "uid"]);
-                                                            },
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 4),
-                                                          Text(
-                                                            teacher['fieldOfStudy'] ??
-                                                                '',
-                                                            style:
-                                                                const TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color: Colors
-                                                                        .white),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: CommentRatingWidget(
-                                                    courseId: course["uid"],
-                                                    paddingInset: 16.0,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFF222831),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                10.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
-                                            // Diğer shape özelliklerini de belirleyebilirsiniz
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          _showDateTimePicker(context);
-                                        },
-                                        child: Text(
-                                          'Bu Kursu Satın Al - ${course['hourlyPrice']} TL',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Card(
-                                        color: const Color(0xFF222831),
-                                        child: ExpansionTile(
-                                          initiallyExpanded: true,
-                                          title: const Text(
-                                            'Kurs Açıklaması',
-                                            style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white),
-                                          ),
-                                          children: [
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.all(16.0),
-                                              child: Text(
-                                                course['desc'] ?? '',
-                                                style: const TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Card(
-                                        color: const Color(0xFF50727B),
-                                        child: ExpansionTile(
-                                          initiallyExpanded: false,
-                                          title: const Text(
-                                            'Öğretmen Bilgileri',
-                                            style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white),
-                                          ),
-                                          children: [
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.all(16.0),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  CircleAvatar(
-                                                    radius: 50,
-                                                    backgroundImage:
-                                                        NetworkImage(teacher[
-                                                                'profilePictureUrl'] ??
-                                                            ''),
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  Text(
-                                                    teacher['name'] ?? '',
-                                                    style: const TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    teacher['fieldOfStudy'] ??
-                                                        '',
-                                                    style: const TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Padding(
-                                        padding: const EdgeInsets.all(0.0),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: CommentRatingWidget(
-                                                courseId: course["uid"],
-                                                paddingInset: 8.0,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                          const SizedBox(height: 8),
+                          const Divider(
+                              thickness: 2,
+                              color: Colors.white),
+                          const SizedBox(height: 8),
+                          Text(
+                            course['desc'] ?? '',
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight:
+                                FontWeight.bold,
+                                color: Colors.white),
                           ),
                         ],
                       ),
-                    ]),
+                    ),
                   ),
                 ),
-              ]),
+                const SizedBox(width: 16),
+                // Right side
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton
+                                  .styleFrom(
+                                backgroundColor:
+                                Colors.blueGrey,
+                                shape:
+                                RoundedRectangleBorder(
+                                  borderRadius:
+                                  BorderRadius
+                                      .circular(20.0),
+                                ),
+                              ),
+                              onPressed: () {
+                                if (isLoggedIn)
+                                  _showDateTimePicker(
+                                      context);
+                                else
+                                  context.go('/login');
+                              },
+                              child: Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment
+                                      .center,
+                                  children: [
+                                    const Icon(
+                                      Icons.shopping_cart,
+                                      color: Colors.white,
+                                      size: 29.0,
+                                    ),
+                                    const SizedBox(
+                                        width: 8),
+                                    Text(
+                                      '\n Bu Kursu Satın Al : ${course['hourlyPrice']} TL \n',
+                                      style: const TextStyle(
+                                          color: Colors
+                                              .white,
+                                          fontWeight:
+                                          FontWeight
+                                              .bold,
+                                          fontSize: 24),
+                                    ),
+                                  ]),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Card(
+                              color:
+                              const Color(0xFF50727B),
+                              child: Padding(
+                                padding:
+                                const EdgeInsets.all(
+                                    16.0),
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment
+                                      .center,
+                                  children: [
+                                    CircleAvatar(
+                                      foregroundColor:
+                                      Colors.white,
+                                      radius: 60,
+                                      backgroundImage:
+                                      NetworkImage(
+                                          teacher['profilePictureUrl'] ??
+                                              ''),
+                                    ),
+                                    const SizedBox(
+                                        height: 16),
+                                    TextButton(
+                                      child: Text(
+                                        teacher['name'] ??
+                                            '',
+                                        style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight:
+                                            FontWeight
+                                                .bold,
+                                            color: Colors
+                                                .white),
+                                      ),
+                                      onPressed: () {
+                                        context.go(
+                                            "/profile/" +
+                                                teacher[
+                                                "uid"]);
+                                      },
+                                    ),
+                                    const SizedBox(
+                                        height: 4),
+                                    Text(
+                                      teacher['fieldOfStudy'] ??
+                                          '',
+                                      style:
+                                      const TextStyle(
+                                          fontSize:
+                                          12,
+                                          color: Colors
+                                              .white),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CommentRatingWidget(
+                              courseId: course["uid"],
+                              paddingInset: 16.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+                : Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.stretch,
+                children: [
+            ElevatedButton(
+
+            style: ElevatedButton.styleFrom(
+              shadowColor: Colors.black,
+            backgroundColor:
+                _darkColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                  20.0), // İstediğiniz kenar yuvarlama miktarını belirleyebilirsiniz
+              // Diğer shape özelliklerini de belirleyebilirsiniz
             ),
+          ),
+          onPressed: () {
+            _showDateTimePicker(context);
+          },
+          child: Row(
+              mainAxisAlignment:
+              MainAxisAlignment
+                  .center,
+              children: [
+                const Icon(
+                  Icons.shopping_cart,
+                  color: Colors.white,
+                  size: 29.0,
+                ),
+                const SizedBox(
+                    width: 8),
+                Text(
+                  '\n Bu Kursu Satın Al : ${course['hourlyPrice']} TL \n',
+                  style: const TextStyle(
+                      color: Colors
+                          .white,
+                      fontWeight:
+                      FontWeight
+                          .bold,
+                      fontSize: 18),
+
+                ),
+              ]),
+          ),
+
+    const SizedBox(height: 16),
+    Card(
+    color: _darkColor,
+    child: ExpansionTile(
+    initiallyExpanded: true,
+    title: const Text(
+    'Kurs Açıklaması',
+    style: TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: Colors.white),
+    ),
+    children: [
+    Padding(
+    padding:
+    const EdgeInsets.all(16.0),
+    child: Text(
+    course['desc'] ?? '',
+    style: const TextStyle(
+    color: Colors.white),
+    ),
+    ),
+    ],
+    ),
+    ),
+    const SizedBox(height: 16),
+    Card(
+    color: const Color(0xFF50727B),
+    child: ExpansionTile(
+    initiallyExpanded: false,
+    title: const Text(
+    'Öğretmen Bilgileri',
+    style: TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: Colors.white),
+    ),
+    children: [
+    Padding(
+    padding:
+    const EdgeInsets.all(16.0),
+    child: Column(
+    crossAxisAlignment:
+    CrossAxisAlignment.center,
+    children: [
+    CircleAvatar(
+    radius: 50,
+    backgroundImage:
+    NetworkImage(teacher[
+    'profilePictureUrl'] ??
+    ''),
+    ),
+    const SizedBox(height: 16),
+    Text(
+    teacher['name'] ?? '',
+    style: const TextStyle(
+    fontSize: 18,
+    fontWeight:
+    FontWeight.bold,
+    color: Colors.white),
+    ),
+    const SizedBox(height: 8),
+    Text(
+    teacher['fieldOfStudy'] ??
+    '',
+    style: const TextStyle(
+    color: Colors.white),
+    ),
+    ],
+    ),
+    ),
+    ],
+    ),
+    ),
+    const SizedBox(height: 16),
+    Padding(
+    padding: const EdgeInsets.all(0.0),
+    child: Row(
+    children: [
+    Expanded(
+    child: CommentRatingWidget(
+    courseId: course["uid"],
+    paddingInset: 8.0,
+    ),
+    ),
+    ],
+    ),
+    ),
+    ],
+    ),
+    ),
+    ],
+    ),
+    ]),
+    ),
+    ),
+    ]),
+    ),
     );
   }
 
@@ -856,28 +900,28 @@ class _CoursePageState extends State<CoursePage> {
       title: isLoading
           ? const SizedBox.shrink()
           : isMobile
-              ? Image.asset(
-                  'assets/vitament1.png',
-                  height: isMobile ? 50 : 70,
-                  key: const ValueKey('expanded-logo'),
-                ).animate().fadeIn(duration: 1000.ms)
-              : AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: _isAppBarExpanded
-                      ? Image.asset(
-                          'assets/vitament1.png',
-                          height: isMobile ? 50 : 70,
-                          key: const ValueKey('expanded-logo'),
-                        ).animate().fadeIn(duration: 1000.ms)
-                      : Align(
-                          alignment: Alignment.centerLeft,
-                          child: Image.asset(
-                            'assets/vitament1.png',
-                            height: isMobile ? 40 : 50,
-                            key: const ValueKey('collapsed-logo'),
-                          ),
-                        ),
-                ),
+          ? Image.asset(
+        'assets/vitament1.png',
+        height: isMobile ? 50 : 70,
+        key: const ValueKey('expanded-logo'),
+      ).animate().fadeIn(duration: 1000.ms)
+          : AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _isAppBarExpanded
+            ? Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 50 : 70,
+          key: const ValueKey('expanded-logo'),
+        ).animate().fadeIn(duration: 1000.ms)
+            : Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 50,
+            key: const ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
       centerTitle: isMobile || _isAppBarExpanded,
       pinned: true,
       expandedHeight: 120,
@@ -910,9 +954,9 @@ class _CoursePageState extends State<CoursePage> {
       actions: isMobile ? null : [_buildDesktopMenu()],
       leading: isMobile
           ? IconButton(
-              icon: Icon(Icons.menu, color: _darkColor),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            )
+        icon: Icon(Icons.menu, color: _darkColor),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      )
           : null,
     );
   }
