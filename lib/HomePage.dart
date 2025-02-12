@@ -165,7 +165,12 @@ class _HomePageState extends State<HomePage> {
                     youtubeVideos: youtubeVideos,
                   ),
                   SizedBox(height: 30),
-                  TopBlogsWidget(onSeeAllPressed: () {}, blogs: blogs),
+                  TopBlogsWidget(
+                      onSeeAllPressed: (){
+
+                      },
+                      blogs: blogs
+                  ),
                   SizedBox(height: 30),
                 ]),
               ),
@@ -256,7 +261,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
         HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',
