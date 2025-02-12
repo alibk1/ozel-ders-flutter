@@ -1295,52 +1295,63 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: _backgroundColor,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              left: 16,
-              right: 16,
-              top: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('İsmi Değiştir',
-                  style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _headerTextColor)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: nameController,
-                style: GoogleFonts.poppins(color: _bodyTextColor),
-                decoration: InputDecoration(
-                  hintText: 'Yeni İsim',
-                  hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+        return Container(
+          decoration:BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                left: 16,
+                right: 16,
+                top: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('İsmi Değiştir',
+                    style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white
+                    )),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nameController,
+                  style: GoogleFonts.poppins(color: _bodyTextColor),
+                  decoration: InputDecoration(
+                    hintText: 'Yeni İsim',
+                    hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
-                  setState(() {
-                    userInfo['name'] = nameController.text;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Text('Kaydet', style: GoogleFonts.poppins()),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () async {
+                    await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
+                    setState(() {
+                      userInfo['name'] = nameController.text;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Text('Kaydet', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-            ],
+                const SizedBox(height: 10),
+              ],
+            ),
           ),
         );
       },

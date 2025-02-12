@@ -106,6 +106,11 @@ class _BlogsPageState extends State<BlogsPage> {
                 decoration: BoxDecoration(
                   color: _darkColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
                 padding: EdgeInsets.all(16.0),
                 child: Column(
@@ -171,7 +176,10 @@ class _BlogsPageState extends State<BlogsPage> {
                         filterBlogs();
                         Navigator.pop(context);
                       },
-                      child: Text('Uygula'),
+                      child: Text('Uygula',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      )
+                      ,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _primaryColor,
                         foregroundColor: Colors.white,

@@ -165,10 +165,11 @@ class _AppointmentCardState extends State<AppointmentCard> {
           blur: 30,
           border: 0,
           linearGradient: LinearGradient(
-            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Seçiliyse gradient ekle
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-          ),
+          )
+              ,
           borderGradient: LinearGradient(
             colors: [Colors.white24, Colors.white12],
           ),
@@ -346,14 +347,22 @@ class _AppointmentCardState extends State<AppointmentCard> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.transparent, // Arkaplan transparan
       isScrollControlled: true,
       builder: (BuildContext context) {
-        if (widget.isTeacher) {
-          return _buildTeacherView(context, homework, existingFiles);
-        } else {
-          return _buildStudentView(context, homework, existingFiles);
-        }
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)), // Köşeleri yuvarlak yapıyoruz
+          ),
+          child: widget.isTeacher
+              ? _buildTeacherView(context, homework, existingFiles)
+              : _buildStudentView(context, homework, existingFiles),
+        );
       },
     );
   }
@@ -665,7 +674,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -749,10 +758,20 @@ class _AppointmentCardState extends State<AppointmentCard> {
   void _showAppointmentSurveyDetails(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.transparent, // Arkaplan transparan
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return _buildSurveyListView(context);
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)), // Köşeleri yuvarlak yapıyoruz
+          ),
+          child: _buildSurveyListView(context), // Burada modal içeriği
+        );
       },
     );
   }
@@ -891,7 +910,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1018,7 +1037,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1193,7 +1212,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
           blur: 30,
           border: 0,
           linearGradient: LinearGradient(
-            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
