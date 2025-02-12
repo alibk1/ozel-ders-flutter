@@ -381,9 +381,12 @@ class _CoursePageState extends State<CoursePage> {
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
-          ? Center(
-          child: LoadingAnimationWidget.dotsTriangle(
-              color: const Color(0xFF222831), size: 200))
+          ? Stack(
+        children: [
+          _buildMainContent(isMobile),
+          if (isLoading || isCategoriesLoading) _buildLoadingOverlay(),
+        ],
+      )
           : SafeArea(
         child: CustomScrollView(slivers: [
             _buildAppBar(isMobile),

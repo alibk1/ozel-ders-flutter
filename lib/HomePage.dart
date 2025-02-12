@@ -42,7 +42,6 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> youtubeVideos = [];
   List<Map<String, dynamic>> blogs = [];
 
-
   @override
   void initState() {
     super.initState();
@@ -70,17 +69,17 @@ class _HomePageState extends State<HomePage> {
       topTeachers = await FirestoreService().getTeachersByPopularity(0, 5);
       blogs = await FirestoreService().getAllBlogs();
       List<String> neededTeacherList = [];
-      for(var course in topCourses)
-      {
+      for (var course in topCourses) {
         neededTeacherList.add(course["author"]);
       }
-      for(var teacher in topTeachers)
-      {
+      for (var teacher in topTeachers) {
         neededTeacherList.add(teacher["uid"]);
       }
 
-      neededTeachers = await FirestoreService().getSpesificTeachers(neededTeacherList);
-      neededCourses = await FirestoreService().getCoursesByAuthors(neededTeacherList);
+      neededTeachers =
+          await FirestoreService().getSpesificTeachers(neededTeacherList);
+      neededCourses =
+          await FirestoreService().getCoursesByAuthors(neededTeacherList);
 
       /*print(neededCourses.length);
       for(var course in topCourses)
@@ -137,7 +136,8 @@ class _HomePageState extends State<HomePage> {
             _buildAppBar(isMobile),
             SliverToBoxAdapter(child: _buildHeroSection()),
             SliverPadding(
-              padding: EdgeInsets.symmetric(vertical: 30, horizontal: isMobile ? 5 : 30),
+              padding: EdgeInsets.symmetric(
+                  vertical: 30, horizontal: isMobile ? 5 : 30),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   IntroductionSection(),
@@ -156,7 +156,6 @@ class _HomePageState extends State<HomePage> {
                     },
                     topTeachers: topTeachers,
                     courses: neededCourses,
-
                   ),
                   SizedBox(height: 30),
                   TopYoutubeVideosWidget(
@@ -164,14 +163,9 @@ class _HomePageState extends State<HomePage> {
                       context.go("/courses");
                     },
                     youtubeVideos: youtubeVideos,
-
                   ),
                   SizedBox(height: 30),
-                  TopBlogsWidget(
-                      onSeeAllPressed: (){
-
-                      },
-                      blogs: blogs),
+                  TopBlogsWidget(onSeeAllPressed: () {}, blogs: blogs),
                   SizedBox(height: 30),
                 ]),
               ),
@@ -187,31 +181,31 @@ class _HomePageState extends State<HomePage> {
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
       backgroundColor: Colors.transparent,
-      title: isLoading ? SizedBox.shrink() : isMobile ? Image.asset(
-        'assets/vitament1.png',
-        height: isMobile ? 50 : 70,
-        key: ValueKey('expanded-logo'),
-      ).animate()
-          .fadeIn(duration: 1000.ms)
-          :
-      AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
-        child: _isAppBarExpanded
-            ? Image.asset(
-          'assets/vitament1.png',
-          height: isMobile ? 50 : 70,
-          key: ValueKey('expanded-logo'),
-        ).animate()
-            .fadeIn(duration: 1000.ms)
-            : Align(
-          alignment: Alignment.centerLeft,
-          child: Image.asset(
-            'assets/vitament1.png',
-            height: isMobile ? 40 : 50,
-            key: ValueKey('collapsed-logo'),
-          ),
-        ),
-      ),
+      title: isLoading
+          ? SizedBox.shrink()
+          : isMobile
+              ? Image.asset(
+                  'assets/vitament1.png',
+                  height: isMobile ? 50 : 70,
+                  key: ValueKey('expanded-logo'),
+                ).animate().fadeIn(duration: 1000.ms)
+              : AnimatedSwitcher(
+                  duration: Duration(milliseconds: 300),
+                  child: _isAppBarExpanded
+                      ? Image.asset(
+                          'assets/vitament1.png',
+                          height: isMobile ? 50 : 70,
+                          key: ValueKey('expanded-logo'),
+                        ).animate().fadeIn(duration: 1000.ms)
+                      : Align(
+                          alignment: Alignment.centerLeft,
+                          child: Image.asset(
+                            'assets/vitament1.png',
+                            height: isMobile ? 40 : 50,
+                            key: ValueKey('collapsed-logo'),
+                          ),
+                        ),
+                ),
       centerTitle: isMobile || _isAppBarExpanded,
       pinned: true,
       expandedHeight: 120,
@@ -233,7 +227,10 @@ class _HomePageState extends State<HomePage> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+                colors: [
+                  Colors.white.withOpacity(0.1),
+                  Colors.white.withOpacity(0.05)
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -247,9 +244,9 @@ class _HomePageState extends State<HomePage> {
       actions: isMobile ? null : [_buildDesktopMenu()],
       leading: isMobile
           ? IconButton(
-        icon: Icon(Icons.menu, color: _darkColor),
-        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-      )
+              icon: Icon(Icons.menu, color: _darkColor),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            )
           : null,
     );
   }
@@ -277,14 +274,16 @@ class _HomePageState extends State<HomePage> {
     return Container(
       height: 500,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40),),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
+        ),
         gradient: LinearGradient(
           colors: [_primaryColor, _darkColor],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
-      
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -340,7 +339,8 @@ class _HomePageState extends State<HomePage> {
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
                 minimumSize: Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               child: Text('Ara', style: GoogleFonts.poppins(fontSize: 18)),
             ),
@@ -374,11 +374,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildSubCategoryDropdown() {
     final category = categories.firstWhere(
-          (c) => c['uid'] == selectedCategoryId,
+      (c) => c['uid'] == selectedCategoryId,
       orElse: () => <String, dynamic>{},
     );
 
-    final subCategories = (category['subCategories'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final subCategories = (category['subCategories'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
 
     return DropdownButtonFormField<String>(
       value: selectedSubCategoryId,
@@ -392,7 +394,8 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }).toList(),
-      onChanged: (String? value) => setState(() => selectedSubCategoryId = value),
+      onChanged: (String? value) =>
+          setState(() => selectedSubCategoryId = value),
       dropdownColor: _backgroundColor,
       icon: Icon(Icons.arrow_drop_down, color: _darkColor),
     );
@@ -428,7 +431,8 @@ class _HomePageState extends State<HomePage> {
     if (selectedCategoryId != null) {
       final params = {
         'category': selectedCategoryId!,
-        if (selectedSubCategoryId != null) 'subCategory': selectedSubCategoryId!,
+        if (selectedSubCategoryId != null)
+          'subCategory': selectedSubCategoryId!,
       };
       context.go('/search', extra: params);
     }
@@ -496,7 +500,7 @@ class HeaderMenu extends StatelessWidget implements PreferredSizeWidget {
           HeaderMenuItem(
             title: isLoggedIn ? 'Profilim' : 'Giriş Yap / Kaydol',
             route:
-            isLoggedIn ? '/profile/${AuthService().userUID()}' : '/login',
+                isLoggedIn ? '/profile/${AuthService().userUID()}' : '/login',
           ),
         ],
       ),
@@ -530,7 +534,9 @@ class _HeaderMenuItemState extends State<HeaderMenuItem> {
         margin: EdgeInsets.symmetric(horizontal: 8),
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isHovered ? Color(0xFF76ABAE).withOpacity(0.2) : Colors.transparent,
+          color: isHovered
+              ? Color(0xFF76ABAE).withOpacity(0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -553,16 +559,18 @@ class IntroductionSection extends StatelessWidget {
     final isMobile = screenWidth < 800;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 64, vertical: 32),
+      padding:
+          EdgeInsets.symmetric(horizontal: isMobile ? 16 : 64, vertical: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // İlk Bölüm: Başlık ve yazı solda, resimler ve ikonlar sağda
+
           SectionContent(
             title: 'Biz Kimiz?',
             text:
-            //'Biz, online rehabilitasyon ve terapi hizmetleri sunan, alanında uzman bir ekibiz. Amacımız, bireylerin fiziksel ve mental sağlıklarını iyileştirmek için güvenilir, etkili ve kişiselleştirilmiş çözümler sunmaktır. Tecrübeli terapistlerden oluşan kadromuz, her bireyin ihtiyaçlarına özel yaklaşımlar geliştirerek, onların yaşam kalitesini artırmayı hedeflemektedir. Modern teknolojiyi kullanarak, her yerden erişilebilir hizmetler sunuyor ve danışanlarımızın en iyi sonuçları elde etmeleri için sürekli olarak kendimizi geliştiriyoruz.',
-            'Biz, online rehabilitasyon ve terapi hizmetleri sunan, alanında uzman bir ekibiz. Amacımız, bireylerin fiziksel ve mental sağlıklarını iyileştirmek için güvenilir, etkili ve kişiselleştirilmiş çözümler sunmaktır.',
+                //'Biz, online rehabilitasyon ve terapi hizmetleri sunan, alanında uzman bir ekibiz. Amacımız, bireylerin fiziksel ve mental sağlıklarını iyileştirmek için güvenilir, etkili ve kişiselleştirilmiş çözümler sunmaktır. Tecrübeli terapistlerden oluşan kadromuz, her bireyin ihtiyaçlarına özel yaklaşımlar geliştirerek, onların yaşam kalitesini artırmayı hedeflemektedir. Modern teknolojiyi kullanarak, her yerden erişilebilir hizmetler sunuyor ve danışanlarımızın en iyi sonuçları elde etmeleri için sürekli olarak kendimizi geliştiriyoruz.',
+                'Biz, online rehabilitasyon ve terapi hizmetleri sunan, alanında uzman bir ekibiz. Amacımız, bireylerin fiziksel ve mental sağlıklarını iyileştirmek için güvenilir, etkili ve kişiselleştirilmiş çözümler sunmaktır.',
             imagePaths: ["assets/mantalk.jpg", "assets/therapy.jpg"],
             reverse: false,
           ),
@@ -571,11 +579,13 @@ class IntroductionSection extends StatelessWidget {
           SectionContent(
             title: 'Neler Sunuyoruz?',
             text:
-            //'Geniş yelpazede online rehabilitasyon ve terapi hizmetleri sunuyoruz. Fiziksel terapi, konuşma terapisi, psikolojik danışmanlık ve mesleki rehabilitasyon gibi farklı alanlarda uzmanlaşmış ekibimizle, her bireyin ihtiyacına uygun çözümler üretiyoruz. Ayrıca, bireysel ve grup seansları, özel programlar ve danışan takibi gibi hizmetlerle, danışanlarımızın tedavi sürecini destekliyoruz. Modern teknolojik altyapımız sayesinde, kullanıcı dostu ve erişilebilir bir hizmet deneyimi sunuyor, her yerden kolayca erişim imkanı sağlıyoruz.',
-            'Geniş yelpazede online rehabilitasyon ve terapi hizmetleri sunuyoruz. Fiziksel terapi, konuşma terapisi, psikolojik danışmanlık ve mesleki rehabilitasyon gibi farklı alanlarda uzmanlaşmış ekibimizle, her bireyin ihtiyacına uygun çözümler üretiyoruz.',
+                //'Geniş yelpazede online rehabilitasyon ve terapi hizmetleri sunuyoruz. Fiziksel terapi, konuşma terapisi, psikolojik danışmanlık ve mesleki rehabilitasyon gibi farklı alanlarda uzmanlaşmış ekibimizle, her bireyin ihtiyacına uygun çözümler üretiyoruz. Ayrıca, bireysel ve grup seansları, özel programlar ve danışan takibi gibi hizmetlerle, danışanlarımızın tedavi sürecini destekliyoruz. Modern teknolojik altyapımız sayesinde, kullanıcı dostu ve erişilebilir bir hizmet deneyimi sunuyor, her yerden kolayca erişim imkanı sağlıyoruz.',
+                'Geniş yelpazede online rehabilitasyon ve terapi hizmetleri sunuyoruz. Fiziksel terapi, konuşma terapisi, psikolojik danışmanlık ve mesleki rehabilitasyon gibi farklı alanlarda uzmanlaşmış ekibimizle, her bireyin ihtiyacına uygun çözümler üretiyoruz.',
             imagePaths: ["assets/therapy.jpg", "assets/mantalk.jpg"],
             reverse: true,
           ),
+
+
           SizedBox(height: 32),
           //ContactForm(),
         ],
@@ -622,7 +632,8 @@ class SectionContent extends StatelessWidget {
     final isMobile = screenWidth < 800;
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 16,horizontal: isMobile ? 20 : 100),
+      margin:
+          EdgeInsets.symmetric(vertical: 16, horizontal: isMobile ? 20 : 100),
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -637,89 +648,94 @@ class SectionContent extends StatelessWidget {
       ),
       child: isMobile
           ? Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SectionTitle(title: title),
-            ],
-          ),
-          SizedBox(height: 16),
-          Container(padding: EdgeInsets.all(8), child: ContentText(text: text)),
-          SizedBox(height: 20),
-          ImageCarousel(imagePaths: imagePaths),
-          SizedBox(height: 20),
-          FeatureGrid(),
-        ],
-      )
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SectionTitle(title: title),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Container(
+                    padding: EdgeInsets.all(8), child: ContentText(text: text)),
+                SizedBox(height: 20),
+                ImageCarousel(imagePaths: imagePaths),
+                SizedBox(height: 20),
+                FeatureGrid(),
+              ],
+            )
           : Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: reverse
-            ? [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SectionTitle(title: title),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Container(padding: EdgeInsets.all(8), child: ContentText(text: text)),
-                SizedBox(height: 20),
-                FeatureGrid(),
-              ],
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: reverse
+                  ? [
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SectionTitle(title: title),
+                              ],
+                            ),
+                            SizedBox(height: 16),
+                            Container(
+                                padding: EdgeInsets.all(8),
+                                child: ContentText(text: text)),
+                            SizedBox(height: 20),
+                            FeatureGrid(),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 40),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          children: [
+                            ImageCarousel(imagePaths: imagePaths),
+                          ],
+                        ),
+                      ),
+                    ]
+                  : [
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ImageCarousel(imagePaths: imagePaths),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 40),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SectionTitle(title: title),
+                              ],
+                            ),
+                            SizedBox(height: 16),
+                            Container(
+                                padding: EdgeInsets.all(8),
+                                child: ContentText(text: text)),
+                            SizedBox(height: 20),
+                            FeatureGrid(),
+                          ],
+                        ),
+                      ),
+                    ],
             ),
-          ),
-          SizedBox(width: 40),
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                ImageCarousel(imagePaths: imagePaths),
-              ],
-            ),
-          ),
-        ]
-            : [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ImageCarousel(imagePaths: imagePaths),
-              ],
-            ),
-          ),
-          SizedBox(width: 40),
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SectionTitle(title: title),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Container(padding: EdgeInsets.all(8), child: ContentText(text: text)),
-                SizedBox(height: 20),
-                FeatureGrid(),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -728,7 +744,7 @@ class FeatureGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 800;
-    if(!isMobile) {
+    if (!isMobile) {
       return GridView.count(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
@@ -759,8 +775,7 @@ class FeatureGrid extends StatelessWidget {
           ),
         ],
       );
-    }
-    else {
+    } else {
       return GridView.count(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
@@ -815,7 +830,10 @@ class FeatureCard extends StatelessWidget {
       alignment: Alignment.center,
       border: 0,
       linearGradient: LinearGradient(
-        colors: [Color(0xFF76ABAE).withOpacity(0.1), Color(0xFF4CAF50).withOpacity(0.1)],
+        colors: [
+          Color(0xFF76ABAE).withOpacity(0.1),
+          Color(0xFF4CAF50).withOpacity(0.1)
+        ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),

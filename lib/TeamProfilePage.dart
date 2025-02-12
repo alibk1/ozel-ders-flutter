@@ -3,6 +3,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
 import 'package:ozel_ders/Components/TeacherCard.dart';
@@ -36,6 +38,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   Map<String, dynamic> userInfo = {};
   String teamUidIfCurrent = "";
   String teamNameIfCurrent = "";
+  bool isCategoriesLoading = true;
   bool isLoggedIn = false;
   bool isSelf = false;
   bool isCurrentTeam = false;
@@ -627,9 +630,11 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       // AppBar’da HomePage ve CoursesPage’deki gibi sade, şeffaf arka plan ve logo animasyonu
       drawer: isMobile ? DrawerMenu(isLoggedIn: isLoggedIn) : null,
       body: isLoading
-          ? Center(
-        child: LoadingAnimationWidget.dotsTriangle(
-            color: _darkColor, size: 200),
+          ? Stack(
+        children: [
+          _buildMainContent(isMobile),
+          if (isLoading || isCategoriesLoading) _buildLoadingOverlay(),
+        ],
       )
           : SafeArea(
         child: CustomScrollView(
@@ -646,6 +651,131 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     );
 
   }
+
+  SliverAppBar _buildAppBar(bool isMobile) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      title: isLoading
+          ? SizedBox.shrink()
+          : isMobile
+          ? Image.asset(
+        'assets/vitament1.png',
+        height: isMobile ? 50 : 70,
+        key: ValueKey('expanded-logo'),
+      ).animate().fadeIn(duration: 1000.ms)
+          : AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        child: _isAppBarExpanded
+            ? Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 50 : 70,
+          key: ValueKey('expanded-logo'),
+        ).animate().fadeIn(duration: 1000.ms)
+            : Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 50,
+            key: ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
+      centerTitle: isMobile || _isAppBarExpanded,
+      pinned: true,
+      expandedHeight: 120,
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final isExpanded = constraints.maxHeight > kToolbarHeight;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_isAppBarExpanded != isExpanded) {
+              setState(() {
+                _isAppBarExpanded = isExpanded;
+              });
+            }
+          });
+          return FlexibleSpaceBar(
+            background: GlassmorphicContainer(
+              width: double.infinity,
+              height: double.infinity,
+              borderRadius: 0,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.1),
+                  Colors.white.withOpacity(0.05)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+            ),
+          );
+        },
+      ),
+      actions: isMobile ? null : [_buildDesktopMenu()],
+      leading: isMobile
+          ? IconButton(
+        icon: Icon(Icons.menu, color: _darkColor),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      )
+          : null,
+    );
+  }
+
+  Widget _buildDesktopMenu() {
+    return Row(
+      children: [
+        const HeaderButton(title: 'Ana Sayfa', route: '/'),
+        const HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
+        const HeaderButton(title: 'Blog', route: '/blogs'),
+        if (isLoggedIn)
+          HeaderButton(
+            title: 'Randevularım',
+            route: '/appointments/${AuthService().userUID()}',
+          ),
+        HeaderButton(
+          title: isLoggedIn ? 'Profilim' : 'Giriş Yap',
+          route: isLoggedIn ? '/profile/${AuthService().userUID()}' : '/login',
+        ),
+      ],
+    );
+  }
+
+
+
+  Widget _buildMainContent(bool isMobile) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_backgroundColor, _primaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(isMobile),
+            SliverPadding(
+              padding: EdgeInsets.symmetric(
+                  vertical: 30, horizontal: isMobile ? 5 : 30),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const SizedBox(height: 30),
+                  const SizedBox(height: 30),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
   SliverAppBar _buildSliverAppBar(bool isMobile) {
     return SliverAppBar(
       backgroundColor: Colors.transparent,
@@ -724,6 +854,19 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       ],
     );
   }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: SpinKitFadingCircle(
+          color: _primaryColor,
+          size: 50,
+        ),
+      ),
+    );
+  }
+
 
   // ************************ Mobil Versiyon ************************
 
