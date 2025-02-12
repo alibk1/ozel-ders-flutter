@@ -1,52 +1,45 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:ozel_ders/Components/CourseCard.dart';
-import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 
-class TopCoursesWidget extends StatefulWidget {
+import 'YoutubeCard.dart';
+
+class TopYoutubeVideosWidget extends StatefulWidget {
   final Function onSeeAllPressed;
-  final List<Map<String, dynamic>> courses;
-  final List<Map<String, dynamic>> teachers;
+  final List<Map<String, dynamic>> youtubeVideos;
 
-  const TopCoursesWidget({
+  const TopYoutubeVideosWidget({
     required this.onSeeAllPressed,
-    required this.courses,
-    required this.teachers,
+    required this.youtubeVideos,
     Key? key,
   }) : super(key: key);
 
   @override
-  _TopCoursesWidgetState createState() => _TopCoursesWidgetState();
+  _TopYoutubeVideosWidgetState createState() => _TopYoutubeVideosWidgetState();
 }
 
-class _TopCoursesWidgetState extends State<TopCoursesWidget> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
+class _TopYoutubeVideosWidgetState extends State<TopYoutubeVideosWidget> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
+
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 170, vertical: 32),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 170,
+        vertical: 32,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Başlık ve "Tümünü Gör" butonu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'En İyi Danışmanlıklar',
+                'Popüler Videolar',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -67,29 +60,30 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
             ],
           ),
           SizedBox(height: 16),
-          if (widget.courses.isEmpty)
-            Center(child: Text('Gösterilecek kurs bulunamadı'))
+          if (widget.youtubeVideos.isEmpty)
+            Center(child: Text('Gösterilecek video bulunamadı'))
           else if (isMobile)
-            _buildMobileCourseList(widget.courses)
+            _buildMobileVideoList(widget.youtubeVideos)
           else
-            _buildDesktopCourseGrid(widget.courses),
+            _buildDesktopVideoGrid(widget.youtubeVideos),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopCourseGrid(List<Map<String, dynamic>> topCourses) {
+  /// Desktop için grid yapıda video kartlarını oluşturur.
+  Widget _buildDesktopVideoGrid(List<Map<String, dynamic>> youtubeVideos) {
     return AnimationLimiter(
       child: GridView.builder(
         shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(), // Scroll'u devre dışı bırak
+        physics: NeverScrollableScrollPhysics(), // Grid içi scroll kapalı
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 5, // 5 sütun
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.85,
         ),
-        itemCount: topCourses.length,
+        itemCount: youtubeVideos.length,
         itemBuilder: (context, index) {
           return AnimationConfiguration.staggeredGrid(
             position: index,
@@ -97,13 +91,7 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
             columnCount: 5,
             child: ScaleAnimation(
               child: FadeInAnimation(
-                child: CourseCard(
-                  course: topCourses[index],
-                  author: widget.teachers.firstWhere(
-                        (teacher) => teacher["uid"] == topCourses[index]["author"],
-                    orElse: () => {},
-                  ),
-                ),
+                child: YoutubeCard(videoData: youtubeVideos[index]),
               ),
             ),
           );
@@ -112,12 +100,13 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
     );
   }
 
-  Widget _buildMobileCourseList(List<Map<String, dynamic>> topCourses) {
+  /// Mobilde yatay liste şeklinde video kartlarını oluşturur.
+  Widget _buildMobileVideoList(List<Map<String, dynamic>> youtubeVideos) {
     return SizedBox(
-      height: 320, // Sabit yükseklik
+      height: 280, // Sabit yükseklik
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: topCourses.length,
+        itemCount: youtubeVideos.length,
         itemBuilder: (context, index) {
           return AnimationConfiguration.staggeredList(
             position: index,
@@ -128,13 +117,7 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
                 child: Container(
                   width: 280,
                   margin: EdgeInsets.only(right: 16),
-                  child: CourseCard(
-                    course: topCourses[index],
-                    author: widget.teachers.firstWhere(
-                          (teacher) => teacher["uid"] == topCourses[index]["author"],
-                      orElse: () => {},
-                    ),
-                  ),
+                  child: YoutubeCard(videoData: youtubeVideos[index]),
                 ),
               ),
             ),
