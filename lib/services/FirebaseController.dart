@@ -1335,6 +1335,8 @@ class FirestoreService {
       'videoUrl': videoURL,
       'videoThumbnailUrl': thumbnail,
       'videoTitle': title,
+      'date': Timestamp.fromDate(DateTime.now()),
+      'views': 0,
     });
   }
 
@@ -1343,6 +1345,12 @@ class FirestoreService {
     await _db.collection('videos').doc(videoUID).update({
       'videoThumbnailUrl': thumbnail,
       'title': title,
+    });
+  }
+
+  Future<void> updateYoutubeVideoViews(String videoUID, int olderView) async {
+    await _db.collection('videos').doc(videoUID).update({
+      'views': olderView + 1,
     });
   }
 
@@ -1358,6 +1366,34 @@ class FirestoreService {
       return {...data, 'UID': doc.id};
     }).toList();
   }
+
+  Future<List<Map<String, dynamic>>> getAllVideos20Times({int limit = 20, DocumentSnapshot? startAfter}) async {
+    Query query = _db.collection('videos').orderBy('date', descending: true).limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    QuerySnapshot snapshot = await query.get();
+    List<Map<String, dynamic>> videos = [];
+
+    for (var doc in snapshot.docs) {
+      Map<String, dynamic> videoData = doc.data() as Map<String, dynamic>;
+      videoData['uid'] = doc.id;
+
+      /*QuerySnapshot commentsSnapshot = await doc.reference.collection('comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+      courseData['comments'] = comments;
+       */
+      videos.add(videoData);
+    }
+
+    return videos;
+  }
+
 
   // Yeni eklenen metot: Resim dosyasını Firebase Storage'a yükleyip download URL'sini döner.
   Future<String> uploadThumbnail(String filePath) async {
@@ -1395,6 +1431,7 @@ class FirestoreService {
 
     return downloadUrl;
   }
+
   Future<List<Map<String, dynamic>>> getSelectedTeachers(String uid) async {
     print("getSelectedTeachers begin");
     QuerySnapshot snapshot = await _db

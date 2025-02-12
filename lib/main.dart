@@ -7,9 +7,11 @@ import 'package:ozel_ders/BlogCreatePage.dart';
 import 'package:ozel_ders/BlogPage.dart';
 import 'package:ozel_ders/BlogsPage.dart';
 import 'package:ozel_ders/CategoriesPage.dart';
+import 'package:ozel_ders/ContentsPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
+import 'package:ozel_ders/YoutubeVideosPage.dart';
 import 'package:ozel_ders/auth.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
@@ -97,6 +99,14 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/blogs',
         builder: (context, state) => BlogsPage(),
+      ),
+      GoRoute(
+        path: '/contents',
+        builder: (context, state) => ContentsPage(),
+      ),
+      GoRoute(
+        path: '/videos',
+        builder: (context, state) => YoutubeVideosPage(),
       ),
       GoRoute(
         path: '/courses/:category/:subcategory',
