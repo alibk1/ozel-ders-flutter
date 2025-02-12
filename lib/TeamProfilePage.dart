@@ -67,14 +67,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     teamInfo = await FirestoreService().getTeamByUID(widget.uid);
     print(teamInfo);
     categories = await FirestoreService().getCategories();
-
   // TODO :  BURAYI TAMAMLA EKSİK BURASI
-    var teamCheck = await FirestoreService().getTeamByUID(widget.uid);
-    print(teamCheck);
-    if (teamCheck.isNotEmpty) {
-      String uid = teamCheck["uid"];
-      context.go("/team/$uid");
-    }
     userInfo = await FirestoreService().getTeamByUID(widget.uid);
     if (userInfo.isNotEmpty) {
       isTeacher = true;
