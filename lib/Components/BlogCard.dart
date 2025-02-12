@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +14,7 @@ class BlogCard extends StatefulWidget {
 
 class _BlogCardState extends State<BlogCard> {
   bool isHovered = false;
+  Widget? image;
 
   // İçerikten ilk resmi ve metin özetini çıkar
   String? _getFirstImageUrl() {
@@ -157,8 +157,13 @@ class _BlogCardState extends State<BlogCard> {
     final isMobile = MediaQuery.of(context).size.width < 800;
     final imageSize = isMobile ? 120.0 : 200.0;
 
+    if(image != null)
+    {
+      return image!;
+    }
+
     if (imageUrl == null) {
-      return Image.asset(
+      image = Image.asset(
         'assets/blogpost.png',
         width: imageSize,
         height: imageSize,
@@ -166,11 +171,11 @@ class _BlogCardState extends State<BlogCard> {
       );
     }
 
-    if (imageUrl.startsWith('data:image')) {
+    if (imageUrl!.startsWith('data:image')) {
       // Base64 kodlu resim
       final base64Data = imageUrl.split(',')[1];
       final bytes = base64Decode(base64Data);
-      return Image.memory(
+      image = Image.memory(
         bytes,
         width: imageSize,
         height: imageSize,
@@ -178,12 +183,13 @@ class _BlogCardState extends State<BlogCard> {
       );
     } else {
       // Network resmi
-      return Image.network(
-        imageUrl,
+      image = Image.network(
+        imageUrl!,
         width: imageSize,
         height: imageSize,
         fit: BoxFit.cover,
       );
     }
+    return image!;
   }
 }

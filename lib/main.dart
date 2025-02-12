@@ -10,10 +10,13 @@ import 'package:ozel_ders/CategoriesPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
-import 'package:ozel_ders/Login3.dart';
-import 'package:ozel_ders/LoginPage2.dart';
+import 'package:ozel_ders/auth.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
-
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'AdminPanel2.dart';
+import 'Components/YoutubeCard.dart';
+import 'package:ozel_ders/Login3.dart';
+import 'Components/Navbar.dart';
 import 'ProfilePage.dart';
 //import 'auth.dart';
 import 'firebase_options.dart';
@@ -50,7 +53,7 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => CoursesPage(category: '', subCategory: '',)//AdminPanel2() ,
+        builder: (context, state) => AdminPanel2()// CoursesPage(category: '', subCategory: '',) ,
       ),
       GoRoute(
         path: '/blog-update/:uid/:blogUID',
@@ -75,9 +78,23 @@ class MyApp extends StatelessWidget {
         },
       ),
       GoRoute(
+        path: '/video/:url',
+        builder: (context, state) {
+          final url = state.pathParameters['url']!;
+          return YoutubeVideoPlayerScreen(videoUrl: url,);
+        },
+      ),
+      GoRoute(
         path: '/blogs',
         builder: (context, state) => BlogsPage(),
       ),
+
+      //NAvbar deneme route yeri
+      GoRoute(
+        path: '/navbar',
+        builder: (context, state) => Navbar(),
+      ),
+
       GoRoute(
         path: '/courses/:category/:subcategory',
         builder: (context, state) {
@@ -92,8 +109,14 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => LoginSignupPage()//LoginSignupPage(reference: "",),
+        builder: (context, state) => LoginRegisterScreen(),
       ),
+      GoRoute(path: '/oldlogin',
+        builder: (context, state) => LoginSignupPage(reference: '',),),
+
+
+
+
       /*GoRoute(
         path: '/newuser/:uid',
         builder: (context, state) {
@@ -137,6 +160,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: "Vitament",
       routerConfig: _router,
       localizationsDelegates: const [
