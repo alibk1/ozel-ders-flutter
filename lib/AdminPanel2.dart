@@ -1,5 +1,6 @@
 import 'dart:convert';
-
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:zefyrka/zefyrka.dart';
@@ -20,13 +21,14 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> teachers = [];
   List<Map<String, dynamic>> students = [];
+  List<Map<String, dynamic>> videos = [];
 
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -49,6 +51,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
       List<Map<String, dynamic>> loadedCategories = await firestoreService.getCategories();
       List<Map<String, dynamic>> loadedTeachers = await firestoreService.getAllTeachers();
       List<Map<String, dynamic>> loadedStudents = await firestoreService.getAllStudents();
+      List<Map<String, dynamic>> loadedVideos = await firestoreService.getAllVideos();
 
       // Status'e göre sıralama
       loadedCourses.sort((a, b) => (a['status'] as int).compareTo(b['status'] as int));
@@ -60,6 +63,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
         categories = loadedCategories;
         students = loadedStudents;
         teachers = loadedTeachers;
+        videos = loadedVideos;
         isLoading = false;
       });
     } catch (e) {
@@ -121,6 +125,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
             Tab(text: 'Danışmanlıklar'),
             Tab(text: 'Bloglar'),
             Tab(text: 'Kategoriler'),
+            Tab(text: 'Videolar'),
           ],
         ),
       ),
@@ -132,6 +137,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
           _buildCoursesTab(),
           _buildBlogsTab(),
           _buildCategoriesTab(),
+          _buildVideosTab(),
         ],
       ),
     );
@@ -383,5 +389,243 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
         );
       },
     );
+  }
+
+  Widget _buildVideosTab() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+                onPressed: ()
+                {
+                  _showAddVideoDialog();
+                },
+                icon: Icon(Icons.add, color: Colors.green,)
+            ),
+          ],
+        ),
+       Expanded(
+          child: ListView.builder(
+            itemCount: videos.length,
+            itemBuilder: (context, index) {
+              var course = videos[index];
+              return ListTile(
+                title: Text(course['videoTitle']),
+                subtitle: Text('URL: ${course['videoUrl']}'),
+                trailing: IconButton(
+                    onPressed: (){},
+                    icon: Icon(Icons.delete, color: Colors.red,)
+                ),
+                onTap: () {
+                  _showEditVideoDialog(videos[index]);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddVideoDialog() {
+    TextEditingController videoUrlController = TextEditingController();
+    TextEditingController titleController = TextEditingController();
+    Uint8List? localImageBytes; // Web için dosya byte'ları
+    final _formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text('Yeni Video Ekle'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Video URL alanı
+                      TextFormField(
+                        controller: videoUrlController,
+                        decoration: InputDecoration(labelText: 'Video URL'),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Video URL gereklidir'
+                            : null,
+                      ),
+                      // Başlık alanı
+                      TextFormField(
+                        controller: titleController,
+                        decoration: InputDecoration(labelText: 'Başlık'),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Başlık gereklidir'
+                            : null,
+                      ),
+                      SizedBox(height: 12),
+                      // Resim seçimi ve önizleme
+                      localImageBytes != null
+                          ? Image.memory(localImageBytes!, height: 150, fit: BoxFit.cover)
+                          : Container(
+                        height: 150,
+                        color: Colors.grey.shade300,
+                        child: Center(child: Text('Resim Seçilmedi')),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Uint8List? pickedBytes = await selectImage();
+                          if (pickedBytes != null) {
+                            setStateDialog(() {
+                              localImageBytes = pickedBytes;
+                            });
+                          }
+                        },
+                        child: Text('Resim Seç'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate() && localImageBytes != null) {
+                      // Web ortamında resmi yüklemek için FirestoreService'in
+                      // web'e uygun uploadThumbnailWeb fonksiyonunu kullanıyoruz.
+                      String thumbnailUrl = await firestoreService.uploadThumbnailWeb(localImageBytes!);
+                      await firestoreService.createYoutubeVideo(
+                        "admin",
+                        videoUrlController.text.trim(),
+                        thumbnailUrl,
+                        titleController.text.trim(),
+                      );
+                      _loadData(); // Verileri güncelle
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Video eklendi!')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Tüm alanlar zorunludur.')),
+                      );
+                    }
+                  },
+                  child: Text('Kaydet'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('İptal'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditVideoDialog(Map<String, dynamic> video) {
+    TextEditingController titleController = TextEditingController(text: video['videoTitle']);
+    // Mevcut resim URL'si (Firebase Storage'daki)
+    String currentThumbnailUrl = video['videoThumbnailUrl'];
+    Uint8List? newLocalImageBytes; // Düzenleme sırasında seçilecek yeni resim byte'ları
+    final _formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text('Videoyu Düzenle'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Başlık alanı
+                      TextFormField(
+                        controller: titleController,
+                        decoration: InputDecoration(labelText: 'Başlık'),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Başlık gereklidir'
+                            : null,
+                      ),
+                      SizedBox(height: 12),
+                      // Resim alanı: Eğer yeni resim seçilmişse onun önizlemesi,
+                      // aksi halde mevcut resim gösterilir.
+                      newLocalImageBytes != null
+                          ? Image.memory(newLocalImageBytes!, height: 150, fit: BoxFit.cover)
+                          : Image.network(currentThumbnailUrl, height: 150, fit: BoxFit.cover),
+                      TextButton(
+                        onPressed: () async {
+                          Uint8List? pickedBytes = await selectImage();
+                          if (pickedBytes != null) {
+                            setStateDialog(() {
+                              newLocalImageBytes = pickedBytes;
+                            });
+                          }
+                        },
+                        child: Text('Resim Değiştir'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate() && (newLocalImageBytes != null || currentThumbnailUrl.isNotEmpty)) {
+                      String updatedThumbnailUrl = currentThumbnailUrl;
+                      // Yeni resim seçilmişse eski resmi silip yenisini yükle
+                      if (newLocalImageBytes != null) {
+                        await firestoreService.deleteThumbnail(currentThumbnailUrl);
+                        updatedThumbnailUrl = await firestoreService.uploadThumbnailWeb(newLocalImageBytes!);
+                      }
+                      String videoUID = video['UID'];
+                      await firestoreService.updateYoutubeVideo(
+                        videoUID,
+                        updatedThumbnailUrl,
+                        titleController.text.trim(),
+                      );
+                      _loadData(); // Verileri güncelle
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Video güncellendi!')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Başlık ve resim zorunludur.')),
+                      );
+                    }
+                  },
+                  child: Text('Kaydet'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('İptal'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+// Web için: selectImage fonksiyonu yalnızca dosya byte’larını döndürür.
+  Future<Uint8List?> selectImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+    if (result != null) {
+      return result.files.single.bytes; // Web ortamında path kullanılmaz
+    }
+    return null;
   }
 }

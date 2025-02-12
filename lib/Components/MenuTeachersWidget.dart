@@ -10,9 +10,13 @@ import 'package:shimmer/shimmer.dart';
 
 class TopTeachersWidget extends StatefulWidget {
   final Function onSeeAllPressed;
+  final List<Map<String, dynamic>> topTeachers;
+  final List<Map<String, dynamic>> courses;
 
   const TopTeachersWidget({
     required this.onSeeAllPressed,
+    required this.topTeachers,
+    required this.courses,
     Key? key,
   }) : super(key: key);
 
@@ -22,97 +26,16 @@ class TopTeachersWidget extends StatefulWidget {
 
 class _TopTeachersWidgetState extends State<TopTeachersWidget> {
   final FirestoreService _firestore = FirestoreService();
-  bool _isLoading = true;
   List<Map<String, dynamic>> _teachers = [];
-  List<Map<String, dynamic>> _courses = [];
-  List<Map<String, dynamic>> _appointments = [];
-  List<Map<String, dynamic>> _blogs = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
-  }
-
-  Future<void> _fetchData() async {
-    try {
-      final results = await Future.wait([
-        _firestore.getAllTeachers(),
-        _firestore.getAllCourses(),
-        _firestore.getAllAppointments(),
-        _firestore.getAllBlogs(),
-      ]);
-
-      setState(() {
-        _teachers = results[0] ?? [];
-        _courses = results[1] ?? [];
-        _appointments = results[2] ?? [];
-        _blogs = results[3] ?? [];
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Veri çekme hatası: $e');
-      setState(() => _isLoading = false);
-    }
-  }
-
-  List<Map<String, dynamic>> _getSortedTeachers() {
-    if (_isLoading || _teachers.isEmpty) return [];
-
-    List<Map<String, dynamic>> sortedTeachers = List.from(_teachers);
-    sortedTeachers.sort((a, b) {
-      double scoreA = _calculateTeacherScore(a);
-      double scoreB = _calculateTeacherScore(b);
-      return scoreB.compareTo(scoreA);
-    });
-
-    return sortedTeachers.take(5).toList();
-  }
-
-  double _calculateTeacherScore(Map<String, dynamic> teacher) {
-    String teacherUID = teacher['UID'] ?? '';
-
-    // Öğretmenin kurslarını bul
-    List<Map<String, dynamic>> teacherCourses = _courses
-        .where((course) => course['author'] == teacherUID)
-        .toList();
-
-    // Kursların yorumlarından toplam puanı hesapla
-    double totalRating = teacherCourses.fold(0.0, (sum, course) {
-      List<dynamic> comments = course['comments'] ?? [];
-      double courseRating = comments.fold(0.0, (sum, comment) => sum + (comment['rating'] ?? 0.0));
-      return sum + courseRating;
-    });
-
-    // Randevu sayısı
-    int appointmentCount = _appointments
-        .where((app) => app['author'] == teacherUID)
-        .length;
-
-    // Blog sayısı
-    int blogCount = _blogs
-        .where((blog) => blog['creatorUID'] == teacherUID)
-        .length;
-
-    // Toplam puan: Kurs puanları + randevu sayısı + blog sayısı * 2
-    return totalRating + appointmentCount + (blogCount * 2);
   }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
-
-    if (_isLoading) {
-      return Center(
-        child: LoadingAnimationWidget.twistingDots(
-          leftDotColor: Color(0xFF222831),
-          rightDotColor: Color(0xFF663366),
-          size: 100,
-        ),
-      );
-    }
-
-    final topTeachers = _getSortedTeachers();
 
     return Container(
       width: double.infinity,
@@ -140,7 +63,7 @@ class _TopTeachersWidgetState extends State<TopTeachersWidget> {
                 child: Text(
                   'Tümünü Gör',
                   style: TextStyle(
-                    color: Color(0xFFEEEEEE),
+                    color: Color(0xFF3C72C2),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -149,12 +72,12 @@ class _TopTeachersWidgetState extends State<TopTeachersWidget> {
             ],
           ),
           SizedBox(height: 16),
-          if (topTeachers.isEmpty)
+          if (widget.topTeachers.isEmpty)
             Center(child: Text('Gösterilecek öğretmen bulunamadı'))
           else if (isMobile)
-            _buildMobileTeacherList(topTeachers)
+            _buildMobileTeacherList(widget.topTeachers)
           else
-            _buildDesktopTeacherGrid(topTeachers),
+            _buildDesktopTeacherGrid(widget.topTeachers),
         ],
       ),
     );
@@ -215,8 +138,8 @@ class _TopTeachersWidgetState extends State<TopTeachersWidget> {
   }
 
   Widget _buildTeacherCard(Map<String, dynamic> teacher) {
-    String teacherUID = teacher['UID'] ?? '';
-    List<Map<String, dynamic>> teacherCourses = _courses
+    String teacherUID = teacher['uid'] ?? '';
+    List<Map<String, dynamic>> teacherCourses = widget.courses
         .where((course) => course['author'] == teacherUID)
         .toList();
 

@@ -1,3 +1,4 @@
+import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,8 +8,10 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ozel_ders/Components/ContactForm.dart';
 import 'package:ozel_ders/Components/Drawer.dart';
 import 'package:ozel_ders/Components/Footer.dart';
+import 'package:ozel_ders/Components/MenuBlogsWidget.dart';
 import 'package:ozel_ders/Components/MenuCoursesWidget.dart';
 import 'package:ozel_ders/Components/MenuTeachersWidget.dart';
+import 'package:ozel_ders/Components/MenuYoutubeWidget.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -32,6 +35,13 @@ class _HomePageState extends State<HomePage> {
   String? selectedCategoryId;
   String? selectedSubCategoryId;
   List<Map<String, dynamic>> categories = [];
+  List<Map<String, dynamic>> topCourses = [];
+  List<Map<String, dynamic>> topTeachers = [];
+  List<Map<String, dynamic>> neededCourses = [];
+  List<Map<String, dynamic>> neededTeachers = [];
+  List<Map<String, dynamic>> youtubeVideos = [];
+  List<Map<String, dynamic>> blogs = [];
+
 
   @override
   void initState() {
@@ -42,7 +52,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initializeData() async {
     try {
       isLoggedIn = await AuthService().isUserSignedIn();
-      await _loadCategories();
+      await _loadData();
     } catch (e) {
       print('Initialization error: $e');
     } finally {
@@ -52,11 +62,40 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _loadCategories() async {
+  Future<void> _loadData() async {
     try {
-      final result = await FirestoreService().getCategories();
+      categories = await FirestoreService().getCategories();
+      youtubeVideos = await FirestoreService().getAllVideos();
+      topCourses = await FirestoreService().getCoursesByPopularity(0, 5);
+      topTeachers = await FirestoreService().getTeachersByPopularity(0, 5);
+      blogs = await FirestoreService().getAllBlogs();
+      List<String> neededTeacherList = [];
+      for(var course in topCourses)
+      {
+        neededTeacherList.add(course["author"]);
+      }
+      for(var teacher in topTeachers)
+      {
+        neededTeacherList.add(teacher["uid"]);
+      }
+
+      neededTeachers = await FirestoreService().getSpesificTeachers(neededTeacherList);
+      neededCourses = await FirestoreService().getCoursesByAuthors(neededTeacherList);
+
+      /*print(neededCourses.length);
+      for(var course in topCourses)
+      {
+        if(!neededCourses.contains(course)) neededCourses.add(course);
+      }
+      print(neededCourses.length);
+
+      for(var teacher in topTeachers)
+      {
+        if(!neededTeachers.contains(teacher)) neededTeachers.add(teacher);
+      }
+       */
+
       setState(() {
-        categories = result;
         isCategoriesLoading = false;
       });
     } catch (e) {
@@ -101,19 +140,39 @@ class _HomePageState extends State<HomePage> {
               padding: EdgeInsets.symmetric(vertical: 30, horizontal: isMobile ? 5 : 30),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  IntroductionSection(),
+                  SizedBox(height: 30),
                   TopCoursesWidget(
                     onSeeAllPressed: () {
                       context.go("/courses");
                     },
+                    courses: topCourses,
+                    teachers: neededTeachers,
                   ),
                   SizedBox(height: 30),
                   TopTeachersWidget(
                     onSeeAllPressed: () {
                       context.go("/courses");
                     },
+                    topTeachers: topTeachers,
+                    courses: neededCourses,
+
                   ),
                   SizedBox(height: 30),
-                  IntroductionSection(),
+                  TopYoutubeVideosWidget(
+                    onSeeAllPressed: () {
+                      context.go("/courses");
+                    },
+                    youtubeVideos: youtubeVideos,
+
+                  ),
+                  SizedBox(height: 30),
+                  TopBlogsWidget(
+                      onSeeAllPressed: (){
+
+                      },
+                      blogs: blogs),
+                  SizedBox(height: 30),
                 ]),
               ),
             ),
@@ -518,7 +577,7 @@ class IntroductionSection extends StatelessWidget {
             reverse: true,
           ),
           SizedBox(height: 32),
-          ContactForm(),
+          //ContactForm(),
         ],
       ),
     );
@@ -820,31 +879,29 @@ class ContentText extends StatelessWidget {
 class ImageCarousel extends StatelessWidget {
   final List<String> imagePaths;
 
-  ImageCarousel({required this.imagePaths});
+  const ImageCarousel({required this.imagePaths, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return CarouselSlider(
-      options: CarouselOptions(
-        autoPlay: true,
-        aspectRatio: 16 / 9,
-        enlargeCenterPage: true,
-        enableInfiniteScroll: true,
-        autoPlayInterval: Duration(seconds: 3),
-        autoPlayAnimationDuration: Duration(milliseconds: 800),
-        autoPlayCurve: Curves.fastOutSlowIn,
-      ),
-      items: imagePaths.map<Widget>((photoUrl) {
+    return Swiper(
+      itemBuilder: (BuildContext context, int index) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(16.0),
           child: Image.asset(
-            photoUrl,
+            imagePaths[index],
             fit: BoxFit.cover,
             width: double.infinity,
-            height: 50,
           ),
         );
-      }).toList(),
+      },
+      itemCount: imagePaths.length,
+      autoplay: true,
+      viewportFraction: 0.8,
+      scale: 0.9,
+      pagination: SwiperPagination(),
+      itemHeight: 400,
+      itemWidth: 600,
+      layout: SwiperLayout.STACK,
     );
   }
 }

@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path/path.dart' as p;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -100,6 +105,7 @@ class AuthService {
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Öğrenci dökümanı oluşturma
   Future<void> createStudentDocument(String uid, String email, String name, String studentName, String studentProblem, int age, String city, String profilePictureUrl, String reference) async {
@@ -1165,6 +1171,7 @@ class FirestoreService {
       return {...data, 'uid': doc.id};
     }).toList();
   }
+
   Future<void> updateCoursePopularity(courseUid,int updatePopularity) async {
 
     Map<String, dynamic> data = await getCourseByUID(courseUid);// bu data firebase serviceye al
@@ -1181,15 +1188,13 @@ class FirestoreService {
       }
 
   }
+
   Future<void> updateTeacherPopularity(teacherUid,int updatePopularity) async {
     getTeacherByUID(teacherUid);// bu data firebase serviceye al
 
     Map<String, dynamic> data = await getTeacherByUID(teacherUid);// bu data firebase serviceye al
-
-
     if (data['popularity'] != null) {
       print('Popularity: ${data['popularity']}');
-      // Popularityi güncelle
       int currentPopularity = data['popularity'];
       int newPopularity = currentPopularity + updatePopularity;
       await _db.collection("teachers").doc(teacherUid).update({'popularity': newPopularity});
@@ -1198,22 +1203,196 @@ class FirestoreService {
       print('Popularity alanı bu dökümanda mevcut değil.');
     }
   }
-  Future<List<Map<String, dynamic>>> getCoursesByPopularity(int firstIndex, int lastIndex) async {
-    // Firestore referansı
-    final CollectionReference coursesRef = _db.collection('courses');
 
-    // Popülerlik alanına göre azalan şekilde tüm belgeleri çek
+  Future<List<Map<String, dynamic>>> getCoursesByPopularity(int firstIndex, int lastIndex) async {
+    final CollectionReference coursesRef = FirebaseFirestore.instance.collection('courses');
+
     QuerySnapshot querySnapshot = await coursesRef
         .orderBy('popularity', descending: true)
-        .limit(lastIndex) // Son indexe kadar veri çekiyoruz
+        .limit(lastIndex)
         .get();
 
-    // Belgeleri Map listesine çevir
-    List<Map<String, dynamic>> allCourses = querySnapshot.docs
-        .map((doc) => doc.data() as Map<String, dynamic>)
-        .toList();
+    List<Map<String, dynamic>> courses = [];
+    for (var doc in querySnapshot.docs) {
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['uid'] = doc.id;
 
-    // İstenen aralığı keserek döndür
-    return allCourses.sublist(firstIndex, lastIndex);
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+
+      courseData['comments'] = comments;
+      courses.add(courseData);
+    }
+
+    // lastIndex, liste uzunluğundan fazlaysa, tüm listeyi döndür
+    final int endIndex = lastIndex > courses.length ? courses.length : lastIndex;
+    return courses.sublist(firstIndex, endIndex);
+  }
+
+  Future<List<Map<String, dynamic>>> getTeachersByPopularity(int firstIndex, int lastIndex) async {
+    final CollectionReference teachersRef = _db.collection('teachers');
+
+    QuerySnapshot querySnapshot = await teachersRef
+        .orderBy('popularity', descending: true)
+        .limit(lastIndex)
+        .get();
+
+    List<Map<String, dynamic>> teachers = querySnapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    }).toList();
+
+    // lastIndex, liste uzunluğundan fazlaysa, tüm listeyi döndür
+    final int endIndex = lastIndex > teachers.length ? teachers.length : lastIndex;
+    return teachers.sublist(firstIndex, endIndex);
+  }
+
+  Future<List<Map<String, dynamic>>> getSpesificTeachers(List<String> uids) async {
+    if (uids.isEmpty) return [];
+
+    // Eğer uid sayısı 10'dan fazla ise, burada uygun şekilde bölme yapılabilir.
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('teachers')
+        .where(FieldPath.documentId, whereIn: uids)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'uid': doc.id};
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getSpesificCourses(List<String> uids) async {
+    if (uids.isEmpty) return [];
+
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('courses')
+        .where(FieldPath.documentId, whereIn: uids)
+        .get();
+
+    List<Map<String, dynamic>> courses = [];
+    for (var doc in querySnapshot.docs) {
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['uid'] = doc.id;
+
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+
+      courseData['comments'] = comments;
+      courses.add(courseData);
+    }
+    return courses;
+  }
+
+  Future<List<Map<String, dynamic>>> getCoursesByAuthors(List<String> authorUids) async {
+    if (authorUids.isEmpty) return [];
+
+    // Not: whereIn sorgusu en fazla 10 öğe alabiliyor.
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('courses')
+        .where('author', whereIn: authorUids)
+        .get();
+
+    List<Map<String, dynamic>> courses = [];
+    for (var doc in querySnapshot.docs) {
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['uid'] = doc.id;
+
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+
+      courseData['comments'] = comments;
+      courses.add(courseData);
+    }
+    return courses;
+  }
+
+///YouTube FUNCTIONS
+
+  // Randevu oluşturma
+  Future<void> createYoutubeVideo(String sender, String videoURL, String thumbnail, String title) async {
+    String videoUID = videoURL.split("/").last;
+    await _db.collection('videos').doc(videoUID).set({
+      'sender': sender,
+      'videoUrl': videoURL,
+      'videoThumbnailUrl': thumbnail,
+      'videoTitle': title,
+    });
+  }
+
+  // Randevu oluşturma
+  Future<void> updateYoutubeVideo(String videoUID, String thumbnail, String title) async {
+    await _db.collection('videos').doc(videoUID).update({
+      'videoThumbnailUrl': thumbnail,
+      'title': title,
+    });
+  }
+
+  // Randevu oluşturma
+  Future<void> deleteYoutubeVideo(String videoUID) async {
+    await _db.collection('videos').doc(videoUID).delete();
+  }
+
+  Future<List<Map<String, dynamic>>> getAllVideos() async {
+    QuerySnapshot snapshot = await _db.collection('videos').get();
+    return snapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      return {...data, 'UID': doc.id};
+    }).toList();
+  }
+
+  // Yeni eklenen metot: Resim dosyasını Firebase Storage'a yükleyip download URL'sini döner.
+  Future<String> uploadThumbnail(String filePath) async {
+    File file = File(filePath);
+    String fileName = p.basename(filePath);
+    Reference ref = _storage.ref().child('thumbnails/$fileName');
+    UploadTask uploadTask = ref.putFile(file);
+    TaskSnapshot snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  // Yeni eklenen metot: Firebase Storage'dan resim siler.
+  Future<void> deleteThumbnail(String thumbnailUrl) async {
+    await _storage.refFromURL(thumbnailUrl).delete();
+  }
+
+  Future<String> uploadThumbnailWeb(Uint8List imageBytes) async {
+    // Benzersiz bir dosya adı oluşturmak için zaman damgası kullanıyoruz.
+    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // 'thumbnails' klasörüne dosyayı kaydedecek referansı oluşturuyoruz.
+    Reference ref = FirebaseStorage.instance.ref().child('thumbnails/$fileName.jpg');
+
+    // Resim verisini, contentType belirtisiyle Firebase Storage'a yüklüyoruz.
+    UploadTask uploadTask = ref.putData(
+      imageBytes,
+      SettableMetadata(contentType: 'image/jpeg'),
+    );
+
+    // Yükleme tamamlanana kadar bekliyoruz.
+    TaskSnapshot snapshot = await uploadTask;
+
+    // Yüklenen dosyanın download URL'sini alıyoruz.
+    String downloadUrl = await snapshot.ref.getDownloadURL();
+
+    return downloadUrl;
   }
 }

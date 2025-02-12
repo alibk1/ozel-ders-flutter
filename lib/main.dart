@@ -12,7 +12,10 @@ import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/Login3.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
+import 'AdminPanel2.dart';
+import 'Components/YoutubeCard.dart';
 import 'ProfilePage.dart';
 //import 'auth.dart';
 import 'firebase_options.dart';
@@ -49,7 +52,7 @@ class MyApp extends StatelessWidget {
       ),
       GoRoute(
         path: '/courses',
-        builder: (context, state) => CoursesPage(category: '', subCategory: '',)//AdminPanel2() ,
+        builder: (context, state) => AdminPanel2()// CoursesPage(category: '', subCategory: '',) ,
       ),
       GoRoute(
         path: '/blog-update/:uid/:blogUID',
@@ -71,6 +74,13 @@ class MyApp extends StatelessWidget {
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
           return BlogPage(blogUID: uid,);
+        },
+      ),
+      GoRoute(
+        path: '/video/:url',
+        builder: (context, state) {
+          final url = state.pathParameters['url']!;
+          return YoutubeVideoPlayerScreen(videoUrl: url,);
         },
       ),
       GoRoute(
