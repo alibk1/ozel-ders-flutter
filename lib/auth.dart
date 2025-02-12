@@ -151,7 +151,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   Widget _buildMainContent(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
-        gradient: _gradientBackground
+          gradient: _gradientBackground
       ),
       child: SafeArea(
         child: CustomScrollView(
@@ -393,6 +393,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         ),
         obscureText: true,
       ),
+
       if(_selectedRole != "Kurum")...[
         SizedBox(height: 10,),
         TextFormField(
@@ -793,4 +794,3 @@ class _BirthdateInputExampleState extends State<BirthdateInputExample> {
     );
   }
 }
-
