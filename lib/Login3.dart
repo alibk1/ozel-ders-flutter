@@ -52,12 +52,12 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     isMobile = size.width < 800;
 
     final containerAlignment = isMobile
-        ? (isLogin ? Alignment.topCenter : Alignment.bottomCenter)
+        ? (isLogin ? Alignment.topCenter : Alignment.topCenter)
         : (isLogin ? Alignment.centerLeft : Alignment.centerRight);
 
     // Form için hizalama
     final formAlignment = isMobile
-        ? (isLogin ? Alignment.bottomCenter : Alignment.topCenter)
+        ? (isLogin ? Alignment.bottomCenter : Alignment.bottomCenter)
         : (isLogin ? Alignment.centerRight : Alignment.centerLeft);
 
     return Scaffold(
