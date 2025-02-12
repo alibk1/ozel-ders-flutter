@@ -91,11 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
         isSelf = true;
       }
     }
-    var teamCheck = await FirestoreService().getTeamByUID(widget.uid);
-    if (teamCheck.isNotEmpty) {
-      String uid = teamCheck["uid"];
-      context.go("/team/$uid");
-    }
+
     userInfo = await FirestoreService().getTeacherByUID(widget.uid);
     if (userInfo.isNotEmpty) {
       isTeacher = true;

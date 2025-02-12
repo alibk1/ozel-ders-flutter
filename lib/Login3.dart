@@ -714,8 +714,15 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       User? user = await AuthService()
           .signInWithEmail(_emailController.text, _passwordController.text);
 
+      var teamCheck = await FirestoreService().getTeamByUID(user!.uid);
+      if (teamCheck.isNotEmpty) {
+        String uid = teamCheck["uid"];
+        context.go("/team/$uid");
+      }
+      else{
+        context.go("/profile/" + user!.uid);
 
-      context.go("/profile/" + user!.uid);
+      }
 
     } catch (e) {
       // Herhangi bir hata oluştuğunda burada yakalanır
@@ -761,7 +768,15 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
             "",
             _referenceController.text);
       }
-      context.go("/profile/" + user.uid);
+      var teamCheck = await FirestoreService().getTeamByUID(user!.uid);
+      if (teamCheck.isNotEmpty) {
+        String uid = teamCheck["uid"];
+        context.go("/team/$uid");
+      }
+      else{
+        context.go("/profile/" + user!.uid);
+
+      }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Kayıt hatası')),
