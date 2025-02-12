@@ -107,7 +107,17 @@ class _CoursePageState extends State<CoursePage> {
               decoration: BoxDecoration(
                 color: Color(0xFF222831),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                gradient:  LinearGradient(
+                  colors:
+                  [
+                    Color(0xFF3C72C2),
+                    Color(0xFFA7D8DB)], // Yeni gradyan renkleri
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+            ),
+
               ),
+
               padding: EdgeInsets.only(
                 bottom: MediaQuery
                     .of(context)
@@ -140,7 +150,7 @@ class _CoursePageState extends State<CoursePage> {
                     SizedBox(height: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF76ABAE),
+                        backgroundColor: const Color(0xFF23994c),
                         foregroundColor: Colors.white,
                         minimumSize: const Size(double.infinity, 50),
                       ),
@@ -240,7 +250,7 @@ class _CoursePageState extends State<CoursePage> {
                             padding: EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Color(0xFF76ABAE)
+                                  ? Color(0xFF23994c)
                                   : canReserve
                                   ? Color(0xFF393E46)
                                   : Colors.red,
@@ -298,7 +308,7 @@ class _CoursePageState extends State<CoursePage> {
                     // Randevu Al Butonu
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF76ABAE),
+                        backgroundColor: Color(0xFF23994c),
                         foregroundColor: Colors.white,
                         minimumSize: Size(double.infinity, 50),
                       ),
@@ -381,9 +391,12 @@ class _CoursePageState extends State<CoursePage> {
           ? DrawerMenu(isLoggedIn: isLoggedIn)
           : null,
       body: isLoading
-          ? Center(
-          child: LoadingAnimationWidget.dotsTriangle(
-              color: const Color(0xFF222831), size: 200))
+          ? Stack(
+        children: [
+          _buildMainContent(isMobile),
+          if (isLoading || isCategoriesLoading) _buildLoadingOverlay(),
+        ],
+      )
           : SafeArea(
         child: CustomScrollView(slivers: [
             _buildAppBar(isMobile),
@@ -852,7 +865,7 @@ class _CoursePageState extends State<CoursePage> {
   ThemeData _customDatePickerTheme() {
     return ThemeData.dark().copyWith(
       colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF76ABAE), // Seçili tarih & header
+        primary: Color(0xFF23994c), // Seçili tarih & header
         surface: Color(0xFF222831), // Header arkaplan
         onSurface: Colors.white, // Metin renkleri
       ),

@@ -309,7 +309,7 @@ class _CommentRatingWidgetState extends State<CommentRatingWidget> {
                 ),
                 const SizedBox(height: 24.0),
                 Card(
-                  color: Color(0xFF393E46), // Arka plan rengini ayarladık
+                  color: Colors.white,//Color(0xFF1772bd), // Arka plan rengini ayarladık
                   elevation: 4.0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12.0),
@@ -319,32 +319,32 @@ class _CommentRatingWidgetState extends State<CommentRatingWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
-                        TextField(
-                          controller: _controller,
-                          style: TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
-                            labelText: 'Yorumunuzu yazın',
-                            labelStyle: TextStyle(color: Colors.white70),
-                            border: OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide:
-                              BorderSide(color: Colors.white70, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide:
-                              BorderSide(color: Colors.white, width: 1.0),
-                            ),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(),
                           ),
-                          maxLines: screenWidth < 800 ? 2 : 3,
+                          child: TextField(
+                            controller: _controller,
+                            style: TextStyle(color: Colors.black),
+                            decoration: const InputDecoration(
+
+                              labelText: 'Yorumunuzu yazın',
+                              labelStyle: TextStyle(color: Colors.white70),
+                              border: OutlineInputBorder(),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                BorderSide(color: Colors.white70, width: 1.0),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                BorderSide(color: Colors.white, width: 1.0),
+                              ),
+                            ),
+                            maxLines: screenWidth < 800 ? 2 : 3,
+                          ),
                         ),
                         const SizedBox(height: 16.0),
-                        const Text(
-                          'Puan verin',
-                          style: TextStyle(
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(5, (index) {
@@ -369,7 +369,7 @@ class _CommentRatingWidgetState extends State<CommentRatingWidget> {
                           onPressed: _sendCommentAndRating,
                           child: const Text('Gönder'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF76ABAE),
+                            backgroundColor: Colors.blue,//Color(0xFF76ABAE),
                             foregroundColor: Colors.white,
                             padding:
                             const EdgeInsets.symmetric(vertical: 16.0),

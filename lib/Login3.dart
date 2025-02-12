@@ -52,12 +52,12 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     isMobile = size.width < 800;
 
     final containerAlignment = isMobile
-        ? (isLogin ? Alignment.topCenter : Alignment.bottomCenter)
+        ? (isLogin ? Alignment.topCenter : Alignment.topCenter)
         : (isLogin ? Alignment.centerLeft : Alignment.centerRight);
 
     // Form için hizalama
     final formAlignment = isMobile
-        ? (isLogin ? Alignment.bottomCenter : Alignment.topCenter)
+        ? (isLogin ? Alignment.bottomCenter : Alignment.bottomCenter)
         : (isLogin ? Alignment.centerRight : Alignment.centerLeft);
 
     return Scaffold(
@@ -184,7 +184,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Login",
+          "Hoş Geldiniz",
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
@@ -193,7 +193,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
           style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _emailController,
           decoration: InputDecoration(
-            labelText: 'Email',
+            labelText: 'E-posta',
             prefixIcon: Icon(Icons.person, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
@@ -223,7 +223,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
           style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _passwordController,
           decoration: InputDecoration(
-            labelText: 'Password',
+            labelText: 'Şifre',
             prefixIcon: Icon(Icons.lock, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
@@ -254,17 +254,41 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
             _showChangePasswordDialog(context, _emailController.text);
           },
           child: const Text(
-            "Forgot password?",
+            "Şifrenizi mi unuttunuz?",
             style: TextStyle(color: Colors.blue),
           ),
         ),
         const SizedBox(height: 16),
-        ElevatedButton(
-          // giriş yap butonu için düzenlenecek
-          onPressed: _login,
-          child: const SizedBox(
-            width: double.infinity,
-            child: Center(child: Text("Login")),
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradient renkler
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20), // Köşeleri yuvarlak
+          ),
+          child: ElevatedButton(
+            onPressed: _login,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent, // Butonun kendi arkaplanını transparan yap
+              shadowColor: Colors.transparent, // Gölgeyi kaldır
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20), // Köşeleri yuvarlak
+              ),
+            ),
+            child: const SizedBox(
+              width: double.infinity,
+              child: Center(
+                child: Text(
+                  "Giriş Yap",
+                  style: TextStyle(
+                    color: Colors.white, // Yazı rengi
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -272,7 +296,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Don't have an account? "),
+            const Text("Hesabınız yok mu? "),
             InkWell(
               onTap: () {
                 setState(() {
@@ -280,7 +304,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                 });
               },
               child: const Text(
-                "Register",
+                "Kayıt Ol",
                 style: TextStyle(color: Colors.blue),
               ),
             ),
@@ -296,14 +320,22 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Register",
+          "Aramıza Katılmaya Bir Adım Uzaktasın!",
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
         // Kullanıcı Tipi Seçimi
-        const Text("Kullanıcı Tipi Seçiniz:"),
-        const SizedBox(height: 8),
-        _buildUserTypeDropdown(),
+        const Text(
+          "Kullanıcı Tipi Seçiniz:",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+
+        ),
+        const SizedBox(height: 20),
+        //_buildUserTypeDropdown(),
+        _buildUserTypeSelection(),
+
         const SizedBox(height: 24),
         // Ortak Alanlar
 
@@ -340,7 +372,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
           style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _emailController,
           decoration: InputDecoration(
-            labelText: 'Email',
+            labelText: 'E-posta',
             prefixIcon: Icon(Icons.email, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
@@ -369,7 +401,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
           style: const TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _passwordController,
           decoration: InputDecoration(
-            labelText: 'Password',
+            labelText: 'Şifre',
             prefixIcon: const Icon(Icons.lock, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
@@ -401,13 +433,38 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
           child: _buildExtraFieldsForUserType(userType),
         ),
         const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () async {
-            await _signup();
-          },
-          child: const SizedBox(
-            width: double.infinity,
-            child: Center(child: Text("Register")),
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradient renkler
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20), // Köşeleri yuvarlak
+          ),
+          child: ElevatedButton(
+            onPressed: () async {
+              await _signup();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent, // Butonun kendi arkaplanını transparan yap
+              shadowColor: Colors.transparent, // Gölgeyi kaldır
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20), // Köşeleri yuvarlak
+              ),
+            ),
+            child: const SizedBox(
+              width: double.infinity,
+              child: Center(
+                child: Text(
+                  "Kayıt Ol",
+                  style: TextStyle(
+                    color: Colors.white, // Yazı rengi beyaz
+                    fontWeight: FontWeight.bold, // Font kalın (bold)
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -415,7 +472,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Already have an account? "),
+            const Text("Kayıtlı bir hesabınız mı var? "),
             InkWell(
               onTap: () {
                 setState(() {
@@ -423,7 +480,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                 });
               },
               child: const Text(
-                "Login",
+                "Giriş Yap!",
                 style: TextStyle(color: Colors.blue),
               ),
             ),
@@ -452,6 +509,55 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       },
     );
   }
+
+  Widget _buildUserTypeSelection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: UserType.values.map((type) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10), // Köşeleri yuvarlak
+              border: selectedUserType == type
+                  ? null // Seçili olan için border yok
+                  : Border.all(color: Colors.black, width: 1), // Seçili olmayanlar için siyah border
+              gradient: selectedUserType == type
+                  ? LinearGradient(
+                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Seçiliyse gradient ekle
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+                  : null, // Seçili değilse arkaplan yok
+            ),
+            child: OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  selectedUserType = type;
+                });
+              },
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.transparent, // Arkaplanı transparan bırak
+                side: BorderSide(color: Colors.transparent), // Border'ı transparan yap
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20), // Köşeleri yuvarlak
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: Text(
+                type.toString().split('.').last,
+                style: TextStyle(
+                  color: Colors.black, // Yazı rengi siyah
+                  fontWeight: FontWeight.normal, // Font kalın (bold) değil
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
 
 // ayrı ayrı kişilikler falan ayru field'lar
   Widget _buildExtraFieldsForUserType(UserType userType) {
@@ -604,12 +710,23 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
 
   Future<void> _login() async {
     try {
+      // Giriş işlemi yapılırken hata alırsan catch bloğuna düşecek
       User? user = await AuthService()
           .signInWithEmail(_emailController.text, _passwordController.text);
+
+
       context.go("/profile/" + user!.uid);
-    } on FirebaseAuthException catch (e) {
+
+    } catch (e) {
+      // Herhangi bir hata oluştuğunda burada yakalanır
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Giriş hatası')),
+        SnackBar(
+          content: Text(
+            e is FirebaseAuthException
+                ? e.message ?? 'Giriş hatası'
+                : 'Giriş Yaparken Bir Sorun Oluştu',
+          ),
+        ),
       );
     }
   }

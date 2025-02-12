@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' as dt_picker;
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
@@ -38,6 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool isTeacher = false;
   bool isLoading = true;
+  bool isCategoriesLoading = true;
   Map<String, dynamic> userInfo = {};
   bool isLoggedIn = false;
   bool isSelf = false;
@@ -133,9 +136,11 @@ class _ProfilePageState extends State<ProfilePage> {
       // AppBar’da HomePage ve CoursesPage’deki gibi sade, şeffaf arka plan ve logo animasyonu
       drawer: isMobile ? DrawerMenu(isLoggedIn: isLoggedIn) : null,
       body: isLoading
-          ? Center(
-        child: LoadingAnimationWidget.dotsTriangle(
-            color: _darkColor, size: 200),
+          ? Stack(
+        children: [
+          _buildMainContent(isMobile),
+          if (isLoading || isCategoriesLoading) _buildLoadingOverlay(),
+        ],
       )
           : SafeArea(
         child: CustomScrollView(
@@ -147,6 +152,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   : _buildDesktopProfile(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: SpinKitFadingCircle(
+          color: _primaryColor,
+          size: 50,
         ),
       ),
     );
@@ -1295,52 +1312,63 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: _backgroundColor,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              left: 16,
-              right: 16,
-              top: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('İsmi Değiştir',
-                  style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _headerTextColor)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: nameController,
-                style: GoogleFonts.poppins(color: _bodyTextColor),
-                decoration: InputDecoration(
-                  hintText: 'Yeni İsim',
-                  hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+        return Container(
+          decoration:BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                left: 16,
+                right: 16,
+                top: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('İsmi Değiştir',
+                    style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white
+                    )),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nameController,
+                  style: GoogleFonts.poppins(color: _bodyTextColor),
+                  decoration: InputDecoration(
+                    hintText: 'Yeni İsim',
+                    hintStyle: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
-                  setState(() {
-                    userInfo['name'] = nameController.text;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Text('Kaydet', style: GoogleFonts.poppins()),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () async {
+                    await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
+                    setState(() {
+                      userInfo['name'] = nameController.text;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Text('Kaydet', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-            ],
+                const SizedBox(height: 10),
+              ],
+            ),
           ),
         );
       },
@@ -1700,8 +1728,130 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+  Widget _buildMainContent(bool isMobile) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_backgroundColor, _primaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(isMobile),
+            SliverPadding(
+              padding: EdgeInsets.symmetric(
+                  vertical: 30, horizontal: isMobile ? 5 : 30),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const SizedBox(height: 30),
+                  const SizedBox(height: 30),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  SliverAppBar _buildAppBar(bool isMobile) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      title: isLoading
+          ? SizedBox.shrink()
+          : isMobile
+          ? Image.asset(
+        'assets/vitament1.png',
+        height: isMobile ? 50 : 70,
+        key: ValueKey('expanded-logo'),
+      ).animate().fadeIn(duration: 1000.ms)
+          : AnimatedSwitcher(
+        duration: Duration(milliseconds: 300),
+        child: _isAppBarExpanded
+            ? Image.asset(
+          'assets/vitament1.png',
+          height: isMobile ? 50 : 70,
+          key: ValueKey('expanded-logo'),
+        ).animate().fadeIn(duration: 1000.ms)
+            : Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/vitament1.png',
+            height: isMobile ? 40 : 50,
+            key: ValueKey('collapsed-logo'),
+          ),
+        ),
+      ),
+      centerTitle: isMobile || _isAppBarExpanded,
+      pinned: true,
+      expandedHeight: 120,
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final isExpanded = constraints.maxHeight > kToolbarHeight;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_isAppBarExpanded != isExpanded) {
+              setState(() {
+                _isAppBarExpanded = isExpanded;
+              });
+            }
+          });
+          return FlexibleSpaceBar(
+            background: GlassmorphicContainer(
+              width: double.infinity,
+              height: double.infinity,
+              borderRadius: 0,
+              blur: 30,
+              border: 0,
+              linearGradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.1),
+                  Colors.white.withOpacity(0.05)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [Colors.white24, Colors.white12],
+              ),
+            ),
+          );
+        },
+      ),
+      actions: isMobile ? null : [_buildDesktopMenu()],
+      leading: isMobile
+          ? IconButton(
+        icon: Icon(Icons.menu, color: _darkColor),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      )
+          : null,
+    );
+  }
+  Widget _buildDesktopMenu() {
+    return Row(
+      children: [
+        HeaderButton(title: 'Ana Sayfa', route: '/'),
+        HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
+        HeaderButton(title: 'Blog', route: '/blogs'),
+        if (isLoggedIn)
+          HeaderButton(
+            title: 'Randevularım',
+            route: '/appointments/${AuthService().userUID()}',
+          ),
+        HeaderButton(
+          title: isLoggedIn ? 'Profilim' : 'Giriş Yap',
+          route: isLoggedIn ? '/profile/${AuthService().userUID()}' : '/login',
+        ),
+      ],
+    );
+  }
+
 
 }
+
+
+
 
 ThemeData _customDatePickerTheme() {
   return ThemeData.dark().copyWith(
