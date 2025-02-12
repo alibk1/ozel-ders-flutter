@@ -1395,4 +1395,43 @@ class FirestoreService {
 
     return downloadUrl;
   }
+  Future<List<Map<String, dynamic>>> getSelectedTeachers(String uid) async {
+    print("getSelectedTeachers begin");
+    QuerySnapshot snapshot = await _db
+        .collection('teachers')
+        .where('reference', isEqualTo: uid)
+        .get();
+    print("snapshot  $snapshot");
+    return await Future.wait(snapshot.docs.map((doc) async {
+      var data = doc.data() as Map<String, dynamic>;
+      String teacherId = doc.id;
+
+      // Courses listesi List<String> (UID listesi) olarak alınıyor
+      List<String> courseIds = List<String>.from(data['courses'] ?? []);
+
+      // Eğer courseIds boş değilse, Firestore'dan gerçek kurs verilerini al
+      List<Map<String, dynamic>> courses = await fetchCoursesFromUIDs(courseIds);
+
+      return {
+        'teacherData': {...data, 'UID': teacherId}, // Öğretmenin tüm verisi
+        'courses': courses, // Gerçek kurs bilgileri (List<Map<String, dynamic>>)
+      };
+    }).toList());
+  }
+  Future<List<Map<String, dynamic>>> fetchCoursesFromUIDs(List<String> courseIds) async {
+    if (courseIds.isEmpty) return []; // Eğer kurs listesi boşsa, boş liste döndür.
+
+    QuerySnapshot courseSnapshot = await _db
+        .collection('courses')
+        .where(FieldPath.documentId, whereIn: courseIds) // UID'lere göre filtrele
+        .get();
+
+    return courseSnapshot.docs.map((courseDoc) {
+      return {
+        ...courseDoc.data() as Map<String, dynamic>,
+        'courseId': courseDoc.id, // Kursun Firestore'daki UID'sini ekliyoruz
+      };
+    }).toList();
+  }
+
 }
