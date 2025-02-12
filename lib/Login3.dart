@@ -710,12 +710,23 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
 
   Future<void> _login() async {
     try {
+      // Giriş işlemi yapılırken hata alırsan catch bloğuna düşecek
       User? user = await AuthService()
           .signInWithEmail(_emailController.text, _passwordController.text);
+
+
       context.go("/profile/" + user!.uid);
-    } on FirebaseAuthException catch (e) {
+
+    } catch (e) {
+      // Herhangi bir hata oluştuğunda burada yakalanır
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Giriş hatası')),
+        SnackBar(
+          content: Text(
+            e is FirebaseAuthException
+                ? e.message ?? 'Giriş hatası'
+                : 'Giriş Yaparken Bir Sorun Oluştu',
+          ),
+        ),
       );
     }
   }
