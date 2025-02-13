@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CourseCard extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -31,11 +34,43 @@ class _CourseCardState extends State<CourseCard> {
     return totalRating.toDouble() / widget.course['comments'].length;
   }
 
+  List<DateTime> get2Closest() {
+    // Firestore'dan gelen Timestamp listesini alıyoruz.
+    List availables = widget.author["availableHours"] ?? [];
+    if (availables.isEmpty) return [];
+
+    // Timestamp'leri DateTime'a dönüştürüyoruz.
+    List<DateTime> dates = availables.map<DateTime>((ts) => ts.toDate()).toList();
+
+    // Eğer 1 veya 2 değer varsa, direkt döndür.
+    if (dates.length <= 2) return dates;
+
+    DateTime now = DateTime.now();
+    // Tarihleri, now'a olan farklarının mutlak değerine göre sıralıyoruz.
+    dates.sort((a, b) {
+      int diffA = (a.difference(now).inMilliseconds).abs();
+      int diffB = (b.difference(now).inMilliseconds).abs();
+      return diffA.compareTo(diffB);
+    });
+
+    // En yakın iki tarihi döndür.
+    return dates.take(2).toList();
+  }
+
+  String formatDateTime(DateTime dt) {
+    final day = dt.day.toString().padLeft(2, '0');
+    final month = dt.month.toString().padLeft(2, '0');
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '$day.$month - $hour.$minute';
+  }
+
+
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 800;
     double averageRating = _calculateAverageRating();
-
+    List<DateTime> closest2 = get2Closest();
     return MouseRegion(
       onEnter: (_) => setState(() => isHovered = true),
       onExit: (_) => setState(() => isHovered = false),
@@ -132,6 +167,54 @@ class _CourseCardState extends State<CourseCard> {
                         ),
                       ],
                     ),
+                    /*SizedBox(height: 3,),
+                    Text(
+                      'En Yakın Müsaitlik',
+                      style: GoogleFonts.poppins(
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                      ),
+                      textAlign: TextAlign.center,
+                    ).animate().fadeIn(duration: 500.ms),
+                    SizedBox(height: 3,),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if(closest2.length > 0) Container(
+                          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${formatDateTime(closest2[0])}",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        if(closest2.length > 1) Container(
+                          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${formatDateTime(closest2[1])}",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+
+                     */
                   ],
                 ),
               ),

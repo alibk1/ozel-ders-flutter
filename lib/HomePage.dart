@@ -4,8 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:go_router/go_router.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:ozel_ders/Components/ContactForm.dart';
 import 'package:ozel_ders/Components/Drawer.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/Components/MenuBlogsWidget.dart';
@@ -433,14 +431,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleSearch() {
-    if (selectedCategoryId != null) {
-      final params = {
-        'category': selectedCategoryId!,
-        if (selectedSubCategoryId != null)
-          'subCategory': selectedSubCategoryId!,
-      };
-      context.go('/search', extra: params);
+     String category = selectedCategoryId ?? "";
+     String subCategory = selectedSubCategoryId ?? "";
+     if(category == "")
+     {
+       context.go('/courses');
+     }
+    else if(subCategory == ""){
+       context.go('/courses/' + category);
     }
+    else{
+       context.go('/courses/' + category + "/" + subCategory);
+     }
   }
 }
 

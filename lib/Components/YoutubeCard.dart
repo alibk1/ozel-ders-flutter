@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ozel_ders/AppointmentsPage.dart';
+import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
@@ -66,6 +67,7 @@ class _YoutubeCardState extends State<YoutubeCard> {
           onTap: () {
             // Video URL'sinin son kısmını alarak GoRoute ile video ekranına yönlendiriyoruz.
             String urlCont = videoUrl.split("/").last;
+            FirestoreService().updateYoutubeVideoViews(widget.videoData["uid"], widget.videoData["views"]);
             context.go('/video/$urlCont');
           },
           child: Padding(
