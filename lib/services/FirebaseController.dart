@@ -1173,9 +1173,7 @@ class FirestoreService {
   }
 
   Future<void> updateCoursePopularity(courseUid,int updatePopularity) async {
-
     Map<String, dynamic> data = await getCourseByUID(courseUid);// bu data firebase serviceye al
-
     if (data['popularity'] != null) {
         print('Popularity: ${data['popularity']}');
         // Popularityi güncelle
@@ -1190,8 +1188,6 @@ class FirestoreService {
   }
 
   Future<void> updateTeacherPopularity(teacherUid,int updatePopularity) async {
-    getTeacherByUID(teacherUid);// bu data firebase serviceye al
-
     Map<String, dynamic> data = await getTeacherByUID(teacherUid);// bu data firebase serviceye al
     if (data['popularity'] != null) {
       print('Popularity: ${data['popularity']}');

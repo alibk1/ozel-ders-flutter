@@ -117,6 +117,13 @@ class MyApp extends StatelessWidget {
         },
       ),
       GoRoute(
+        path: '/courses/:category',
+        builder: (context, state) {
+          final category = state.pathParameters['category']!;
+          return CoursesPage(category: category, subCategory: "");
+        },
+      ),
+      GoRoute(
         path: '/categories',
         builder: (context, state) => CategoriesPage(),
       ),
