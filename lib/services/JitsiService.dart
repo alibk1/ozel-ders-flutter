@@ -6,7 +6,9 @@ class JitsiService {
     final url = Uri.parse('https://api.vitament.net/create-meeting');
     final response = await http.post(
       url,
-      headers: {"Content-Type": "application/json"},
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: jsonEncode({"user_name": "user"}),
     );
 
