@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-
 import 'YoutubeCard.dart';
 
 class TopYoutubeVideosWidget extends StatefulWidget {
@@ -14,61 +13,67 @@ class TopYoutubeVideosWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _TopYoutubeVideosWidgetState createState() => _TopYoutubeVideosWidgetState();
+  _TopYoutubeVideosWidgetState createState() =>
+      _TopYoutubeVideosWidgetState();
 }
 
 class _TopYoutubeVideosWidgetState extends State<TopYoutubeVideosWidget> {
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    return LayoutBuilder(builder: (context, constraints) {
+      double width = constraints.maxWidth;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 170,
-        vertical: 32,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Başlık ve "Tümünü Gör" butonu
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Popüler Videolar',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF222831),
-                ),
-              ),
-              TextButton(
-                onPressed: () => widget.onSeeAllPressed(),
-                child: Text(
-                  'Tümünü Gör',
+      // Mobile ve desktop için padding ayarları
+      double horizontalPadding = width < 800 ? 20 : width * 0.1;
+
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 32,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Başlık ve "Tümünü Gör" butonu
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Popüler Videolar',
                   style: TextStyle(
-                    color: Color(0xFF3C72C2),
-                    fontSize: 16,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFF222831),
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          if (widget.youtubeVideos.isEmpty)
-            Center(child: Text('Gösterilecek video bulunamadı'))
-          else if (isMobile)
-            _buildMobileVideoList(widget.youtubeVideos)
-          else
-            _buildDesktopVideoGrid(widget.youtubeVideos),
-        ],
-      ),
-    );
+                TextButton(
+                  onPressed: () => widget.onSeeAllPressed(),
+                  child: Text(
+                    'Tümünü Gör',
+                    style: TextStyle(
+                      color: Color(0xFF3C72C2),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            if (widget.youtubeVideos.isEmpty)
+              Center(child: Text('Gösterilecek video bulunamadı'))
+            else if (width < 800)
+              _buildMobileVideoList(widget.youtubeVideos) // Mobil düzen
+            else
+              _buildDesktopVideoGrid(widget.youtubeVideos), // Desktop düzen
+          ],
+        ),
+      );
+    });
   }
 
   /// Desktop için grid yapıda video kartlarını oluşturur.
@@ -76,19 +81,19 @@ class _TopYoutubeVideosWidgetState extends State<TopYoutubeVideosWidget> {
     return AnimationLimiter(
       child: GridView.builder(
         shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(), // Grid içi scroll kapalı
+        physics: NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 5, // 5 sütun
+          crossAxisCount: 4, // 4 sütun olarak daha uyumlu
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.85,
+          childAspectRatio: 0.75, // Esnek ve uyumlu oran
         ),
         itemCount: youtubeVideos.length,
         itemBuilder: (context, index) {
           return AnimationConfiguration.staggeredGrid(
             position: index,
             duration: Duration(milliseconds: 500),
-            columnCount: 5,
+            columnCount: 4,
             child: ScaleAnimation(
               child: FadeInAnimation(
                 child: YoutubeCard(videoData: youtubeVideos[index]),
