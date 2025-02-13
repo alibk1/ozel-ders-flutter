@@ -2,7 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:docx_to_text/docx_to_text.dart'; // .docx dosyasını okumak için
+
 import 'package:ozel_ders/services/FirebaseController.dart';
+import 'package:archive/archive.dart';  // .docx ZIP formatındadır
+import 'dart:convert';
+import 'package:flutter/services.dart';
+
 
 import 'Components/LoadingIndicator.dart';
 
@@ -45,6 +51,84 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
 
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool isKVKKChecked = false;
+  String kvkkText = "KVKK metni yükleniyor...";
+
+  Future<void> _loadKVKKText() async {
+    try {
+      // assets/kvkk.docx dosyasını yükle
+      ByteData data = await rootBundle.load("assets/kvkk.docx");
+      print(data);
+
+      List<int> bytes = data.buffer.asUint8List();
+      print(bytes);
+
+
+      // .docx dosyasını ZIP formatında açıyoruz
+      final archive = ZipDecoder().decodeBytes(bytes);
+      print(archive);
+
+      // Dosyaların adlarını ve içeriklerini kontrol et
+      for (final file in archive.files) {
+        print('Dosya Adı: ${file.name}');  // Debug: dosya adlarını kontrol et
+
+        // 'word/document.xml' dosyasını bul ve içeriğini çöz
+        if (file.name == 'word/document.xml') {
+          String kvkkXmlText = utf8.decode(file.content);
+
+          // XML etiketlerini temizle
+          kvkkText = kvkkXmlText.replaceAll(RegExp(r'<.*?>'), '').trim();
+          break;
+        }
+      }
+    } catch (e) {
+      kvkkText = "KVKK metni yüklenirken hata oluştu!";
+      print('Hata: $e');  // Debug: Hata mesajı
+    }
+  }
+
+
+
+  Widget kvkkCheckbox(BuildContext context, VoidCallback onChanged) {
+    return Row(
+      children: [
+        Checkbox(
+          value: isKVKKChecked,
+          onChanged: (bool? newValue) {
+            isKVKKChecked = newValue ?? false;
+            onChanged();
+          },
+        ),
+        GestureDetector(
+          onTap: () async {
+            await _loadKVKKText();
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text("KVKK Aydınlatma Metni"),
+                content: SingleChildScrollView(
+                  child: Text(kvkkText),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text("Tamam"),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: Text(
+            "KVKK Aydınlatma Metni'ni kabul ediyorum",
+            style: TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -433,6 +517,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
           child: _buildExtraFieldsForUserType(userType),
         ),
         const SizedBox(height: 16),
+        kvkkCheckbox(context, () => setState(() {})),
         Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
