@@ -14,6 +14,7 @@ import 'package:ozel_ders/services/FirebaseController.dart';
 
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ozel_ders/services/JitsiService.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -47,6 +48,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeData() async {
+    //String? a = await JitsiService().createMeeting();
+    //print(a);
     try {
       isLoggedIn = await AuthService().isUserSignedIn();
       await _loadData();
