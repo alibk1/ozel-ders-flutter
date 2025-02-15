@@ -716,7 +716,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
 
       var teamCheck = await FirestoreService().getTeamByUID(user!.uid);
       if (teamCheck.isNotEmpty) {
-        String uid = teamCheck["uid"];
+        String uid = teamCheck["UID"];
         context.go("/team/$uid");
       }
       else{
@@ -770,7 +770,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       }
       var teamCheck = await FirestoreService().getTeamByUID(user!.uid);
       if (teamCheck.isNotEmpty) {
-        String uid = teamCheck["uid"];
+        String uid = teamCheck["UID"];
         context.go("/team/$uid");
       }
       else{

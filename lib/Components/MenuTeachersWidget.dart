@@ -138,7 +138,7 @@ class _TopTeachersWidgetState extends State<TopTeachersWidget> {
   }
 
   Widget _buildTeacherCard(Map<String, dynamic> teacher) {
-    String teacherUID = teacher['uid'] ?? '';
+    String teacherUID = teacher['UID'] ?? '';
     List<Map<String, dynamic>> teacherCourses = widget.courses
         .where((course) => course['author'] == teacherUID)
         .toList();

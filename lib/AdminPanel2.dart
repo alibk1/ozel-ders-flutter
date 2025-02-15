@@ -290,7 +290,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
           actions: [
             TextButton(
               onPressed: () {
-                firestoreService.acceptBlog(blog['uid']);
+                firestoreService.acceptBlog(blog['UID']);
                 _loadData(); // Verileri yeniden yükle
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -301,7 +301,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
             ),
             TextButton(
               onPressed: () {
-                _showDenyBlogDialog(context, blog['uid']);
+                _showDenyBlogDialog(context, blog['UID']);
               },
               child: Text('Reddet'),
             ),
@@ -375,7 +375,7 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
               SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () {
-                  firestoreService.editCategory(category['uid'], categoryNameController.text);
+                  firestoreService.editCategory(category['UID'], categoryNameController.text);
                   _loadData(); // Verileri yeniden yükle
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(

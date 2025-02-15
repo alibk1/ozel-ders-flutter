@@ -30,6 +30,7 @@ Future<void> handleInvite(BuildContext context, Map<String, dynamic> notificatio
   // Daveti onaylamak için soru tipi dialog gösteriliyor
   AwesomeDialog(
     context: context,
+    width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
     dialogType: DialogType.question,
     animType: AnimType.bottomSlide,
     title: 'Davet',
@@ -41,6 +42,7 @@ Future<void> handleInvite(BuildContext context, Map<String, dynamic> notificatio
       // Yükleniyor dialog'u gösteriliyor
       AwesomeDialog(
         context: context,
+        width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
         dialogType: DialogType.noHeader,
         animType: AnimType.bottomSlide,
         body: const Padding(
@@ -69,6 +71,7 @@ Future<void> handleInvite(BuildContext context, Map<String, dynamic> notificatio
       if (handled) {
         AwesomeDialog(
           context: context,
+          width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
           dialogType: DialogType.success,
           animType: AnimType.bottomSlide,
           btnOkText: "Tamam",
@@ -79,6 +82,7 @@ Future<void> handleInvite(BuildContext context, Map<String, dynamic> notificatio
       } else {
         AwesomeDialog(
           context: context,
+          width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
           dialogType: DialogType.error,
           animType: AnimType.bottomSlide,
           btnOkText: "Tamam",
@@ -100,6 +104,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
   if (timestamps.length < 1) {
     AwesomeDialog(
       context: context,
+      width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
       dialogType: DialogType.error,
       animType: AnimType.bottomSlide,
       title: 'Hata',
@@ -118,6 +123,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
 
   AwesomeDialog(
     context: context,
+    width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
     dialogType: DialogType.noHeader,
     animType: AnimType.bottomSlide,
     title: 'Yeni Randevu Talebi',
@@ -216,6 +222,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
         // Yükleniyor dialog'unu göster
         AwesomeDialog(
           context: context,
+          width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
           dialogType: DialogType.noHeader,
           animType: AnimType.bottomSlide,
           body: const Padding(
@@ -249,6 +256,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
         if (success) {
           AwesomeDialog(
             context: context,
+            width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
             dialogType: DialogType.success,
             animType: AnimType.bottomSlide,
             title: 'Başarılı!',
@@ -269,6 +277,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
         } else {
           AwesomeDialog(
             context: context,
+            width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
             dialogType: DialogType.error,
             animType: AnimType.bottomSlide,
             title: 'Bir Sorun Oluştu',
@@ -281,6 +290,7 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
         // Hiçbir tarih seçilmemişse uyarı göster
         AwesomeDialog(
           context: context,
+          width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
           dialogType: DialogType.warning,
           animType: AnimType.bottomSlide,
           title: 'Uyarı',
@@ -297,7 +307,8 @@ Future<void> handleMeeting(BuildContext context, Map<String, dynamic> notificati
 Future<void> handleMeetingAccept(BuildContext context, Map<String, dynamic> notification) async {
   AwesomeDialog(
     context: context,
-    dialogType: DialogType.info,
+      width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+      dialogType: DialogType.info,
     animType: AnimType.bottomSlide,
     title: 'Randevu Kabul Edildi',
     desc: notification["message"],

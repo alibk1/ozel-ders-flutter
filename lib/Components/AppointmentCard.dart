@@ -197,10 +197,10 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 SizedBox(height: 16),
                 _buildListTile(Icons.book, 'Kurs', courseData['name'] ?? ''),
                 _buildListTileWithTap(Icons.person, 'Eğitmen', authorData['name'] ?? '', () {
-                  context.go('/profile/${authorData["uid"]}');
+                  context.go('/profile/${authorData["UID"]}');
                 }),
                 _buildListTileWithTap(Icons.person_outline, 'Öğrenci', studentData['name'] ?? '', () {
-                  context.go('/profile/${studentData["uid"]}');
+                  context.go('/profile/${studentData["UID"]}');
                 }),
                 _buildListTile(Icons.calendar_today, 'Tarih ve Saat', isAccepted ? dateStr : "Eğitmen Henüz Tarih Seçmedi"),
                 _buildListTile(Icons.check_circle, 'Onaylanma Durumu', isAccepted ? "Onaylandı" : "Henüz Onaylanmadı",
@@ -238,7 +238,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
                         "Lütfen bireysel değerlendirme tamamlanmadıysa onaylamayınız. Hatalı veya kasıtlı yanlış kullanımlar cezai sonuçlar doğurabilir.",
                         btnOkOnPress: () async {
                           LoadingIndicator(context).showLoading();
-                          await FirestoreService().studentHadPersonalCheck(studentData["uid"]);
+                          await FirestoreService().studentHadPersonalCheck(studentData["UID"]);
                           Navigator.pop(context);
                         },
                         btnCancelOnPress: () {},
@@ -395,7 +395,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
 
     Future<void> _uploadFiles() async {
       try {
-        String storageFolder = "/appointment_homeworks/${appData["uid"]}/";
+        String storageFolder = "/appointment_homeworks/${appData["UID"]}/";
         List<String> uploadedFileUrls = [];
         LoadingIndicator(context).showLoading();
 
@@ -892,8 +892,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
               LoadingIndicator(context).showLoading();
               await FirestoreService().createAppointmentSurvey(
                 widget.appointmentUID,
-                authorData["uid"],
-                studentData["uid"],
+                authorData["UID"],
+                studentData["UID"],
                 questions,
                 _surveyNameController.text,
               );
@@ -1191,8 +1191,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
       await FirestoreService().updateAppointmentSurveyAnswers(
         widget.appointmentUID,
         survey["UID"],
-        authorData["uid"],
-        studentData["uid"],
+        authorData["UID"],
+        studentData["UID"],
         answers,
       );
       await getData();
@@ -1334,7 +1334,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 ),
               ),
               onPressed: () {
-                context.go('/courses/' + (courseData["uid"] ?? ''));
+                context.go('/courses/' + (courseData["UID"] ?? ''));
               },
             ),
             Text(

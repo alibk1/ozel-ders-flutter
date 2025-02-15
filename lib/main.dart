@@ -12,13 +12,9 @@ import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/YoutubeVideosPage.dart';
-import 'package:ozel_ders/auth.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
-import 'AdminPanel2.dart';
 import 'Components/YoutubeCard.dart';
 import 'package:ozel_ders/Login3.dart';
-import 'Components/Navbar.dart';
 import 'ProfilePage.dart';
 
 //import 'auth.dart';
@@ -135,7 +131,7 @@ class MyApp extends StatelessWidget {
       /*GoRoute(
         path: '/newuser/:uid',
         builder: (context, state) {
-          final uid = state.pathParameters['uid']!;
+          final uid = state.pathParameters['UID']!;
           return LoginSignupPage(reference: uid);
         },
       ),
@@ -163,7 +159,7 @@ class MyApp extends StatelessWidget {
         },
       ),
       GoRoute(
-        path: '/courses/:uid',
+        path: '/course/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
           return CoursePage(uid: uid);

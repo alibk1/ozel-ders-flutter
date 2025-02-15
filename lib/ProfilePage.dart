@@ -1,15 +1,18 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' as dt_picker;
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:intl/intl.dart';
 import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
+import 'package:ozel_ders/Components/MenuCoursesWidget.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
 import 'package:ozel_ders/Components/BlogCard.dart';
 import 'package:ozel_ders/Components/Drawer.dart';
@@ -46,12 +49,26 @@ class _ProfilePageState extends State<ProfilePage> {
   bool isSelf = false;
   bool isCurrentTeam = false;
   bool _isAppBarExpanded = true;
+  bool _isCoursesExpanded = false;
+  List<dynamic> teacherAvailableHours = [];
 
   String teamUidIfCurrent = "";
   String teamNameIfCurrent = "";
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> notifications = [];
   List<Map<String, dynamic>> appointments = [];
+  List<Map<String, dynamic>> blogs = [];
+  List<Map<String, dynamic>> coursesNeeded = [];
+  List<Map<String, dynamic>> teachersNeeded = [];
+
+  //APPOINTMENT WIDGET VARIABLES
+  DateTime selectedDate = DateTime.now().add(const Duration(days: 2));
+  List<DateTime> selectedTimes = [];
+  List<Map<String, String>> timeSlots = [];
+  List<DateTime> teacherAppDates = [];
+  List<DateTime> teacherAvailables = [];
+  Map<String, dynamic> course = {};
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -66,6 +83,21 @@ class _ProfilePageState extends State<ProfilePage> {
         isSelf = false;
         isCurrentTeam = false;
         categories = [];
+        selectedDate = DateTime.now().add(const Duration(days: 2));
+        selectedTimes = [];
+        timeSlots = [];
+        teacherAppDates = [];
+        teacherAvailables = [];
+        course = {};
+        _isCoursesExpanded = false;
+        teacherAvailableHours = [];
+        teamUidIfCurrent = "";
+        teamNameIfCurrent = "";
+        notifications = [];
+        appointments = [];
+        blogs = [];
+        coursesNeeded = [];
+        teachersNeeded = [];
       });
       initData();
     }
@@ -79,12 +111,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> initData() async {
     isLoggedIn = await AuthService().isUserSignedIn();
+    Map<String, dynamic> teamCheck = {};
     if (isLoggedIn) {
       String currentUID = AuthService().userUID();
-      var teamCheck = await FirestoreService().getTeamByUID(currentUID);
+      teamCheck = await FirestoreService().getTeamByUID(currentUID);
       if (teamCheck.isNotEmpty) {
         isCurrentTeam = true;
-        teamUidIfCurrent = teamCheck["uid"];
+        teamUidIfCurrent = teamCheck["UID"];
         teamNameIfCurrent = teamCheck["name"];
       }
       if (widget.uid == AuthService().userUID()) {
@@ -93,14 +126,33 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     userInfo = await FirestoreService().getTeacherByUID(widget.uid);
+    List<String> neededTeacherUIDs = [];
     if (userInfo.isNotEmpty) {
       isTeacher = true;
       notifications = await FirestoreService().getNotificationsForTeacher(widget.uid);
-    } else {
+      blogs = await FirestoreService().getTeacherBlogs(widget.uid);
+      neededTeacherUIDs.add(widget.uid);
+      teacherAvailableHours = userInfo["availableHours"];
+      coursesNeeded = await FirestoreService().getCoursesByAuthors([widget.uid]);
+    } else if(!isCurrentTeam){
       userInfo = await FirestoreService().getStudentByUID(widget.uid);
+      List<dynamic> courses = userInfo["courses"];
+      coursesNeeded = await FirestoreService().getSpesificCourses(courses);
+      for(var course in  coursesNeeded) {
+        if(!neededTeacherUIDs.contains(course["author"]))
+          neededTeacherUIDs.add(course["author"]);
+      }
       notifications = await FirestoreService().getNotificationsForStudent(widget.uid);
       isTeacher = false;
     }
+    else{
+      userInfo = teamCheck;
+      List<dynamic> teacherUIDs = userInfo["teachers"];
+      neededTeacherUIDs.addAll(teacherUIDs as List<String>);
+      coursesNeeded = await FirestoreService().getCoursesByAuthors(neededTeacherUIDs);
+      isTeacher = false;
+    }
+    teachersNeeded = await FirestoreService().getSpesificTeachers(neededTeacherUIDs);
     appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
     categories = await FirestoreService().getCategories();
 
@@ -115,6 +167,26 @@ class _ProfilePageState extends State<ProfilePage> {
         'Başka Terapi Almadan Önce "Bireysel Değerlendirme" Terapisi Almanız Gerekmektedir. Danışmanlıklar Sayfasından Bireysel Değerlendirme Terapisi Alabilirsiniz.',
         btnOkOnPress: () {},
       ).show();
+    }
+
+    if(isTeacher)
+    {
+      for (var app in appointments) {
+        Timestamp date = app["date"];
+        DateTime dateTime = date.toDate();
+        teacherAppDates.add(dateTime);
+      }
+
+      for (Timestamp a in teacherAvailableHours) {
+        teacherAvailables.add(a.toDate());
+      }
+
+      // 08:00'dan 20:00'e kadar 50 dakikalık süreler oluştur
+      for (int hour = 8; hour < 20; hour++) {
+        String startTime = '${hour.toString().padLeft(2, '0')}:00';
+        String endTime = '${hour.toString().padLeft(2, '0')}:50';
+        timeSlots.add({'start': startTime, 'end': endTime});
+      }
     }
 
     setState(() {
@@ -224,7 +296,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-
   Widget _buildDesktopMenuActions() {
     return Row(
       children: [
@@ -252,12 +323,15 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           _buildProfileHeader(),
           const SizedBox(height: 16),
-          _buildAboutSection(isExpanded: true),
+          if(isTeacher && isSelf) appointmentsWidget(context),
+          if(isTeacher && !isSelf && !isCurrentTeam) appointmentWidgetForStudents(context),
           const SizedBox(height: 16),
-          _buildCoursesSection(isExpanded: true),
+          _buildAboutSection(),
           const SizedBox(height: 16),
-          _buildBlogsSection(isExpanded: true),
+          _buildCoursesSection(isMobile: true),
           const SizedBox(height: 16),
+          if(isTeacher) _buildBlogsSection(isExpanded: true),
+          if(isTeacher) const SizedBox(height: 16),
         ],
       ),
     );
@@ -269,37 +343,44 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildDesktopProfile() {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100),
+        constraints: const BoxConstraints(maxWidth: 1500),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             children: [
-              // SOL SÜTUN: Profil Header + Hakkında
-              Expanded( // 🔹 Expanded ile sol alan sabit
-                flex: 1,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildProfileHeader(),
-                    const SizedBox(height: 16),
-                    _buildAboutSection(isExpanded: false),
-                  ],
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // SOL SÜTUN: Profil Header, Hakkında ve Kurslar
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildProfileHeader(),
+                        const SizedBox(height: 16),
+                        _buildAboutSection(),
+                        const SizedBox(height: 16),
+                        _buildCoursesSection(isMobile: false),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if(isTeacher && isSelf) appointmentsWidget(context),
+                        if(isTeacher && !isSelf && !isCurrentTeam) appointmentWidgetForStudents(context),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              // SAĞ SÜTUN: Danışmanlıklar (Kurslar) + Bloglar
-              Expanded( // 🔹 Expanded ile sağ alan sabit
-                flex: 1,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildCoursesSection(isExpanded: false),
-                    const SizedBox(height: 16),
-                    _buildBlogsSection(isExpanded: false),
-                  ],
-                ),
-              ),
+             if(isTeacher) const SizedBox(height: 16),
+              if(isTeacher) _buildBlogsSection(isExpanded: true),
             ],
           ),
         ),
@@ -309,7 +390,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // **************** Kurslar (Danışmanlıklar) Bölümü ****************
 
-  Widget _buildCoursesSection({required bool isExpanded}) {
+  Widget _buildCoursesSection({required bool isMobile}) {
+    int column = isMobile ? 2 : 3;
+    List<Map<String, dynamic>> lowerList = coursesNeeded.length >= column ? coursesNeeded.sublist(0, column) : coursesNeeded;
+
+    double width = MediaQuery.of(context).size.width;
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
       children: [
@@ -331,61 +416,57 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
         const SizedBox(height: 16),
-        Container( // 🔹 Genişliği zorunlu tutuyoruz
+        Container(
           width: double.infinity,
-          child: CarouselSlider(
-            options: CarouselOptions(
-              aspectRatio: 1.2,
-              enlargeCenterPage: true,
-              enableInfiniteScroll: false,
-              scrollDirection: Axis.horizontal, // 🔹 Dikeyden yataya çevirdik
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 300,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: width < 800 ? 0.65 : 0.75,
             ),
-            items: (userInfo['courses'] as List<dynamic>?)
-                ?.map<Widget>((courseId) {
-              return FutureBuilder<Map<String, dynamic>>(
-                future: FirestoreService().getCourseByUID(courseId),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Hata: ${snapshot.error}',
-                        style: GoogleFonts.poppins(color: _bodyTextColor)));
-                  } else if (!snapshot.hasData) {
-                    return Center(child: Text('Veri yok',
-                        style: GoogleFonts.poppins(color: _bodyTextColor)));
-                  } else {
-                    final courseData = snapshot.data!;
-                    return FutureBuilder<Map<String, dynamic>>(
-                      future: FirestoreService().getTeacherByUID(courseData["author"]),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        } else if (snapshot.hasError) {
-                          return Center(child: Text('Hata: ${snapshot.error}',
-                              style: GoogleFonts.poppins(color: _bodyTextColor)));
-                        } else if (!snapshot.hasData) {
-                          return Center(child: Text('Veri yok',
-                              style: GoogleFonts.poppins(color: _bodyTextColor)));
-                        } else {
-                          final authorData = snapshot.data!;
-                          return Container(
-                            width: double.infinity, // 🔹 Genişliği zorla
-                            child: CourseCard(course: courseData, author: authorData),
-                          );
-                        }
-                      },
-                    );
-                  }
-                },
+            itemCount: _isCoursesExpanded ? coursesNeeded.length : lowerList.length,
+            itemBuilder: (context, index) {
+              final course = _isCoursesExpanded ? coursesNeeded[index] : lowerList[index];
+              final teacher = teachersNeeded.firstWhere(
+                    (teacher) => teacher["UID"] == course["author"],
+                orElse: () => {},
               );
-            }).toList() ?? [],
+              return AnimationConfiguration.staggeredGrid(
+                position: index,
+                duration: Duration(milliseconds: 500),
+                columnCount: (width / 300).floor(),
+                child: ScaleAnimation(
+                  child: FadeInAnimation(
+                    child: CourseCard(
+                      course: course,
+                      author: teacher,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
+        TextButton(
+            onPressed: (){
+              _isCoursesExpanded = !_isCoursesExpanded;
+              setState(() {
+                
+              });
+            },
+            child: Text(_isCoursesExpanded ? "Daralt" : "Genişlet", style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,),
+            ),
+        )
       ],
     ).animate().fadeIn(duration: 500.ms);
 
-    return isExpanded
-        ? Card(
+    return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -393,8 +474,7 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(16.0),
         child: content,
       ),
-    )
-        : content;
+    );
   }
 
   // **************** Bloglar Bölümü ****************
@@ -416,7 +496,7 @@ class _ProfilePageState extends State<ProfilePage> {
             if (isSelf)
               IconButton(
                 onPressed: () {
-                  context.go("/blog-create/${userInfo["uid"]}");
+                  context.go("/blog-create/${userInfo["UID"]}");
                 },
                 icon: const Icon(Icons.add_circle, color: Colors.black),
               ),
@@ -425,58 +505,29 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 16),
         Container( // 🔹 Genişliği zorunlu tutuyoruz
           width: double.infinity,
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: isTeacher
-                ? FirestoreService().getTeacherBlogs(widget.uid)
-                : Future.value([]),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                    height: 50,
-                    child: Center(child: CircularProgressIndicator()));
-              } else if (snapshot.hasError) {
-                return Text('Hata: ${snapshot.error}',
-                    style: GoogleFonts.poppins(color: _bodyTextColor));
-              } else {
-                final blogs = snapshot.data ?? [];
-                if (blogs.isEmpty) {
-                  return Text('Henüz blog yok.',
-                      style: GoogleFonts.poppins(color: _bodyTextColor));
-                } else {
-                  return CarouselSlider(
-                    options: CarouselOptions(
-                      aspectRatio: 1.3,
-                      enableInfiniteScroll: false,
-                      enlargeCenterPage: true,
-                      scrollDirection: Axis.horizontal,
+          child: AnimationLimiter(
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: blogs.length,
+              itemBuilder: (context, index) {
+                return AnimationConfiguration.staggeredList(
+                  position: index,
+                  duration: Duration(milliseconds: 500),
+                  child: SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: BlogCard(blog: blogs[index]),
+                      ),
                     ),
-                    items: blogs.map((blog) {
-                      return Container( // 🔹 Genişliği zorla
-                        width: double.infinity,
-                        child: Stack(
-                          children: [
-                            BlogCard(blog: blog),
-                            if (isSelf)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: IconButton(
-                                  icon: const Icon(Icons.build_circle,
-                                      color: Colors.black, size: 35),
-                                  onPressed: () {
-                                    context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
-                                  },
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }
-              }
-            },
+                  ),
+                );
+              },
+            ),
           ),
+
         ),
       ],
     ).animate().fadeIn(duration: 500.ms);
@@ -574,6 +625,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               List<TimeOfDay> times = [];
                               AwesomeDialog(
                                 context: context,
+                                width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
                                 dialogType: DialogType.noHeader,
                                 animType: AnimType.bottomSlide,
                                 title: 'Yeni Randevu Talebi',
@@ -734,6 +786,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   {
                                     AwesomeDialog(
                                         context: context,
+                                        width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+
                                         dialogType: DialogType.error,
                                         animType: AnimType.bottomSlide,
                                         body: const Padding(
@@ -780,6 +834,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             final dayOnly = DateTime(
                                 day.year, day.month, day.day);
                             return eventsMap[dayOnly] ?? [];
+                          },
+                          availableCalendarFormats: {
+                            CalendarFormat.month: "Ay",
+                            CalendarFormat.twoWeeks: "2 Hafta",
                           },
                           onDaySelected: (selectedDay, focusedDay) {
                             setState2(() {
@@ -931,6 +989,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onPressed: () async {
                                     AwesomeDialog(
                                       context: context,
+                                      width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+
                                       dialogType: DialogType.noHeader,
                                       animType: AnimType.bottomSlide,
                                       title: 'Randevuya Ayırdığın Saati Sil',
@@ -978,6 +1038,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onPressed: () async {
                                     AwesomeDialog(
                                       context: context,
+                                      width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+
                                       dialogType: DialogType.noHeader,
                                       animType: AnimType.bottomSlide,
                                       title: 'Saati Randevuya Ayır',
@@ -1038,6 +1100,832 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       },
     );
+  }
+
+  Widget appointmentsWidget(BuildContext context) {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        // 08:00'den 20:00'ye kadar 50 dakikalık süreler oluştur
+        final List<Map<String, String>> timeSlots = [];
+        for (int hour = 8; hour < 20; hour++) {
+          String startTime = '${hour.toString().padLeft(2, '0')}:00';
+          String endTime = '${hour.toString().padLeft(2, '0')}:50';
+          timeSlots.add({'start': startTime, 'end': endTime});
+        }
+
+        final List<DateTime> teacherAppDates = [];
+        List<DateTime> availableHours = [];
+        for(Timestamp a in userInfo["availableHours"])
+        {
+          availableHours.add(a.toDate());
+        }
+        for (var app in appointments) {
+          Timestamp date = app["date"];
+          DateTime dateTime = date.toDate().toUtc();
+          print(dateTime);
+          teacherAppDates.add(dateTime);
+        }
+
+        final Map<DateTime, List<Map<String, dynamic>>> eventsMap = {};
+        for (var appointment in appointments) {
+          final dateTime = (appointment['date'] as Timestamp).toDate();
+          final dayOnly = DateTime(
+              dateTime.year, dateTime.month, dateTime.day);
+
+          if (!eventsMap.containsKey(dayOnly)) {
+            eventsMap[dayOnly] = [];
+          }
+          eventsMap[dayOnly]!.add(appointment);
+        }
+
+        DateTime _focusedDay = DateTime.now();
+        DateTime? _selectedDay;
+        bool selectedAvailable = false;
+        // Seçilen saat
+        DateTime? _selectedTime;
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState2) {
+            return Padding(
+              padding: MediaQuery
+                  .of(context)
+                  .viewInsets,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Başlık
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      child: const Text(
+                        'Randevu Takvimi',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      child: ElevatedButton(
+                        onPressed: () async
+                        {
+                          DateTime firstSelectedDate = DateTime.now().add(Duration(days: 1));
+                          DateTime secondSelectedDate = DateTime.now().add(Duration(days: 2));
+                          List<TimeOfDay> times = [];
+                          AwesomeDialog(
+                            context: context,
+                            width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                            dialogType: DialogType.noHeader,
+                            animType: AnimType.bottomSlide,
+                            title: 'Yeni Randevu Talebi',
+                            desc: "",
+                            // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                            body: StatefulBuilder(
+                              builder: (BuildContext context, StateSetter setModalState) {
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(height: 10),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF76ABAE),
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(double.infinity, 50),
+                                      ),
+                                      onPressed: () async {
+                                        final DateTime? picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: secondSelectedDate,
+                                          firstDate: DateTime.now(),
+                                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                                          locale: const Locale('tr', 'TR'), // Türkçe için
+                                          builder: (context, child) => Theme(
+                                            data: _customDatePickerTheme(), // Özel tema
+                                            child: child!,
+                                          ),
+                                        );
+                                        if (picked != null) {
+                                          setModalState(() {
+                                            firstSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
+                                          });
+                                        }
+                                      },
+                                      child: Text(
+                                        'Başlangıç Tarihi Seç (${DateFormat('dd/MM/yyyy').format(firstSelectedDate)})',
+                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    SizedBox(height: 10),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF76ABAE),
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(double.infinity, 50),
+                                      ),
+                                      onPressed: () async {
+                                        final DateTime? picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: secondSelectedDate,
+                                          firstDate: DateTime.now(),
+                                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                                          locale: const Locale('tr', 'TR'), // Türkçe için
+                                          builder: (context, child) => Theme(
+                                            data: _customDatePickerTheme(), // Özel tema
+                                            child: child!,
+                                          ),
+                                        );
+                                        if (picked != null) {
+                                          setModalState(() {
+                                            secondSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
+                                          });
+                                        }
+                                      },
+                                      child: Text(
+                                        'Bitiş Tarihi Seç (${DateFormat('dd/MM/yyyy').format(secondSelectedDate)})',
+                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    SizedBox(height: 10,),
+                                    Wrap(
+                                      spacing: 8.0,
+                                      runSpacing: 8.0,
+                                      alignment: WrapAlignment.center,
+                                      children: timeSlots.map((slot) {
+                                        // Başlangıç saati
+                                        final int slotStart =
+                                        int.parse(slot["start"]!.split(":")[0]);
+
+                                        final bool isSelected = times.contains(TimeOfDay(hour: slotStart, minute: 0));
+
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setModalState(() {
+                                              if(isSelected)
+                                              {
+                                                times.remove(TimeOfDay(hour: slotStart, minute: 0));
+                                              }
+                                              else{
+                                                times.add(TimeOfDay(hour: slotStart, minute: 0));
+                                              }
+                                            });
+                                          },
+                                          child: Container(
+                                            width: 80,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? const Color(
+                                                  0xFF76ABAE)
+                                                  : const Color(0xFF393E46),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: isSelected
+                                                  ? Border.all(
+                                                  color: Colors.white, width: 2)
+                                                  : null,
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              '${slot['start']} - ${slot['end']}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+
+                                  ],
+                                );
+                              },
+                            ),
+                            btnOkText: "Seç",
+                            btnCancelText: "İptal",
+                            btnOkOnPress: () async {
+                              LoadingIndicator(context).showLoading();
+                              if(firstSelectedDate == secondSelectedDate)
+                              {
+                                for(TimeOfDay time in times)
+                                {
+                                  DateTime newDate = DateTime(firstSelectedDate.year, firstSelectedDate.month, firstSelectedDate.day, time.hour, time.minute);
+                                  await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
+                                }
+                                setState2((){});
+                              }
+                              else if(firstSelectedDate.isBefore(secondSelectedDate))
+                              {
+                                DateTime first = firstSelectedDate;
+                                while(true){
+                                  for(TimeOfDay time in times)
+                                  {
+                                    print("Girdi");
+                                    DateTime newDate = DateTime(first.year, first.month, first.day, time.hour, time.minute);
+                                    await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
+                                  }
+                                  if(first == secondSelectedDate){
+                                    break;
+                                  }
+                                  first = first.add(Duration(days: 1));
+                                }
+                                setState2((){});
+                              }
+                              else if(firstSelectedDate.isAfter(secondSelectedDate))
+                              {
+                                AwesomeDialog(
+                                    context: context,
+                                    width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                                    dialogType: DialogType.error,
+                                    animType: AnimType.bottomSlide,
+                                    body: const Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'Hatalı veya Eksik Bilgi (Tarihleri Kontrol Ediniz)',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                    ),
+                                    dismissOnTouchOutside: false,
+                                    dismissOnBackKeyPress: false,
+                                    btnOkText: "Tamam",
+                                    btnOkOnPress: () {}
+                                ).show();
+                              }
+                              await initData();
+                              print(firstSelectedDate);
+                              print(secondSelectedDate);
+                              Navigator.pop(context);
+
+                            },
+                            btnCancelOnPress: () {},
+                          ).show();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF222831),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(3),
+                            side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+                          ),
+                        ),
+                        child: const Text('Çoklu Müsaitlik Ayarlama', style: TextStyle(color: Colors.white),),
+                      ),
+                    ),
+                    TableCalendar(
+                      locale: 'tr_TR',
+                      focusedDay: _focusedDay,
+                      firstDay: DateTime.now().add(Duration(days: -1)),
+                      lastDay: DateTime.utc(2030, 12, 31),
+                      startingDayOfWeek: StartingDayOfWeek.monday,
+                      selectedDayPredicate: (day) =>
+                          isSameDay(_selectedDay, day),
+                      eventLoader: (day) {
+                        final dayOnly = DateTime(
+                            day.year, day.month, day.day);
+                        return eventsMap[dayOnly] ?? [];
+                      },
+                      availableCalendarFormats: {
+                        CalendarFormat.month: "Ay",
+                        CalendarFormat.twoWeeks: "2 Hafta",
+                      },
+                      onDaySelected: (selectedDay, focusedDay) {
+                        setState2(() {
+                          _selectedDay = selectedDay;
+                          _focusedDay = focusedDay;
+                          _selectedTime = null;
+                        });
+                      },
+                      calendarStyle: const CalendarStyle(
+                        markerDecoration: BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+
+                    if (_selectedDay != null) ...[
+                      const SizedBox(height: 16),
+
+                      // Seçilen Gün
+                      Text(
+                        'Seçilen Gün: '
+                            '${_selectedDay!.day}.${_selectedDay!
+                            .month}.${_selectedDay!.year}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Saat Seçimi
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        alignment: WrapAlignment.center,
+                        children: timeSlots.map((slot) {
+                          // Başlangıç saati
+                          final int slotStart =
+                          int.parse(slot["start"]!.split(":")[0]);
+
+                          // Seçili güne bu saati ekliyoruz
+                          final DateTime slotDateTime = DateTime(
+                            _selectedDay!.year,
+                            _selectedDay!.month,
+                            _selectedDay!.day,
+                            slotStart,
+                            0,
+                          );
+
+                          bool canReserve = true;
+                          for (DateTime date in teacherAppDates) {
+                            if (date.year == slotDateTime.toUtc().year &&
+                                date.month == slotDateTime.toUtc().month &&
+                                date.day == slotDateTime.toUtc().day &&
+                                date.hour == slotDateTime.toUtc().hour) {
+                              canReserve = false; // Bu saat dolu
+                              break;
+                            }
+                          }
+
+                          bool hasAvailable = false;
+                          for (DateTime date in availableHours) {
+                            if (date.year == slotDateTime.year &&
+                                date.month == slotDateTime.month &&
+                                date.day == slotDateTime.day &&
+                                date.hour == slotDateTime.hour) {
+                              hasAvailable = true; // Bu saat dolu
+                              break;
+                            }
+                          }
+
+                          // Seçilen saat mi?
+                          final bool isSelected = _selectedTime != null &&
+                              _selectedTime!.year == slotDateTime.year &&
+                              _selectedTime!.month == slotDateTime.month &&
+                              _selectedTime!.day == slotDateTime.day &&
+                              _selectedTime!.hour == slotDateTime.hour;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState2(() {
+                                _selectedTime = slotDateTime;
+                                selectedAvailable = hasAvailable;
+                              });
+                            },
+                            child: Container(
+                              width: 80,
+                              // 4 slotun yan yana gelmesi için
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(
+                                    0xFF76ABAE) // Seçilen slot rengi
+                                    : !hasAvailable
+                                    ? Colors.red // Boş slot
+                                    : canReserve ? Colors.green : const Color(0xFF393E46), // Dolu slot
+                                borderRadius: BorderRadius.circular(8),
+                                border: isSelected
+                                    ? Border.all(
+                                    color: Colors.white, width: 2)
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${slot['start']} - ${slot['end']}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Builder(
+                        builder: (context) {
+                          // Henüz saat seçilmediyse (null) => buton da pasif kalsın
+                          if (_selectedTime == null) {
+                            return ElevatedButton(
+                              onPressed: null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF76ABAE),
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(120, 50),
+                              ),
+                              child: const Text("Saat Seçiniz"),
+                            );
+                          }
+
+                          final existingAppointment = appointments
+                              .firstWhere((app) {
+                            final dt = (app['date'] as Timestamp).toDate();
+                            return dt.year == _selectedTime!.year &&
+                                dt.month == _selectedTime!.month &&
+                                dt.day == _selectedTime!.day &&
+                                dt.hour == _selectedTime!.hour;
+                          }, orElse: () => {});
+                          if (existingAppointment.isNotEmpty) {
+                            return Container(
+                              height: 400,
+                              child: AppointmentCard(
+                                appointmentUID: existingAppointment["UID"],
+                                isTeacher: false,
+                              ),
+                            );
+                          } else {
+                            return selectedAvailable ? ElevatedButton(
+                              onPressed: () async {
+                                AwesomeDialog(
+                                  context: context,
+                                  width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                                  dialogType: DialogType.noHeader,
+                                  animType: AnimType.bottomSlide,
+                                  title: 'Randevuya Ayırdığın Saati Sil',
+                                  desc: 'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                                  body: StatefulBuilder(
+                                    builder: (BuildContext context,
+                                        StateSetter setModalState) {
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                                            style: TextStyle(
+                                                fontSize: 16),
+                                          ), SizedBox(height: 10),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  btnOkText: "Evet",
+                                  btnCancelText: "Hayır",
+                                  btnOkOnPress: () async {
+                                    await FirestoreService()
+                                        .removeTeacherAvailableHour(
+                                        widget.uid,
+                                        DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
+                                    userInfo = await FirestoreService().getTeacherByUID(widget.uid);
+                                    setState((){});
+                                    setState2((){});
+                                  },
+                                  btnCancelOnPress: () {},
+                                ).show();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF76ABAE),
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(120, 50),
+                              ),
+                              child: const Text(
+                                "Randevuya Ayırdığın Saati İptal Et",
+                                style: TextStyle(color: Colors.red),),
+                            ) :
+                            ElevatedButton(
+                              onPressed: () async {
+                                AwesomeDialog(
+                                  context: context,
+                                  width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                                  dialogType: DialogType.noHeader,
+                                  animType: AnimType.bottomSlide,
+                                  title: 'Saati Randevuya Ayır',
+                                  desc: 'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
+                                  // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                                  body: StatefulBuilder(
+                                    builder: (BuildContext context,
+                                        StateSetter setModalState) {
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
+                                            style: TextStyle(fontSize: 16),
+                                          ), SizedBox(height: 10),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  // Dialog'un altındaki butonlar
+                                  btnOkText: "Evet",
+                                  btnCancelText: "Hayır",
+                                  btnOkOnPress: () async {
+                                    await FirestoreService()
+                                        .updateTeacherAvailableHours(
+                                        widget.uid,
+                                        DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
+                                    userInfo = await FirestoreService().getTeacherByUID(widget.uid);
+                                    setState((){});
+                                    setState2((){});
+                                  },
+                                  btnCancelOnPress: () {},
+                                ).show();
+
+                                debugPrint("Yeni randevu ekleme işlemi");
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF76ABAE),
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(120, 50),
+                              ),
+                              child: const Text("Bu Saati Randevuya Ayır"),
+                            );
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget appointmentWidgetForStudents(BuildContext context){
+    InputDecoration _inputDecoration(String label) {
+      return InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.poppins(color: _darkColor.withOpacity(0.7)),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.9),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      );
+    }
+
+    return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF222831),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20), bottom: Radius.circular(20)),
+            gradient:  LinearGradient(
+              colors:
+              [
+                Color(0xFF3C72C2),
+                Color(0xFFA7D8DB),
+              ], // Yeni gradyan renkleri
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+
+          ),
+
+          padding: EdgeInsets.only(
+            bottom: MediaQuery
+                .of(context)
+                .viewInsets
+                .bottom + 16,
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Center(
+                  child: Text(
+                    'Randevu Al',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  dropdownColor: _backgroundColor,
+                  value: course["UID"],
+                  decoration: _inputDecoration('Bir Danışmanlık Seçin'),
+                  icon: Icon(Icons.arrow_drop_down, color: _darkColor),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      course = coursesNeeded.firstWhere((c) => c["UID"] == newValue);
+                      print(course);
+                    });
+                  },
+                  items: coursesNeeded.map<DropdownMenuItem<String>>((cou) {
+                    return DropdownMenuItem<String>(
+                      value: cou['UID'],
+                      child: Text(cou['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: 16),
+                TableCalendar(
+                  locale: 'tr_TR',
+                  focusedDay: DateTime.now().add(const Duration(days: 2)),
+                  firstDay: DateTime.now().add(const Duration(days: 2)),
+                  lastDay:  DateTime.now().add(const Duration(days: 365)),
+                  startingDayOfWeek: StartingDayOfWeek.monday,
+                  selectedDayPredicate: (day) =>
+                      isSameDay(selectedDate, day),
+                  availableCalendarFormats: {
+                    CalendarFormat.month: "Ay",
+                    CalendarFormat.twoWeeks: "2 Hafta",
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      selectedDate = selectedDay;
+                    });
+                  },
+                  calendarStyle: const CalendarStyle(
+                    markerDecoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+                // Saat Seçimi
+                Text(
+                  'Saat Seç (En fazla 3 adet)',
+                  style: TextStyle(fontSize: 18, color: Colors.white70),
+                ),
+                SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: timeSlots.map((slot) {
+                    int slotStart = int.parse(slot["start"]!.split(":")[0]);
+                    DateTime slotDateTime = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      slotStart,
+                      0,
+                    );
+
+                    bool canReserve = true;
+                    for (DateTime date in teacherAppDates) {
+                      if (date.year == slotDateTime.year &&
+                          date.month == slotDateTime.month &&
+                          date.day == slotDateTime.day &&
+                          date.hour == slotDateTime.hour) {
+                        canReserve = false;
+                        break;
+                      }
+                    }
+                    if (!teacherAvailables.contains(slotDateTime)) {
+                      canReserve = false;
+                    }
+
+                    bool isSelected = selectedTimes.any((dateTime) =>
+                    dateTime.year == slotDateTime.year &&
+                        dateTime.month == slotDateTime.month &&
+                        dateTime.day == slotDateTime.day &&
+                        dateTime.hour == slotDateTime.hour);
+
+                    return GestureDetector(
+                      onTap: canReserve
+                          ? () {
+                        if (!isSelected && selectedTimes.length < 3) {
+                          setState(() {
+                            selectedTimes.add(slotDateTime);
+                            print(selectedTimes.length);
+                          });
+                        } else if (isSelected) {
+                          setState(() {
+                            selectedTimes.removeWhere((dateTime) =>
+                            dateTime.year == slotDateTime.year &&
+                                dateTime.month ==
+                                    slotDateTime.month &&
+                                dateTime.day == slotDateTime.day &&
+                                dateTime.hour == slotDateTime.hour);
+                          });
+                        }
+                      }
+                          : null,
+                      child: Container(
+                        width: 120,
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Color(0xFF23994c)
+                              : canReserve
+                              ? Color(0xFF393E46)
+                              : Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                          border: isSelected
+                              ? Border.all(color: Colors.white, width: 2)
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${slot['start']} - ${slot['end']}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: 16),
+                // Seçilen Randevuların Gösterimi
+                selectedTimes.isNotEmpty
+                    ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Seçilen Randevular:',
+                      style: TextStyle(
+                          fontSize: 18, color: Colors.white70),
+                    ),
+                    SizedBox(height: 8),
+                    Column(
+                      children: selectedTimes.map((dateTime) {
+                        String formatted =
+                        DateFormat('dd/MM/yyyy - HH:mm')
+                            .format(dateTime);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 2.0),
+                          child: Text(
+                            formatted,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 16),
+                  ],
+                )
+                    : SizedBox(),
+                // Randevu Al Butonu
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF23994c),
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 50),
+                  ),
+                  onPressed: selectedTimes.isNotEmpty
+                      ? () async {
+                    LoadingIndicator(context).showLoading();
+                    User? user = FirebaseAuth.instance.currentUser;
+
+                    if (user != null) {
+                      print(course);
+                      userInfo = await FirestoreService()
+                          .getTeacherByUID(course["author"]);
+
+                      String appUID =
+                      await FirestoreService().createAppointment(
+                        course["author"],
+                        user.uid,
+                        course["UID"],
+                        "",
+                        selectedTimes, // Liste olarak gönderiyoruz
+                      );
+                      Map<String, dynamic> userMap =
+                      await FirestoreService()
+                          .getStudentByUID(user.uid);
+                      await FirestoreService()
+                          .sendAppointmentToTeacher(
+                          appUID,
+                          course["author"],
+                          user.uid,
+                          userMap["name"]);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                'Randevu başarıyla oluşturuldu')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text('Lütfen Giriş Yapınız.')),
+                      );
+                    }
+                    Navigator.pop(context);
+                  }
+                      : null,
+                  child: Text(
+                    'Randevu Al',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
   }
 
   Widget _buildProfileHeader() {
@@ -1136,11 +2024,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   userType: isTeacher ? UserType.teacher : UserType.student,
                   userUID: widget.uid,
                 ),
-                if (isTeacher)
-                  IconButton(
-                    onPressed: () => showAppointmentsBottomSheet(context),
-                    icon: const Icon(Icons.calendar_month, color: Colors.white),
-                  ),
                 const SizedBox(width: 4),
                 Text(
                   isTeacher ? 'Eğitimci' : 'Öğrenci',
@@ -1155,28 +2038,35 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // **************** Hakkında (About) Bölümü ****************
 
-  Widget _buildAboutSection({required bool isExpanded}) {
-    Widget content = Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Text(
-        userInfo['desc'] ?? '',
-        style: GoogleFonts.poppins(fontSize: 15, color: _bodyTextColor),
+  Widget _buildAboutSection() {
+    Widget content = InkWell(
+      onTap: () => _showFullDescriptionDialog(context),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          userInfo['desc'] == null
+              ? ""
+              : userInfo['desc'].length > 300
+              ? userInfo['desc'].substring(0, 300) + "..."
+              : userInfo['desc'],
+          style: GoogleFonts.poppins(fontSize: 15, color: _bodyTextColor),
+        ),
       ),
     );
-    return isExpanded
-        ? Card(
+
+    return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ExpansionTile(
         initiallyExpanded: true,
         title: Text(
           'Hakkında',
           style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: _headerTextColor),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: _headerTextColor,
+          ),
         ),
         trailing: isSelf
             ? IconButton(
@@ -1187,13 +2077,38 @@ class _ProfilePageState extends State<ProfilePage> {
             : null,
         children: [content],
       ),
-    )
-        : Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: content,
+    );
+  }
+
+  void _showFullDescriptionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          "Hakkında",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            userInfo['desc'] ?? "",
+            style: GoogleFonts.poppins(fontSize: 15, color: _bodyTextColor),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              "Kapat",
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1463,7 +2378,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     void updateSubCategories() {
       if (selectedCategory != null) {
-        final category = categories.firstWhere((cat) => cat['uid'] == selectedCategory);
+        final category = categories.firstWhere((cat) => cat['UID'] == selectedCategory);
         subCategories = List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
         subCategories = [];
@@ -1542,7 +2457,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       },
                       items: categories.map<DropdownMenuItem<String>>((cat) {
                         return DropdownMenuItem<String>(
-                          value: cat['uid'],
+                          value: cat['UID'],
                           child: Text(cat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
                         );
                       }).toList(),
@@ -1567,7 +2482,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                         items: subCategories.map<DropdownMenuItem<String>>((subCat) {
                           return DropdownMenuItem<String>(
-                            value: subCat['uid'],
+                            value: subCat['UID'],
                             child: Text(subCat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
                           );
                         }).toList(),
@@ -1724,6 +2639,7 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+
   Widget _buildMainContent(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
@@ -1752,6 +2668,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
       backgroundColor: Colors.transparent,
@@ -1824,6 +2741,7 @@ class _ProfilePageState extends State<ProfilePage> {
           : null,
     );
   }
+
   Widget _buildDesktopMenu() {
     return Row(
       children: [

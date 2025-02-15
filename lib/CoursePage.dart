@@ -325,7 +325,7 @@ class _CoursePageState extends State<CoursePage> {
                           await FirestoreService().createAppointment(
                             course["author"],
                             user.uid,
-                            course["uid"],
+                            course["UID"],
                             "",
                             selectedTimes, // Liste olarak gönderiyoruz
                           );
@@ -678,7 +678,7 @@ class _CoursePageState extends State<CoursePage> {
                                         context.go(
                                             "/profile/" +
                                                 teacher[
-                                                "uid"]);
+                                                "UID"]);
                                       },
                                     ),
                                     const SizedBox(
@@ -705,7 +705,7 @@ class _CoursePageState extends State<CoursePage> {
                         children: [
                           Expanded(
                             child: CommentRatingWidget(
-                              courseId: course["uid"],
+                              courseId: course["UID"],
                               paddingInset: 16.0,
                             ),
                           ),
@@ -842,7 +842,7 @@ class _CoursePageState extends State<CoursePage> {
     children: [
     Expanded(
     child: CommentRatingWidget(
-    courseId: course["uid"],
+    courseId: course["UID"],
     paddingInset: 8.0,
     ),
     ),

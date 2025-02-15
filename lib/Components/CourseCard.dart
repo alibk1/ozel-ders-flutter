@@ -91,7 +91,7 @@ class _CourseCardState extends State<CourseCard> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            context.go('/courses/${widget.course["UID"]}');
+            context.go('/course/${widget.course["UID"]}');
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

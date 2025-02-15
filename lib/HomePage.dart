@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
         neededTeacherList.add(course["author"]);
       }
       for (var teacher in topTeachers) {
-        neededTeacherList.add(teacher["uid"]);
+        neededTeacherList.add(teacher["UID"]);
       }
 
       neededTeachers =
@@ -191,7 +191,7 @@ class _HomePageState extends State<HomePage> {
           ? SizedBox.shrink()
           : isMobile
               ? Image.asset(
-                  'assets/vitament1.png',
+                  'assets/AYBUKOM1.png',
                   height: isMobile ? 50 : 70,
                   key: ValueKey('expanded-logo'),
                 ).animate().fadeIn(duration: 1000.ms)
@@ -199,14 +199,14 @@ class _HomePageState extends State<HomePage> {
                   duration: Duration(milliseconds: 300),
                   child: _isAppBarExpanded
                       ? Image.asset(
-                          'assets/vitament1.png',
+                          'assets/AYBUKOM1.png',
                           height: isMobile ? 50 : 70,
                           key: ValueKey('expanded-logo'),
                         ).animate().fadeIn(duration: 1000.ms)
                       : Align(
                           alignment: Alignment.centerLeft,
                           child: Image.asset(
-                            'assets/vitament1.png',
+                            'assets/AYBUKOM1.png',
                             height: isMobile ? 40 : 50,
                             key: ValueKey('collapsed-logo'),
                           ),
@@ -362,7 +362,7 @@ class _HomePageState extends State<HomePage> {
       decoration: _inputDecoration('Kategori Seçin'),
       items: categories.map<DropdownMenuItem<String>>((category) {
         return DropdownMenuItem<String>(
-          value: category['uid'] as String, // Explicit type casting
+          value: category['UID'] as String, // Explicit type casting
           child: Text(
             category['name'] as String,
             style: GoogleFonts.poppins(color: _darkColor),
@@ -380,7 +380,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildSubCategoryDropdown() {
     final category = categories.firstWhere(
-      (c) => c['uid'] == selectedCategoryId,
+      (c) => c['UID'] == selectedCategoryId,
       orElse: () => <String, dynamic>{},
     );
 
@@ -390,10 +390,9 @@ class _HomePageState extends State<HomePage> {
 
     return DropdownButtonFormField<String>(
       value: selectedSubCategoryId,
-      decoration: _inputDecoration('Alt Kategori Seçin (Opsiyonel)'),
       items: subCategories.map<DropdownMenuItem<String>>((subCat) {
         return DropdownMenuItem<String>(
-          value: subCat['uid'] as String, // Explicit type casting
+          value: subCat['UID'] as String, // Explicit type casting
           child: Text(
             subCat['name'] as String,
             style: GoogleFonts.poppins(color: _darkColor),
@@ -403,6 +402,7 @@ class _HomePageState extends State<HomePage> {
       onChanged: (String? value) =>
           setState(() => selectedSubCategoryId = value),
       dropdownColor: _backgroundColor,
+      decoration: _inputDecoration('Alt Kategori Seçin (Opsiyonel)'),
       icon: Icon(Icons.arrow_drop_down, color: _darkColor),
     );
   }

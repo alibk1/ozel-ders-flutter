@@ -26,7 +26,6 @@ class TeamProfilePage extends StatefulWidget {
 
 class _TeamProfilePageState extends State<TeamProfilePage> {
   bool isLoading = true;
-  Map<String, dynamic> teamInfo = {};
   final Color _backgroundColor = const Color(0xFFEEEEEE);
   final Color _darkColor = const Color(0xFF3C72C2);
   final Color _headerTextColor = const Color(0xFF222831);
@@ -67,10 +66,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   }
 
   Future<void> initData() async {
-    teamInfo = await FirestoreService().getTeamByUID(widget.uid);
-    print(teamInfo);
     categories = await FirestoreService().getCategories();
-  // TODO :  BURAYI TAMAMLA EKSİK BURASI
     userInfo = await FirestoreService().getTeamByUID(widget.uid);
     if (userInfo.isNotEmpty) {
       isTeacher = true;
@@ -328,7 +324,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     void updateSubCategories() {
       if (selectedCategory != null) {
         final category = categories.firstWhere(
-                (category) => category['uid'] == selectedCategory);
+                (category) => category['UID'] == selectedCategory);
         subCategories =
         List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
@@ -415,7 +411,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                       },
                       items: categories.map<DropdownMenuItem<String>>((category) {
                         return DropdownMenuItem<String>(
-                          value: category['uid'],
+                          value: category['UID'],
                           child: Text(category['name'],
                               style: TextStyle(color: Colors.white)),
                         );
@@ -444,7 +440,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                         items: subCategories
                             .map<DropdownMenuItem<String>>((subCategory) {
                           return DropdownMenuItem<String>(
-                            value: subCategory['uid'],
+                            value: subCategory['UID'],
                             child: Text(subCategory['name'],
                                 style: TextStyle(color: Colors.white)),
                           );
@@ -1028,7 +1024,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
             if (isSelf)
               IconButton(
                 onPressed: () {
-                  context.go("/blog-create/${userInfo["uid"]}");
+                  context.go("/blog-create/${userInfo["UID"]}");
                 },
                 icon: const Icon(Icons.add_circle, color: Colors.black),
               ),
@@ -1076,7 +1072,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                                   icon: const Icon(Icons.build_circle,
                                       color: Colors.black, size: 35),
                                   onPressed: () {
-                                    context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
+                                    context.go("/blog-update/${userInfo["UID"]}/${blog["uid"]}");
                                   },
                                 ),
                               ),
@@ -1837,7 +1833,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                                   icon: const Icon(Icons.build_circle,
                                       color: Colors.black, size: 35),
                                   onPressed: () {
-                                    //context.go("/blog-update/${userInfo["uid"]}/${blog["uid"]}");
+                                    //context.go("/blog-update/${userInfo["UID"]}/${blog["UID"]}");
                                   },
                                 ),
                               ),
@@ -2166,7 +2162,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
 
     void updateSubCategories() {
       if (selectedCategory != null) {
-        final category = categories.firstWhere((cat) => cat['uid'] == selectedCategory);
+        final category = categories.firstWhere((cat) => cat['UID'] == selectedCategory);
         subCategories = List<Map<String, dynamic>>.from(category['subCategories']);
       } else {
         subCategories = [];
@@ -2245,7 +2241,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                       },
                       items: categories.map<DropdownMenuItem<String>>((cat) {
                         return DropdownMenuItem<String>(
-                          value: cat['uid'],
+                          value: cat['UID'],
                           child: Text(cat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
                         );
                       }).toList(),
@@ -2270,7 +2266,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                         },
                         items: subCategories.map<DropdownMenuItem<String>>((subCat) {
                           return DropdownMenuItem<String>(
-                            value: subCat['uid'],
+                            value: subCat['UID'],
                             child: Text(subCat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
                           );
                         }).toList(),

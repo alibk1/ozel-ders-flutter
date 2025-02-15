@@ -50,7 +50,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   void onCategoryTap(Map<String, dynamic> category) async {
     // Alt kategorileri Firestore'dan alıyoruz (getSubCategories metodunu burada çağırın)
     // Bu örnekte getSubCategories metodunun geriye List<Map<String, dynamic>> döndüğünü varsayıyorum
-    selectedCategory = category['uid'];
+    selectedCategory = category['UID'];
     selectedCategoryImage = category["imageUrl"];
     subCategories = category['subCategories'];
     setState(() {
@@ -293,7 +293,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
               return GestureDetector(
                 onTap: () {
                   context.go(
-                      '/courses/' + selectedCategory + '/' + subCategory["uid"]);
+                      '/courses/' + selectedCategory + '/' + subCategory["UID"]);
                 },
                 child: Container(
                   decoration: BoxDecoration(
