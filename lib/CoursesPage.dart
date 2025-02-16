@@ -207,7 +207,7 @@ class _CoursesPageState extends State<CoursesPage> {
                           ),
                           ...categories.map<DropdownMenuItem<String>>((category) {
                             return DropdownMenuItem<String>(
-                              value: category['uid'],
+                              value: category['UID'],
                               child: Text(category['name'], style: TextStyle(color: _backgroundColor)),
                             );
                           }).toList(),
@@ -243,10 +243,10 @@ class _CoursesPageState extends State<CoursesPage> {
                               value: 'Seçilmedi',
                               child: Text('Seçilmedi', style: TextStyle(color: _backgroundColor)),
                             ),
-                            ...categories.firstWhere((category) => category['uid'] == selectedCategory)['subCategories']
+                            ...categories.firstWhere((category) => category['UID'] == selectedCategory)['subCategories']
                                 .map<DropdownMenuItem<String>>((subCategory) {
                               return DropdownMenuItem<String>(
-                                value: subCategory['uid'],
+                                value: subCategory['UID'],
                                 child: Text(subCategory['name'], style: TextStyle(color: _backgroundColor)),
                               );
                             }).toList(),

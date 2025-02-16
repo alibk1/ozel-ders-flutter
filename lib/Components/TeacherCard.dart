@@ -44,7 +44,7 @@ class TeacherCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: () {
           // Öğretmen detay sayfasına yönlendirme
-          // context.go('/teacher/${teacherData["uid"]}');
+          // context.go('/teacher/${teacherData["UID"]}');
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),

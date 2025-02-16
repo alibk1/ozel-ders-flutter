@@ -77,7 +77,7 @@ class _TopCoursesWidgetState extends State<TopCoursesWidget> {
                 itemBuilder: (context, index) {
                   final course = widget.courses[index];
                   final teacher = widget.teachers.firstWhere(
-                        (teacher) => teacher["uid"] == course["author"],
+                        (teacher) => teacher["UID"] == course["author"],
                     orElse: () => {},
                   );
                   return AnimationConfiguration.staggeredGrid(

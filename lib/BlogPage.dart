@@ -204,7 +204,7 @@ class _BlogPageState extends State<BlogPage> {
                   ),
                   IconButton(
                     onPressed: () {
-                      context.go("/profile/${authorData!['uid']}");
+                      context.go("/profile/${authorData!['UID']}");
                     },
                     icon: Icon(Ionicons.eye, color: _primaryColor),
                   ),

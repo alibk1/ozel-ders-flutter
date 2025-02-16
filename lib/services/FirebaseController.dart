@@ -546,11 +546,11 @@ class FirestoreService {
             .collection('subCategories').get();
         subCategories = subCategoriesSnapshot.docs.map((subDoc) =>
         {
-          'uid': subDoc.id,
+          'UID': subDoc.id,
           ...subDoc.data() as Map<String, dynamic>
         }).toList();
         categories.add({
-          'uid': doc.id,
+          'UID': doc.id,
           ...doc.data() as Map<String, dynamic>,
           'subCategories': subCategories,
         });
@@ -629,7 +629,7 @@ class FirestoreService {
   Future<Map<String, dynamic>> getCourseByUID(String uid) async {
     DocumentSnapshot doc = await _db.collection('courses').doc(uid).get();
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    data['uid'] = doc.id;
+    data['UID'] = doc.id;
     return data;
   }
 
@@ -638,7 +638,7 @@ class FirestoreService {
     DocumentSnapshot doc = await _db.collection('teams').doc(uid).get();
     if(doc.exists) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      data['uid'] = doc.id;
+      data['UID'] = doc.id;
       return data;
     }
     else return Map<String, dynamic>.fromIterable(Iterable.empty());
@@ -649,7 +649,7 @@ class FirestoreService {
   Future<Map<String, dynamic>> getCategoryByUID(String uid) async {
     DocumentSnapshot doc = await _db.collection('categories').doc(uid).get();
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    data['uid'] = doc.id;
+    data['UID'] = doc.id;
     return data;
   }
 
@@ -659,7 +659,7 @@ class FirestoreService {
     DocumentSnapshot doc = await _db.collection('teachers').doc(uid).get();
     if (doc.exists) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      data['uid'] = doc.id;
+      data['UID'] = doc.id;
       return data;
     } else {
       return {};
@@ -671,7 +671,7 @@ class FirestoreService {
     DocumentSnapshot doc = await _db.collection('students').doc(uid).get();
     if (doc.exists) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      data['uid'] = doc.id;
+      data['UID'] = doc.id;
       return data;
     } else {
       return {};
@@ -683,7 +683,7 @@ class FirestoreService {
     DocumentSnapshot doc = await _db.collection('appointments').doc(uid).get();
     if (doc.exists) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      data['uid'] = doc.id;
+      data['UID'] = doc.id;
       return data;
     } else {
       return {};
@@ -1122,12 +1122,28 @@ class FirestoreService {
   Future<List<Map<String, dynamic>>> getTeacherBlogs(String teacherUID) async {
     QuerySnapshot snapshot = await _db.collection('blogs')
         .where('creatorUID', isEqualTo: teacherUID)
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snapshot.docs.map((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
-    }).toList();
+        .orderBy('createdAt', descending: true).get();
+
+    List<Map<String, dynamic>> blogs = [];
+
+    for (var doc in snapshot.docs) {
+      // Kursun temel verileri
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['UID'] = doc.id;
+
+      // Kursun yorumlarını çek
+      QuerySnapshot commentsSnapshot = await doc.reference.collection('comments').get();
+      List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {
+        return {
+          ...commentDoc.data() as Map<String, dynamic>,
+          'commentUID': commentDoc.id,
+        };
+      }).toList();
+      courseData['comments'] = comments;
+      blogs.add(courseData);
+    }
+
+    return blogs;
   }
 
   // Belirli bir blogu getirme
@@ -1135,7 +1151,7 @@ class FirestoreService {
     DocumentSnapshot doc = await _db.collection('blogs').doc(blogUID).get();
     if (doc.exists) {
       var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
+      return {...data, 'UID': doc.id};
     } else {
       throw Exception('Blog bulunamadı.');
     }
@@ -1168,7 +1184,7 @@ class FirestoreService {
         .get();
     return snapshot.docs.map((doc) {
       var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
+      return {...data, 'UID': doc.id};
     }).toList();
   }
 
@@ -1211,7 +1227,7 @@ class FirestoreService {
     List<Map<String, dynamic>> courses = [];
     for (var doc in querySnapshot.docs) {
       Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
-      courseData['uid'] = doc.id;
+      courseData['UID'] = doc.id;
 
       // Kursun yorumlarını çek
       QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
@@ -1241,7 +1257,7 @@ class FirestoreService {
 
     List<Map<String, dynamic>> teachers = querySnapshot.docs.map((doc) {
       var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
+      return {...data, 'UID': doc.id};
     }).toList();
 
     // lastIndex, liste uzunluğundan fazlaysa, tüm listeyi döndür
@@ -1260,11 +1276,11 @@ class FirestoreService {
 
     return querySnapshot.docs.map((doc) {
       var data = doc.data() as Map<String, dynamic>;
-      return {...data, 'uid': doc.id};
+      return {...data, 'UID': doc.id};
     }).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getSpesificCourses(List<String> uids) async {
+  Future<List<Map<String, dynamic>>> getSpesificCourses(List<dynamic> uids) async {
     if (uids.isEmpty) return [];
 
     final querySnapshot = await FirebaseFirestore.instance
@@ -1275,7 +1291,7 @@ class FirestoreService {
     List<Map<String, dynamic>> courses = [];
     for (var doc in querySnapshot.docs) {
       Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
-      courseData['uid'] = doc.id;
+      courseData['UID'] = doc.id;
 
       // Kursun yorumlarını çek
       QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
@@ -1304,7 +1320,7 @@ class FirestoreService {
     List<Map<String, dynamic>> courses = [];
     for (var doc in querySnapshot.docs) {
       Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
-      courseData['uid'] = doc.id;
+      courseData['UID'] = doc.id;
 
       // Kursun yorumlarını çek
       QuerySnapshot commentsSnapshot = await doc.reference.collection('Comments').get();
@@ -1373,7 +1389,7 @@ class FirestoreService {
 
     for (var doc in snapshot.docs) {
       Map<String, dynamic> videoData = doc.data() as Map<String, dynamic>;
-      videoData['uid'] = doc.id;
+      videoData['UID'] = doc.id;
 
       /*QuerySnapshot commentsSnapshot = await doc.reference.collection('comments').get();
       List<Map<String, dynamic>> comments = commentsSnapshot.docs.map((commentDoc) {

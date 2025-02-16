@@ -67,7 +67,7 @@ class _YoutubeCardState extends State<YoutubeCard> {
           onTap: () {
             // Video URL'sinin son kısmını alarak GoRoute ile video ekranına yönlendiriyoruz.
             String urlCont = videoUrl.split("/").last;
-            FirestoreService().updateYoutubeVideoViews(widget.videoData["uid"], widget.videoData["views"]);
+            FirestoreService().updateYoutubeVideoViews(widget.videoData["UID"], widget.videoData["views"]);
             context.go('/video/$urlCont');
           },
           child: Padding(
