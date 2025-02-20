@@ -107,7 +107,7 @@ class _BlogsPageState extends State<BlogsPage> {
                   color: _darkColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   gradient: LinearGradient(
-                    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+                    colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Gradyan renkleri
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -370,19 +370,19 @@ class _BlogsPageState extends State<BlogsPage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -435,7 +435,7 @@ class _BlogsPageState extends State<BlogsPage> {
       children: [
         _HeaderButton(title: 'Ana Sayfa', route: '/'),
         _HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        _HeaderButton(title: 'Blog', route: '/blogs'),
+        _HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           _HeaderButton(
             title: 'Randevularım',

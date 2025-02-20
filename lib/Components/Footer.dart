@@ -9,7 +9,7 @@ class FooterSection extends StatelessWidget {
   final Color _darkColor = Color(0xFF3C72C2); // Koyu arka plan
   final Color _lightColor = Color(0xFFEEEEEE); // Açık metin rengi
   final Gradient _gradientBackground = LinearGradient(
-    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)],
+    colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -58,7 +58,7 @@ class FooterSection extends StatelessWidget {
         Column(
           children: [
             Image.asset(
-              'assets/vitament1.png',
+              'assets/AYBUKOM2.png',
               height: 50,
             ),
             SizedBox(height: 8),
@@ -81,7 +81,7 @@ class FooterSection extends StatelessWidget {
           children: [
             _FooterLink(text: 'Ana Sayfa', route: '/', hoverColor: _lightColor.withOpacity(0.2)),
             _FooterLink(text: 'Danışmanlıklar', route: '/courses', hoverColor: _lightColor.withOpacity(0.2)),
-            _FooterLink(text: 'Blog', route: '/blogs', hoverColor: _lightColor.withOpacity(0.2)),
+            _FooterLink(text: 'İçerikler', route: '/contents', hoverColor: _lightColor.withOpacity(0.2)),
           ],
         ),
         SizedBox(height: 20),
@@ -147,7 +147,7 @@ class FooterSection extends StatelessWidget {
               Row(
                 children: [
                   Image.asset(
-                    'assets/vitament1.png',
+                    'assets/AYBUKOM2.png',
                     height: 60,
                   ),
                   SizedBox(width: 12),
@@ -191,7 +191,7 @@ class FooterSection extends StatelessWidget {
                 children: [
                   _FooterLink(text: 'Ana Sayfa', route: '/', hoverColor: _lightColor.withOpacity(0.2)),
                   _FooterLink(text: 'Danışmanlıklar', route: '/courses', hoverColor: _lightColor.withOpacity(0.2)),
-                  _FooterLink(text: 'Blog', route: '/blogs', hoverColor: _lightColor.withOpacity(0.2)),
+                  _FooterLink(text: 'İçerikler', route: '/contents', hoverColor: _lightColor.withOpacity(0.2)),
                 ],
               ),
             ],

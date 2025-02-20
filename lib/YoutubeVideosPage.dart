@@ -321,7 +321,7 @@ class _YoutubeVideosPageState extends State<YoutubeVideosPage> {
                       crossAxisCount: isMobile ? 2 : 4,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
-                      childAspectRatio: isMobile ? 0.65 : 0.65,
+                      childAspectRatio: isMobile ? 0.65 : 1,
                     ),
                     itemCount: videos.length,
                     itemBuilder: (context, index) {
@@ -371,19 +371,19 @@ class _YoutubeVideosPageState extends State<YoutubeVideosPage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -436,7 +436,7 @@ class _YoutubeVideosPageState extends State<YoutubeVideosPage> {
       children: [
         _HeaderButton(title: 'Ana Sayfa', route: '/'),
         _HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        _HeaderButton(title: 'Blog', route: '/blogs'),
+        _HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           _HeaderButton(
             title: 'Randevularım',

@@ -111,9 +111,9 @@ class _NavbarState extends State<Navbar> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: isLoading ? const SizedBox.shrink() : isMobile ? Image.asset(
-        'assets/vitament1.png',
+        'assets/AYBUKOM1.png',
         height: isMobile ? 50 : 70,
         key: const ValueKey('expanded-logo'),
       ).animate()
@@ -123,7 +123,7 @@ class _NavbarState extends State<Navbar> {
         duration: const Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: const ValueKey('expanded-logo'),
         ).animate()
@@ -131,7 +131,7 @@ class _NavbarState extends State<Navbar> {
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: const ValueKey('collapsed-logo'),
           ),
@@ -184,7 +184,7 @@ class _NavbarState extends State<Navbar> {
       children: [
         const HeaderButton(title: 'Ana Sayfa', route: '/'),
         const HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        const HeaderButton(title: 'Blog', route: '/blogs'),
+        const HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',

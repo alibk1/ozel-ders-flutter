@@ -47,7 +47,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
   final Color _primaryColor = Color(0xFFA7D8DB);
   final Color _backgroundColor = Color(0xFFEEEEEE);
   final Color _darkColor = Color(0xFF3C72C2);
-  final Color _textColor = Color(0xFF222831);
+  final Color _textColor = Color(0xFFEEEEEE);
 
   @override
   void initState() {
@@ -73,8 +73,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
 
   // ===================== MODAL & DİĞER YARDIMCI METODLAR =====================
 
-  Widget _buildListTile(IconData icon, String title, String subtitle,
-      {Color? subtitleColor, VoidCallback? onTap}) {
+  Widget _buildListTile(IconData icon, String title, String subtitle, {Color? subtitleColor, VoidCallback? onTap}) {
     return ListTile(
       leading: Icon(icon, color: _primaryColor),
       title: Text(
@@ -165,7 +164,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
           blur: 30,
           border: 0,
           linearGradient: LinearGradient(
-            colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Seçiliyse gradient ekle
+            colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Seçiliyse gradient ekle
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
@@ -350,14 +349,19 @@ class _AppointmentCardState extends State<AppointmentCard> {
       backgroundColor: Colors.transparent, // Arkaplan transparan
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)), // Köşeleri yuvarlak yapıyoruz
+        return GlassmorphicContainer(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.8,
+          borderRadius: 20,
+          blur: 30,
+          border: 0,
+          linearGradient: LinearGradient(
+            colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Seçiliyse gradient ekle
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderGradient: LinearGradient(
+            colors: [Colors.white24, Colors.white12],
           ),
           child: widget.isTeacher
               ? _buildTeacherView(context, homework, existingFiles)
@@ -463,10 +467,11 @@ class _AppointmentCardState extends State<AppointmentCard> {
           blur: 30,
           border: 0,
           linearGradient: LinearGradient(
-            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Seçiliyse gradient ekle
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-          ),
+          )
+          ,
           borderGradient: LinearGradient(
             colors: [Colors.white24, Colors.white12],
           ),
@@ -557,40 +562,63 @@ class _AppointmentCardState extends State<AppointmentCard> {
   Widget _buildStudentView(BuildContext context, String homework, List<ExistingFile> existingFiles) {
     return GlassmorphicContainer(
       width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.5,
+      height: double.infinity,
       borderRadius: 20,
       blur: 30,
       border: 0,
       linearGradient: LinearGradient(
-        colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+        colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Seçiliyse gradient ekle
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-      ),
+      )
+      ,
       borderGradient: LinearGradient(
         colors: [Colors.white24, Colors.white12],
       ),
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Ödev Detayları',
-            style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
-          ),
-          SizedBox(height: 16),
-          Text(
-            homework,
-            style: GoogleFonts.poppins(color: _textColor, fontSize: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Ödev Detayları',
+                    style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    homework,
+                    style: GoogleFonts.poppins(color: _textColor, fontSize: 16),
+                  ),
+                ],
+              ),
+            ],
           ),
           SizedBox(height: 16),
           if (existingFiles.isNotEmpty)
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   "Eklenen Belgeler",
-                  style: GoogleFonts.poppins(color: _darkColor, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 ...existingFiles.map((file) => InkWell(
@@ -614,7 +642,8 @@ class _AppointmentCardState extends State<AppointmentCard> {
     return Container(
       width: double.infinity,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             "Eklenen Belgeler",
@@ -622,12 +651,14 @@ class _AppointmentCardState extends State<AppointmentCard> {
           ),
           SizedBox(height: 8),
           Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 8.0,
             runSpacing: 8.0,
             children: [
               ...existingFiles.map((file) => Chip(
                 label: Text(file.name, style: GoogleFonts.poppins(color: _textColor)),
-                backgroundColor: _backgroundColor,
+                backgroundColor: _primaryColor,
                 deleteIcon: Icon(Icons.close, color: _darkColor),
                 onDeleted: () {
                   setModalState(() {
@@ -674,7 +705,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
+                colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Yeni gradyan renkleri
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -786,7 +817,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
           blur: 30,
           border: 0,
           linearGradient: LinearGradient(
-            colors: [Colors.white.withOpacity(0.1), Colors.white.withOpacity(0.05)],
+            colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Yeni gradyan renkleri
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -910,7 +941,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
+                colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Yeni gradyan renkleri
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1037,7 +1068,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
               blur: 30,
               border: 0,
               linearGradient: LinearGradient(
-                colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
+                colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Yeni gradyan renkleri
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1212,7 +1243,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
           blur: 30,
           border: 0,
           linearGradient: LinearGradient(
-            colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Yeni gradyan renkleri
+            colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Yeni gradyan renkleri
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

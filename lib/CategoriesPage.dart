@@ -71,7 +71,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       key: _scaffoldKey,
       appBar: AppBar(
         backgroundColor: Color(0xFF222831),
-        title: Image.asset('assets/vitament1.png', height: MediaQuery
+        title: Image.asset('assets/AYBUKOM1.png', height: MediaQuery
             .of(context)
             .size
             .width < 800 ? 60 : 80),

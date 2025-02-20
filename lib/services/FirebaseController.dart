@@ -108,7 +108,8 @@ class FirestoreService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Öğrenci dökümanı oluşturma
-  Future<void> createStudentDocument(String uid, String email, String name, String studentName, String studentProblem, int age, String city, String profilePictureUrl, String reference) async {
+  Future<void> createStudentDocument(String uid, String email, String name, String studentName,
+      String studentProblem, int age, String city, String profilePictureUrl, String reference, List<String> selectedCategories) async {
     await _db.collection('students').doc(uid).set({
       'email': email,
       'name': name,
@@ -120,6 +121,7 @@ class FirestoreService {
       'desc': '',
       'reference': reference,
       'courses': [],
+      'selectedCategories': selectedCategories,
       'hasPersonalCheck': false
     });
   }
@@ -128,6 +130,12 @@ class FirestoreService {
   Future<void> studentHadPersonalCheck(String uid) async {
     await _db.collection('students').doc(uid).update({
       'hasPersonalCheck': true
+    });
+  }
+
+  Future<void> updateStudentCategories(String uid, List<String> categories) async {
+    await _db.collection('students').doc(uid).update({
+      'selectedCategories': categories,
     });
   }
 
@@ -1265,7 +1273,7 @@ class FirestoreService {
     return teachers.sublist(firstIndex, endIndex);
   }
 
-  Future<List<Map<String, dynamic>>> getSpesificTeachers(List<String> uids) async {
+  Future<List<Map<String, dynamic>>> getSpesificTeachers(List<dynamic> uids) async {
     if (uids.isEmpty) return [];
 
     // Eğer uid sayısı 10'dan fazla ise, burada uygun şekilde bölme yapılabilir.

@@ -16,6 +16,7 @@ import 'package:ozel_ders/Components/MenuCoursesWidget.dart';
 import 'package:ozel_ders/Components/NotificationIconButton.dart';
 import 'package:ozel_ders/Components/BlogCard.dart';
 import 'package:ozel_ders/Components/Drawer.dart';
+import 'package:ozel_ders/Components/TeacherCard.dart';
 import 'package:ozel_ders/HomePage.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final Color _bodyTextColor = const Color(0xFF393E46);
 
   bool isTeacher = false;
+  bool isTeam = false;
   bool isLoading = true;
   bool isCategoriesLoading = true;
   Map<String, dynamic> userInfo = {};
@@ -50,6 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool isCurrentTeam = false;
   bool _isAppBarExpanded = true;
   bool _isCoursesExpanded = false;
+  bool _isTeachersExpanded = false;
   List<dynamic> teacherAvailableHours = [];
 
   String teamUidIfCurrent = "";
@@ -61,13 +64,24 @@ class _ProfilePageState extends State<ProfilePage> {
   List<Map<String, dynamic>> coursesNeeded = [];
   List<Map<String, dynamic>> teachersNeeded = [];
 
-  //APPOINTMENT WIDGET VARIABLES
+  //APPOINTMENT WIDGET FOR STUDENT VARIABLES
   DateTime selectedDate = DateTime.now().add(const Duration(days: 2));
   List<DateTime> selectedTimes = [];
   List<Map<String, String>> timeSlots = [];
   List<DateTime> teacherAppDates = [];
   List<DateTime> teacherAvailables = [];
   Map<String, dynamic> course = {};
+
+  //APPOINTMENT WIDGET VARIABLES
+  List<DateTime> availableHours = [];
+  Map<DateTime, List<Map<String, dynamic>>> eventsMap = {};
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  bool selectedAvailable = false;
+  DateTime? _selectedTime;
+
+  Map<String, dynamic> courseCreationSelectedTeacher = {};
+
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -77,6 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (oldWidget.uid != widget.uid) {
       setState(() {
         isTeacher = false;
+        isTeam = false;
         isLoading = true;
         userInfo = {};
         isLoggedIn = false;
@@ -98,6 +113,12 @@ class _ProfilePageState extends State<ProfilePage> {
         blogs = [];
         coursesNeeded = [];
         teachersNeeded = [];
+        availableHours = [];
+        eventsMap = {};
+        _focusedDay = DateTime.now();
+        _selectedDay;
+        selectedAvailable = false;
+        _selectedTime;
       });
       initData();
     }
@@ -134,29 +155,40 @@ class _ProfilePageState extends State<ProfilePage> {
       neededTeacherUIDs.add(widget.uid);
       teacherAvailableHours = userInfo["availableHours"];
       coursesNeeded = await FirestoreService().getCoursesByAuthors([widget.uid]);
-    } else if(!isCurrentTeam){
+    } else {
       userInfo = await FirestoreService().getStudentByUID(widget.uid);
-      List<dynamic> courses = userInfo["courses"];
-      coursesNeeded = await FirestoreService().getSpesificCourses(courses);
-      for(var course in  coursesNeeded) {
-        if(!neededTeacherUIDs.contains(course["author"]))
-          neededTeacherUIDs.add(course["author"]);
+      if (userInfo.isNotEmpty) {
+        userInfo = await FirestoreService().getStudentByUID(widget.uid);
+        List<dynamic> courses = userInfo["courses"];
+        coursesNeeded = await FirestoreService().getSpesificCourses(courses);
+        for (var course in coursesNeeded) {
+          if (!neededTeacherUIDs.contains(course["author"]))
+            neededTeacherUIDs.add(course["author"]);
+        }
+        notifications =
+        await FirestoreService().getNotificationsForStudent(widget.uid);
+        isTeacher = false;
       }
-      notifications = await FirestoreService().getNotificationsForStudent(widget.uid);
-      isTeacher = false;
+      else{
+        if(teamCheck["UID"] == widget.uid) userInfo = teamCheck;
+        else userInfo = await FirestoreService().getTeamByUID(widget.uid);
+        List<dynamic> teacherUIDs = userInfo["teachers"];
+        for(String uid in teacherUIDs)
+        {
+          neededTeacherUIDs.add(uid);
+        }
+        coursesNeeded = await FirestoreService().getCoursesByAuthors(neededTeacherUIDs);
+        isTeacher = false;
+        isTeam = true;
+      }
     }
-    else{
-      userInfo = teamCheck;
-      List<dynamic> teacherUIDs = userInfo["teachers"];
-      neededTeacherUIDs.addAll(teacherUIDs as List<String>);
-      coursesNeeded = await FirestoreService().getCoursesByAuthors(neededTeacherUIDs);
-      isTeacher = false;
-    }
+
     teachersNeeded = await FirestoreService().getSpesificTeachers(neededTeacherUIDs);
+
     appointments = await FirestoreService().getUserAppointments(widget.uid, isTeacher);
     categories = await FirestoreService().getCategories();
 
-    if (isSelf && !isTeacher && userInfo["hasPersonalCheck"] == false) {
+    if (isSelf && !isTeacher && !isTeam && userInfo["hasPersonalCheck"] == false) {
       AwesomeDialog(
         context: context,
         dialogType: DialogType.warning,
@@ -188,13 +220,35 @@ class _ProfilePageState extends State<ProfilePage> {
         timeSlots.add({'start': startTime, 'end': endTime});
       }
     }
+    if(isTeacher && isSelf){
+      for(Timestamp a in userInfo["availableHours"])
+      {
+        availableHours.add(a.toDate());
+      }
+      for (var app in appointments) {
+        Timestamp date = app["date"];
+        DateTime dateTime = date.toDate().toUtc();
+        print(dateTime);
+        teacherAppDates.add(dateTime);
+      }
+
+      for (var appointment in appointments) {
+        final dateTime = (appointment['date'] as Timestamp).toDate();
+        final dayOnly = DateTime(
+            dateTime.year, dateTime.month, dateTime.day);
+
+        if (!eventsMap.containsKey(dayOnly)) {
+          eventsMap[dayOnly] = [];
+        }
+        eventsMap[dayOnly]!.add(appointment);
+      }
+    }
 
     setState(() {
       isLoading = false;
     });
   }
 
-  /// build() – Ekran genişliğine göre mobil / masaüstü versiyonlarını ayırıyoruz.
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 800;
@@ -239,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   SliverAppBar _buildSliverAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       pinned: true,
       expandedHeight: 120,
       centerTitle: isMobile || _isAppBarExpanded,
@@ -253,14 +307,14 @@ class _ProfilePageState extends State<ProfilePage> {
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -301,7 +355,7 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
         HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',
@@ -316,7 +370,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ************************ Mobil Versiyon ************************
-
   Widget _buildMobileProfile() {
     return SingleChildScrollView(
       child: Column(
@@ -328,7 +381,11 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 16),
           _buildAboutSection(),
           const SizedBox(height: 16),
+          if(!isTeam && !isTeacher) buildSelectedCategoriesChips(),
+          const SizedBox(height: 16),
           _buildCoursesSection(isMobile: true),
+          if(isTeam) const SizedBox(height: 16),
+          if(isTeam) _buildTeachersSection(isMobile: true),
           const SizedBox(height: 16),
           if(isTeacher) _buildBlogsSection(isExpanded: true),
           if(isTeacher) const SizedBox(height: 16),
@@ -338,8 +395,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ************************ Masaüstü Versiyon ************************
-
-// Masaüstü:
   Widget _buildDesktopProfile() {
     return Center(
       child: ConstrainedBox(
@@ -360,6 +415,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildProfileHeader(),
                         const SizedBox(height: 16),
                         _buildAboutSection(),
+                        if(!isTeam && !isTeacher) const SizedBox(height: 16),
+                        if(!isTeam && !isTeacher) buildSelectedCategoriesChips(),
                         const SizedBox(height: 16),
                         _buildCoursesSection(isMobile: false),
                       ],
@@ -367,13 +424,15 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    flex: 1,
+                    flex: isTeacher || isTeam ? 1 : 0,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if(isTeacher && isSelf) appointmentsWidget(context),
                         if(isTeacher && !isSelf && !isCurrentTeam) appointmentWidgetForStudents(context),
+                        if(isTeam) const SizedBox(height: 16),
+                        if(isTeam) _buildTeachersSection(isMobile: false),
                       ],
                     ),
                   ),
@@ -388,10 +447,51 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // **************** Kurslar (Danışmanlıklar) Bölümü ****************
+  Widget buildSelectedCategoriesChips() {
+    List<dynamic> selected = userInfo["selectedCategories"];
+    List<dynamic> selectedCategoriesNames = [];
+    for(var cat in selected){
+      List<String> split = cat.split("-");
+      List<Map<String, dynamic>> subCategories = categories.firstWhere((c) => c["UID"] == split[0])["subCategories"];
+      String name = subCategories.firstWhere((sc) => sc["UID"] == split[1])["name"];
+      selectedCategoriesNames.add(name);
+    }
+    return Row(
+      children: [
+        Expanded(
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Text("İlgilendiği Kategoriler", style: GoogleFonts.poppins(color: Colors.black)),
+                  SizedBox(height: 12,),
+                  Wrap(
+                    spacing: 8.0, // Yatay boşluk
+                    runSpacing: 8.0, // Dikey boşluk
+                    alignment: WrapAlignment.center,
+                    children: List.generate(selectedCategoriesNames.length, (index) {
+                      return Chip(
+                        label: Text(selectedCategoriesNames[index]),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
+
+  // **************** Kurslar (Danışmanlıklar) Bölümü ****************
   Widget _buildCoursesSection({required bool isMobile}) {
-    int column = isMobile ? 2 : 3;
+    int column = isMobile ? 2 : isTeacher || isTeam ? 3 : 5;
     List<Map<String, dynamic>> lowerList = coursesNeeded.length >= column ? coursesNeeded.sublist(0, column) : coursesNeeded;
 
     double width = MediaQuery.of(context).size.width;
@@ -402,7 +502,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              isTeacher ? 'Verdiği Danışmanlıklar' : 'Aldığı Danışmanlıklar',
+              isTeam ? "Kurumda Verilen Danışmanlıklar" : isTeacher ? 'Verdiği Danışmanlıklar' : 'Aldığı Danışmanlıklar',
               style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -477,8 +577,87 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // **************** Bloglar Bölümü ****************
+  // **************** Danışmanlar Bölümü ****************
+  Widget _buildTeachersSection({required bool isMobile}) {
+    int column = isMobile ? 1 : 2;
+    List<Map<String, dynamic>> lowerList = teachersNeeded.length >= column * 2 ? teachersNeeded.sublist(0, column * 2) : teachersNeeded;
 
+    double width = MediaQuery.of(context).size.width;
+    Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Kurumdaki Danışmanlar" ,
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _headerTextColor),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 300,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: isMobile  ? 0.65 : 0.55,
+            ),
+            itemCount: _isTeachersExpanded ? teachersNeeded.length : lowerList.length,
+            itemBuilder: (context, index) {
+              final teacher = _isTeachersExpanded ? teachersNeeded[index] : lowerList[index];
+              final courses = coursesNeeded.where((c) => c["author"] == teacher["UID"]).toList();
+              return AnimationConfiguration.staggeredGrid(
+                position: index,
+                duration: Duration(milliseconds: 500),
+                columnCount: (width / 300).floor(),
+                child: ScaleAnimation(
+                  child: FadeInAnimation(
+                    child: TeacherCard(
+                      teacherData: teacher,
+                      teacherCourses: courses,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        TextButton(
+          onPressed: (){
+            _isTeachersExpanded = !_isTeachersExpanded;
+            setState(() {
+
+            });
+          },
+          child: Text(_isTeachersExpanded ? "Daralt" : "Genişlet", style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,),
+          ),
+        )
+      ],
+    ).animate().fadeIn(duration: 500.ms);
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: content,
+      ),
+    );
+  }
+
+  // **************** Bloglar Bölümü ****************
   Widget _buildBlogsSection({required bool isExpanded}) {
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
@@ -553,597 +732,6 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            // 08:00'den 20:00'ye kadar 50 dakikalık süreler oluştur
-            final List<Map<String, String>> timeSlots = [];
-            for (int hour = 8; hour < 20; hour++) {
-              String startTime = '${hour.toString().padLeft(2, '0')}:00';
-              String endTime = '${hour.toString().padLeft(2, '0')}:50';
-              timeSlots.add({'start': startTime, 'end': endTime});
-            }
-
-            final List<DateTime> teacherAppDates = [];
-            List<DateTime> availableHours = [];
-            for(Timestamp a in userInfo["availableHours"])
-            {
-              availableHours.add(a.toDate());
-            }
-            for (var app in appointments) {
-              Timestamp date = app["date"];
-              DateTime dateTime = date.toDate().toUtc();
-              print(dateTime);
-              teacherAppDates.add(dateTime);
-            }
-
-            final Map<DateTime, List<Map<String, dynamic>>> eventsMap = {};
-            for (var appointment in appointments) {
-              final dateTime = (appointment['date'] as Timestamp).toDate();
-              final dayOnly = DateTime(
-                  dateTime.year, dateTime.month, dateTime.day);
-
-              if (!eventsMap.containsKey(dayOnly)) {
-                eventsMap[dayOnly] = [];
-              }
-              eventsMap[dayOnly]!.add(appointment);
-            }
-
-            DateTime _focusedDay = DateTime.now();
-            DateTime? _selectedDay;
-            bool selectedAvailable = false;
-            // Seçilen saat
-            DateTime? _selectedTime;
-
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState2) {
-                return Padding(
-                  padding: MediaQuery
-                      .of(context)
-                      .viewInsets,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Başlık
-                        Container(
-                          margin: const EdgeInsets.only(top: 16),
-                          child: const Text(
-                            'Randevu Takvimi',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(top: 16),
-                          child: ElevatedButton(
-                            onPressed: () async
-                            {
-                              DateTime firstSelectedDate = DateTime.now().add(Duration(days: 1));
-                              DateTime secondSelectedDate = DateTime.now().add(Duration(days: 2));
-                              List<TimeOfDay> times = [];
-                              AwesomeDialog(
-                                context: context,
-                                width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
-                                dialogType: DialogType.noHeader,
-                                animType: AnimType.bottomSlide,
-                                title: 'Yeni Randevu Talebi',
-                                desc: "",
-                                // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
-                                body: StatefulBuilder(
-                                  builder: (BuildContext context, StateSetter setModalState) {
-                                    return Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(height: 10),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF76ABAE),
-                                            foregroundColor: Colors.white,
-                                            minimumSize: const Size(double.infinity, 50),
-                                          ),
-                                          onPressed: () async {
-                                            final DateTime? picked = await showDatePicker(
-                                              context: context,
-                                              initialDate: secondSelectedDate,
-                                              firstDate: DateTime.now(),
-                                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                                              locale: const Locale('tr', 'TR'), // Türkçe için
-                                              builder: (context, child) => Theme(
-                                                data: _customDatePickerTheme(), // Özel tema
-                                                child: child!,
-                                              ),
-                                            );
-                                            if (picked != null) {
-                                              setModalState(() {
-                                                firstSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
-                                              });
-                                            }
-                                          },
-                                          child: Text(
-                                            'Başlangıç Tarihi Seç (${DateFormat('dd/MM/yyyy').format(firstSelectedDate)})',
-                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        SizedBox(height: 10),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF76ABAE),
-                                            foregroundColor: Colors.white,
-                                            minimumSize: const Size(double.infinity, 50),
-                                          ),
-                                          onPressed: () async {
-                                            final DateTime? picked = await showDatePicker(
-                                              context: context,
-                                              initialDate: secondSelectedDate,
-                                              firstDate: DateTime.now(),
-                                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                                              locale: const Locale('tr', 'TR'), // Türkçe için
-                                              builder: (context, child) => Theme(
-                                                data: _customDatePickerTheme(), // Özel tema
-                                                child: child!,
-                                              ),
-                                            );
-                                            if (picked != null) {
-                                              setModalState(() {
-                                                secondSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
-                                              });
-                                            }
-                                          },
-                                          child: Text(
-                                            'Bitiş Tarihi Seç (${DateFormat('dd/MM/yyyy').format(secondSelectedDate)})',
-                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        SizedBox(height: 10,),
-                                        Wrap(
-                                          spacing: 8.0,
-                                          runSpacing: 8.0,
-                                          alignment: WrapAlignment.center,
-                                          children: timeSlots.map((slot) {
-                                            // Başlangıç saati
-                                            final int slotStart =
-                                            int.parse(slot["start"]!.split(":")[0]);
-
-                                            final bool isSelected = times.contains(TimeOfDay(hour: slotStart, minute: 0));
-
-                                            return GestureDetector(
-                                              onTap: () {
-                                                setModalState(() {
-                                                  if(isSelected)
-                                                  {
-                                                    times.remove(TimeOfDay(hour: slotStart, minute: 0));
-                                                  }
-                                                  else{
-                                                    times.add(TimeOfDay(hour: slotStart, minute: 0));
-                                                  }
-                                                });
-                                              },
-                                              child: Container(
-                                                width: 80,
-                                                padding: const EdgeInsets.symmetric(
-                                                    vertical: 8),
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? const Color(
-                                                      0xFF76ABAE)
-                                                      : const Color(0xFF393E46),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  border: isSelected
-                                                      ? Border.all(
-                                                      color: Colors.white, width: 2)
-                                                      : null,
-                                                ),
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  '${slot['start']} - ${slot['end']}',
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-
-                                      ],
-                                    );
-                                  },
-                                ),
-                                btnOkText: "Seç",
-                                btnCancelText: "İptal",
-                                btnOkOnPress: () async {
-                                  LoadingIndicator(context).showLoading();
-                                  if(firstSelectedDate == secondSelectedDate)
-                                  {
-                                    for(TimeOfDay time in times)
-                                    {
-                                      DateTime newDate = DateTime(firstSelectedDate.year, firstSelectedDate.month, firstSelectedDate.day, time.hour, time.minute);
-                                      await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
-                                    }
-                                    setState2((){});
-                                  }
-                                  else if(firstSelectedDate.isBefore(secondSelectedDate))
-                                  {
-                                    DateTime first = firstSelectedDate;
-                                    while(true){
-                                      for(TimeOfDay time in times)
-                                      {
-                                        print("Girdi");
-                                        DateTime newDate = DateTime(first.year, first.month, first.day, time.hour, time.minute);
-                                        await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
-                                      }
-                                      if(first == secondSelectedDate){
-                                        break;
-                                      }
-                                      first = first.add(Duration(days: 1));
-                                    }
-                                    setState2((){});
-                                  }
-                                  else if(firstSelectedDate.isAfter(secondSelectedDate))
-                                  {
-                                    AwesomeDialog(
-                                        context: context,
-                                        width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
-
-                                        dialogType: DialogType.error,
-                                        animType: AnimType.bottomSlide,
-                                        body: const Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: Text(
-                                            'Hatalı veya Eksik Bilgi (Tarihleri Kontrol Ediniz)',
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                        ),
-                                        dismissOnTouchOutside: false,
-                                        dismissOnBackKeyPress: false,
-                                        btnOkText: "Tamam",
-                                        btnOkOnPress: () {}
-                                    ).show();
-                                  }
-                                  await initData();
-                                  print(firstSelectedDate);
-                                  print(secondSelectedDate);
-                                  Navigator.pop(context);
-
-                                },
-                                btnCancelOnPress: () {},
-                              ).show();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF222831),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
-                              ),
-                            ),
-                            child: const Text('Çoklu Müsaitlik Ayarlama', style: TextStyle(color: Colors.white),),
-                          ),
-                        ),
-                        TableCalendar(
-                          locale: 'tr_TR',
-                          focusedDay: _focusedDay,
-                          firstDay: DateTime.now().add(Duration(days: -1)),
-                          lastDay: DateTime.utc(2030, 12, 31),
-                          startingDayOfWeek: StartingDayOfWeek.monday,
-                          selectedDayPredicate: (day) =>
-                              isSameDay(_selectedDay, day),
-                          eventLoader: (day) {
-                            final dayOnly = DateTime(
-                                day.year, day.month, day.day);
-                            return eventsMap[dayOnly] ?? [];
-                          },
-                          availableCalendarFormats: {
-                            CalendarFormat.month: "Ay",
-                            CalendarFormat.twoWeeks: "2 Hafta",
-                          },
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState2(() {
-                              _selectedDay = selectedDay;
-                              _focusedDay = focusedDay;
-                              _selectedTime = null;
-                            });
-                          },
-                          calendarStyle: const CalendarStyle(
-                            markerDecoration: BoxDecoration(
-                              color: Colors.blue,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-
-                        if (_selectedDay != null) ...[
-                          const SizedBox(height: 16),
-
-                          // Seçilen Gün
-                          Text(
-                            'Seçilen Gün: '
-                                '${_selectedDay!.day}.${_selectedDay!
-                                .month}.${_selectedDay!.year}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // Saat Seçimi
-                          Wrap(
-                            spacing: 8.0,
-                            runSpacing: 8.0,
-                            alignment: WrapAlignment.center,
-                            children: timeSlots.map((slot) {
-                              // Başlangıç saati
-                              final int slotStart =
-                              int.parse(slot["start"]!.split(":")[0]);
-
-                              // Seçili güne bu saati ekliyoruz
-                              final DateTime slotDateTime = DateTime(
-                                _selectedDay!.year,
-                                _selectedDay!.month,
-                                _selectedDay!.day,
-                                slotStart,
-                                0,
-                              );
-
-                              bool canReserve = true;
-                              for (DateTime date in teacherAppDates) {
-                                if (date.year == slotDateTime.toUtc().year &&
-                                    date.month == slotDateTime.toUtc().month &&
-                                    date.day == slotDateTime.toUtc().day &&
-                                    date.hour == slotDateTime.toUtc().hour) {
-                                  canReserve = false; // Bu saat dolu
-                                  break;
-                                }
-                              }
-
-                              bool hasAvailable = false;
-                              for (DateTime date in availableHours) {
-                                if (date.year == slotDateTime.year &&
-                                    date.month == slotDateTime.month &&
-                                    date.day == slotDateTime.day &&
-                                    date.hour == slotDateTime.hour) {
-                                  hasAvailable = true; // Bu saat dolu
-                                  break;
-                                }
-                              }
-
-                              // Seçilen saat mi?
-                              final bool isSelected = _selectedTime != null &&
-                                  _selectedTime!.year == slotDateTime.year &&
-                                  _selectedTime!.month == slotDateTime.month &&
-                                  _selectedTime!.day == slotDateTime.day &&
-                                  _selectedTime!.hour == slotDateTime.hour;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  setState2(() {
-                                    _selectedTime = slotDateTime;
-                                    selectedAvailable = hasAvailable;
-                                  });
-                                },
-                                child: Container(
-                                  width: 80,
-                                  // 4 slotun yan yana gelmesi için
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(
-                                        0xFF76ABAE) // Seçilen slot rengi
-                                        : !hasAvailable
-                                        ? Colors.red // Boş slot
-                                        : canReserve ? Colors.green : const Color(0xFF393E46), // Dolu slot
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: isSelected
-                                        ? Border.all(
-                                        color: Colors.white, width: 2)
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '${slot['start']} - ${slot['end']}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 16),
-                          Builder(
-                            builder: (context) {
-                              // Henüz saat seçilmediyse (null) => buton da pasif kalsın
-                              if (_selectedTime == null) {
-                                return ElevatedButton(
-                                  onPressed: null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF76ABAE),
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(120, 50),
-                                  ),
-                                  child: const Text("Saat Seçiniz"),
-                                );
-                              }
-
-                              final existingAppointment = appointments
-                                  .firstWhere((app) {
-                                final dt = (app['date'] as Timestamp).toDate();
-                                return dt.year == _selectedTime!.year &&
-                                    dt.month == _selectedTime!.month &&
-                                    dt.day == _selectedTime!.day &&
-                                    dt.hour == _selectedTime!.hour;
-                              }, orElse: () => {});
-                              if (existingAppointment.isNotEmpty) {
-                                return Container(
-                                  height: 400,
-                                  child: AppointmentCard(
-                                    appointmentUID: existingAppointment["UID"],
-                                    isTeacher: false,
-                                  ),
-                                );
-                              } else {
-                                return selectedAvailable ? ElevatedButton(
-                                  onPressed: () async {
-                                    AwesomeDialog(
-                                      context: context,
-                                      width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
-
-                                      dialogType: DialogType.noHeader,
-                                      animType: AnimType.bottomSlide,
-                                      title: 'Randevuya Ayırdığın Saati Sil',
-                                      desc: 'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
-                                      body: StatefulBuilder(
-                                        builder: (BuildContext context,
-                                            StateSetter setModalState) {
-                                          return Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              SizedBox(height: 10),
-                                              Text(
-                                                'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
-                                                style: TextStyle(
-                                                    fontSize: 16),
-                                              ), SizedBox(height: 10),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                      btnOkText: "Evet",
-                                      btnCancelText: "Hayır",
-                                      btnOkOnPress: () async {
-                                        await FirestoreService()
-                                            .removeTeacherAvailableHour(
-                                            widget.uid,
-                                            DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
-                                        userInfo = await FirestoreService().getTeacherByUID(widget.uid);
-                                        setState((){});
-                                        setState2((){});
-                                      },
-                                      btnCancelOnPress: () {},
-                                    ).show();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF76ABAE),
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(120, 50),
-                                  ),
-                                  child: const Text(
-                                    "Randevuya Ayırdığın Saati İptal Et",
-                                    style: TextStyle(color: Colors.red),),
-                                ) :
-                                ElevatedButton(
-                                  onPressed: () async {
-                                    AwesomeDialog(
-                                      context: context,
-                                      width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
-
-                                      dialogType: DialogType.noHeader,
-                                      animType: AnimType.bottomSlide,
-                                      title: 'Saati Randevuya Ayır',
-                                      desc: 'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
-                                      // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
-                                      body: StatefulBuilder(
-                                        builder: (BuildContext context,
-                                            StateSetter setModalState) {
-                                          return Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              SizedBox(height: 10),
-                                              Text(
-                                                'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
-                                                style: TextStyle(fontSize: 16),
-                                              ), SizedBox(height: 10),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                      // Dialog'un altındaki butonlar
-                                      btnOkText: "Evet",
-                                      btnCancelText: "Hayır",
-                                      btnOkOnPress: () async {
-                                        await FirestoreService()
-                                            .updateTeacherAvailableHours(
-                                            widget.uid,
-                                            DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
-                                        userInfo = await FirestoreService().getTeacherByUID(widget.uid);
-                                        setState((){});
-                                        setState2((){});
-                                      },
-                                      btnCancelOnPress: () {},
-                                    ).show();
-
-                                    debugPrint("Yeni randevu ekleme işlemi");
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF76ABAE),
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(120, 50),
-                                  ),
-                                  child: const Text("Bu Saati Randevuya Ayır"),
-                                );
-                              }
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget appointmentsWidget(BuildContext context) {
-    return StatefulBuilder(
-      builder: (BuildContext context, StateSetter setState) {
-        // 08:00'den 20:00'ye kadar 50 dakikalık süreler oluştur
-        final List<Map<String, String>> timeSlots = [];
-        for (int hour = 8; hour < 20; hour++) {
-          String startTime = '${hour.toString().padLeft(2, '0')}:00';
-          String endTime = '${hour.toString().padLeft(2, '0')}:50';
-          timeSlots.add({'start': startTime, 'end': endTime});
-        }
-
-        final List<DateTime> teacherAppDates = [];
-        List<DateTime> availableHours = [];
-        for(Timestamp a in userInfo["availableHours"])
-        {
-          availableHours.add(a.toDate());
-        }
-        for (var app in appointments) {
-          Timestamp date = app["date"];
-          DateTime dateTime = date.toDate().toUtc();
-          print(dateTime);
-          teacherAppDates.add(dateTime);
-        }
-
-        final Map<DateTime, List<Map<String, dynamic>>> eventsMap = {};
-        for (var appointment in appointments) {
-          final dateTime = (appointment['date'] as Timestamp).toDate();
-          final dayOnly = DateTime(
-              dateTime.year, dateTime.month, dateTime.day);
-
-          if (!eventsMap.containsKey(dayOnly)) {
-            eventsMap[dayOnly] = [];
-          }
-          eventsMap[dayOnly]!.add(appointment);
-        }
-
-        DateTime _focusedDay = DateTime.now();
-        DateTime? _selectedDay;
-        bool selectedAvailable = false;
-        // Seçilen saat
-        DateTime? _selectedTime;
-
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState2) {
             return Padding(
@@ -1313,7 +901,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   DateTime newDate = DateTime(firstSelectedDate.year, firstSelectedDate.month, firstSelectedDate.day, time.hour, time.minute);
                                   await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
                                 }
-                                setState2((){});
+                                setState((){});
                               }
                               else if(firstSelectedDate.isBefore(secondSelectedDate))
                               {
@@ -1330,13 +918,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                   }
                                   first = first.add(Duration(days: 1));
                                 }
-                                setState2((){});
+                                setState((){});
                               }
                               else if(firstSelectedDate.isAfter(secondSelectedDate))
                               {
                                 AwesomeDialog(
                                     context: context,
                                     width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+
                                     dialogType: DialogType.error,
                                     animType: AnimType.bottomSlide,
                                     body: const Padding(
@@ -1389,7 +978,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         CalendarFormat.twoWeeks: "2 Hafta",
                       },
                       onDaySelected: (selectedDay, focusedDay) {
-                        setState2(() {
+                        setState(() {
                           _selectedDay = selectedDay;
                           _focusedDay = focusedDay;
                           _selectedTime = null;
@@ -1466,7 +1055,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                           return GestureDetector(
                             onTap: () {
-                              setState2(() {
+                              setState(() {
                                 _selectedTime = slotDateTime;
                                 selectedAvailable = hasAvailable;
                               });
@@ -1539,6 +1128,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 AwesomeDialog(
                                   context: context,
                                   width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+
                                   dialogType: DialogType.noHeader,
                                   animType: AnimType.bottomSlide,
                                   title: 'Randevuya Ayırdığın Saati Sil',
@@ -1568,7 +1158,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                         DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
                                     userInfo = await FirestoreService().getTeacherByUID(widget.uid);
                                     setState((){});
-                                    setState2((){});
                                   },
                                   btnCancelOnPress: () {},
                                 ).show();
@@ -1587,6 +1176,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 AwesomeDialog(
                                   context: context,
                                   width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+
                                   dialogType: DialogType.noHeader,
                                   animType: AnimType.bottomSlide,
                                   title: 'Saati Randevuya Ayır',
@@ -1617,7 +1207,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                         DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
                                     userInfo = await FirestoreService().getTeacherByUID(widget.uid);
                                     setState((){});
-                                    setState2((){});
                                   },
                                   btnCancelOnPress: () {},
                                 ).show();
@@ -1647,21 +1236,507 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget appointmentWidgetForStudents(BuildContext context){
-    InputDecoration _inputDecoration(String label) {
-      return InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.poppins(color: _darkColor.withOpacity(0.7)),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      );
-    }
+  Widget appointmentsWidget(BuildContext context) {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState2) {
+        return Padding(
+          padding: MediaQuery
+              .of(context)
+              .viewInsets,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Başlık
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  child: const Text(
+                    'Randevu Takvimi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  child: ElevatedButton(
+                    onPressed: () async
+                    {
+                      DateTime firstSelectedDate = DateTime.now().add(Duration(days: 1));
+                      DateTime secondSelectedDate = DateTime.now().add(Duration(days: 2));
+                      List<TimeOfDay> times = [];
+                      AwesomeDialog(
+                        context: context,
+                        width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                        dialogType: DialogType.noHeader,
+                        animType: AnimType.bottomSlide,
+                        title: 'Yeni Randevu Talebi',
+                        desc: "",
+                        // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                        body: StatefulBuilder(
+                          builder: (BuildContext context, StateSetter setModalState) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(height: 10),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF76ABAE),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(double.infinity, 50),
+                                  ),
+                                  onPressed: () async {
+                                    final DateTime? picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: secondSelectedDate,
+                                      firstDate: DateTime.now(),
+                                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                                      locale: const Locale('tr', 'TR'), // Türkçe için
+                                      builder: (context, child) => Theme(
+                                        data: _customDatePickerTheme(), // Özel tema
+                                        child: child!,
+                                      ),
+                                    );
+                                    if (picked != null) {
+                                      setModalState(() {
+                                        firstSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
+                                      });
+                                    }
+                                  },
+                                  child: Text(
+                                    'Başlangıç Tarihi Seç (${DateFormat('dd/MM/yyyy').format(firstSelectedDate)})',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF76ABAE),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(double.infinity, 50),
+                                  ),
+                                  onPressed: () async {
+                                    final DateTime? picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: secondSelectedDate,
+                                      firstDate: DateTime.now(),
+                                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                                      locale: const Locale('tr', 'TR'), // Türkçe için
+                                      builder: (context, child) => Theme(
+                                        data: _customDatePickerTheme(), // Özel tema
+                                        child: child!,
+                                      ),
+                                    );
+                                    if (picked != null) {
+                                      setModalState(() {
+                                        secondSelectedDate = DateTime(picked.year, picked.month, picked.day, 8);
+                                      });
+                                    }
+                                  },
+                                  child: Text(
+                                    'Bitiş Tarihi Seç (${DateFormat('dd/MM/yyyy').format(secondSelectedDate)})',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                SizedBox(height: 10,),
+                                Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 8.0,
+                                  alignment: WrapAlignment.center,
+                                  children: timeSlots.map((slot) {
+                                    // Başlangıç saati
+                                    final int slotStart =
+                                    int.parse(slot["start"]!.split(":")[0]);
 
+                                    final bool isSelected = times.contains(TimeOfDay(hour: slotStart, minute: 0));
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setModalState(() {
+                                          if(isSelected)
+                                          {
+                                            times.remove(TimeOfDay(hour: slotStart, minute: 0));
+                                          }
+                                          else{
+                                            times.add(TimeOfDay(hour: slotStart, minute: 0));
+                                          }
+                                        });
+                                      },
+                                      child: Container(
+                                        width: 80,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(
+                                              0xFF76ABAE)
+                                              : const Color(0xFF393E46),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: isSelected
+                                              ? Border.all(
+                                              color: Colors.white, width: 2)
+                                              : null,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${slot['start']} - ${slot['end']}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+
+                              ],
+                            );
+                          },
+                        ),
+                        btnOkText: "Seç",
+                        btnCancelText: "İptal",
+                        btnOkOnPress: () async {
+                          LoadingIndicator(context).showLoading();
+                          if(firstSelectedDate == secondSelectedDate)
+                          {
+                            for(TimeOfDay time in times)
+                            {
+                              DateTime newDate = DateTime(firstSelectedDate.year, firstSelectedDate.month, firstSelectedDate.day, time.hour, time.minute);
+                              await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
+                            }
+                            setState((){});
+                          }
+                          else if(firstSelectedDate.isBefore(secondSelectedDate))
+                          {
+                            DateTime first = firstSelectedDate;
+                            while(true){
+                              for(TimeOfDay time in times)
+                              {
+                                print("Girdi");
+                                DateTime newDate = DateTime(first.year, first.month, first.day, time.hour, time.minute);
+                                await FirestoreService().updateTeacherAvailableHours(widget.uid, newDate);
+                              }
+                              if(first == secondSelectedDate){
+                                break;
+                              }
+                              first = first.add(Duration(days: 1));
+                            }
+                            setState((){});
+                          }
+                          else if(firstSelectedDate.isAfter(secondSelectedDate))
+                          {
+                            AwesomeDialog(
+                                context: context,
+                                width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                                dialogType: DialogType.error,
+                                animType: AnimType.bottomSlide,
+                                body: const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Hatalı veya Eksik Bilgi (Tarihleri Kontrol Ediniz)',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                                dismissOnTouchOutside: false,
+                                dismissOnBackKeyPress: false,
+                                btnOkText: "Tamam",
+                                btnOkOnPress: () {}
+                            ).show();
+                          }
+                          await initData();
+                          print(firstSelectedDate);
+                          print(secondSelectedDate);
+                          Navigator.pop(context);
+
+                        },
+                        btnCancelOnPress: () {},
+                      ).show();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF222831),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(3),
+                        side: const BorderSide(color: Color(0xFFEEEEEE), width: 2),
+                      ),
+                    ),
+                    child: const Text('Çoklu Müsaitlik Ayarlama', style: TextStyle(color: Colors.white),),
+                  ),
+                ),
+                TableCalendar(
+                  locale: 'tr_TR',
+                  focusedDay: _focusedDay,
+                  firstDay: DateTime.now().add(Duration(days: -1)),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  startingDayOfWeek: StartingDayOfWeek.monday,
+                  selectedDayPredicate: (day) =>
+                      isSameDay(_selectedDay, day),
+                  eventLoader: (day) {
+                    final dayOnly = DateTime(
+                        day.year, day.month, day.day);
+                    return eventsMap[dayOnly] ?? [];
+                  },
+                  availableCalendarFormats: {
+                    CalendarFormat.month: "Ay",
+                    CalendarFormat.twoWeeks: "2 Hafta",
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                      _selectedTime = null;
+                    });
+                  },
+                  calendarStyle: const CalendarStyle(
+                    markerDecoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+
+                if (_selectedDay != null) ...[
+                  const SizedBox(height: 16),
+
+                  // Seçilen Gün
+                  Text(
+                    'Seçilen Gün: '
+                        '${_selectedDay!.day}.${_selectedDay!
+                        .month}.${_selectedDay!.year}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Saat Seçimi
+                  Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    alignment: WrapAlignment.center,
+                    children: timeSlots.map((slot) {
+                      // Başlangıç saati
+                      final int slotStart =
+                      int.parse(slot["start"]!.split(":")[0]);
+
+                      // Seçili güne bu saati ekliyoruz
+                      final DateTime slotDateTime = DateTime(
+                        _selectedDay!.year,
+                        _selectedDay!.month,
+                        _selectedDay!.day,
+                        slotStart,
+                        0,
+                      );
+
+                      bool canReserve = true;
+                      for (DateTime date in teacherAppDates) {
+                        if (date.year == slotDateTime.toUtc().year &&
+                            date.month == slotDateTime.toUtc().month &&
+                            date.day == slotDateTime.toUtc().day &&
+                            date.hour == slotDateTime.toUtc().hour) {
+                          canReserve = false; // Bu saat dolu
+                          break;
+                        }
+                      }
+
+                      bool hasAvailable = false;
+                      for (DateTime date in availableHours) {
+                        if (date.year == slotDateTime.year &&
+                            date.month == slotDateTime.month &&
+                            date.day == slotDateTime.day &&
+                            date.hour == slotDateTime.hour) {
+                          hasAvailable = true; // Bu saat dolu
+                          break;
+                        }
+                      }
+
+                      // Seçilen saat mi?
+                      final bool isSelected = _selectedTime != null &&
+                          _selectedTime!.year == slotDateTime.year &&
+                          _selectedTime!.month == slotDateTime.month &&
+                          _selectedTime!.day == slotDateTime.day &&
+                          _selectedTime!.hour == slotDateTime.hour;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTime = slotDateTime;
+                            selectedAvailable = hasAvailable;
+                          });
+                        },
+                        child: Container(
+                          width: 80,
+                          // 4 slotun yan yana gelmesi için
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(
+                                0xFF76ABAE) // Seçilen slot rengi
+                                : !hasAvailable
+                                ? Colors.red // Boş slot
+                                : canReserve ? Colors.green : const Color(0xFF393E46), // Dolu slot
+                            borderRadius: BorderRadius.circular(8),
+                            border: isSelected
+                                ? Border.all(
+                                color: Colors.white, width: 2)
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${slot['start']} - ${slot['end']}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  Builder(
+                    builder: (context) {
+                      // Henüz saat seçilmediyse (null) => buton da pasif kalsın
+                      if (_selectedTime == null) {
+                        return ElevatedButton(
+                          onPressed: null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF76ABAE),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(120, 50),
+                          ),
+                          child: const Text("Saat Seçiniz"),
+                        );
+                      }
+
+                      final existingAppointment = appointments
+                          .firstWhere((app) {
+                        final dt = (app['date'] as Timestamp).toDate();
+                        return dt.year == _selectedTime!.year &&
+                            dt.month == _selectedTime!.month &&
+                            dt.day == _selectedTime!.day &&
+                            dt.hour == _selectedTime!.hour;
+                      }, orElse: () => {});
+                      if (existingAppointment.isNotEmpty) {
+                        return Container(
+                          height: 400,
+                          child: AppointmentCard(
+                            appointmentUID: existingAppointment["UID"],
+                            isTeacher: false,
+                          ),
+                        );
+                      } else {
+                        return selectedAvailable ? ElevatedButton(
+                          onPressed: () async {
+                            AwesomeDialog(
+                              context: context,
+                              width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                              dialogType: DialogType.noHeader,
+                              animType: AnimType.bottomSlide,
+                              title: 'Randevuya Ayırdığın Saati Sil',
+                              desc: 'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                              body: StatefulBuilder(
+                                builder: (BuildContext context,
+                                    StateSetter setModalState) {
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(height: 10),
+                                      Text(
+                                        'Randevuya Ayırdığınız Saati Silmek İstiyor Musunuz?',
+                                        style: TextStyle(
+                                            fontSize: 16),
+                                      ), SizedBox(height: 10),
+                                    ],
+                                  );
+                                },
+                              ),
+                              btnOkText: "Evet",
+                              btnCancelText: "Hayır",
+                              btnOkOnPress: () async {
+                                await FirestoreService()
+                                    .removeTeacherAvailableHour(
+                                    widget.uid,
+                                    DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
+                                userInfo = await FirestoreService().getTeacherByUID(widget.uid);
+                                setState((){});
+                              },
+                              btnCancelOnPress: () {},
+                            ).show();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF76ABAE),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(120, 50),
+                          ),
+                          child: const Text(
+                            "Randevuya Ayırdığın Saati İptal Et",
+                            style: TextStyle(color: Colors.red),),
+                        ) :
+                        ElevatedButton(
+                          onPressed: () async {
+                            AwesomeDialog(
+                              context: context,
+                              width: MediaQuery.of(context).size.width < 800 ? MediaQuery.of(context).size.width / 2 : MediaQuery.of(context).size.width / 1.2,
+                              dialogType: DialogType.noHeader,
+                              animType: AnimType.bottomSlide,
+                              title: 'Saati Randevuya Ayır',
+                              desc: 'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
+                              // Body kısmında StatefulBuilder kullanarak dinamik içerik oluşturuyoruz
+                              body: StatefulBuilder(
+                                builder: (BuildContext context,
+                                    StateSetter setModalState) {
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(height: 10),
+                                      Text(
+                                        'Bu Saati Randevuya Ayırmak İstiyor Musunuz?',
+                                        style: TextStyle(fontSize: 16),
+                                      ), SizedBox(height: 10),
+                                    ],
+                                  );
+                                },
+                              ),
+                              // Dialog'un altındaki butonlar
+                              btnOkText: "Evet",
+                              btnCancelText: "Hayır",
+                              btnOkOnPress: () async {
+                                await FirestoreService()
+                                    .updateTeacherAvailableHours(
+                                    widget.uid,
+                                    DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day, _selectedTime!.hour, _selectedTime!.minute));
+                                userInfo = await FirestoreService().getTeacherByUID(widget.uid);
+                                setState((){});
+                              },
+                              btnCancelOnPress: () {},
+                            ).show();
+
+                            debugPrint("Yeni randevu ekleme işlemi");
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF76ABAE),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(120, 50),
+                          ),
+                          child: const Text("Bu Saati Randevuya Ayır"),
+                        );
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget appointmentWidgetForStudents(BuildContext context){
     return Container(
           decoration: BoxDecoration(
             color: Color(0xFF222831),
@@ -1670,7 +1745,7 @@ class _ProfilePageState extends State<ProfilePage> {
               colors:
               [
                 Color(0xFF3C72C2),
-                Color(0xFFA7D8DB),
+                Color(0xFF3C72C2),
               ], // Yeni gradyan renkleri
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -1935,7 +2010,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [_primaryColor.withOpacity(0.6), _darkColor, _primaryColor.withOpacity(0.6)],
+          colors: [_darkColor, _darkColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -2003,6 +2078,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     fontWeight: FontWeight.bold,
                     color: _headerTextColor),
               ).animate().fadeIn(duration: 500.ms),
+              if(isTeam == false)
               TextButton(
                 onPressed: () => _showOurEmployeeDialog(context),
                 child: Text(
@@ -2026,7 +2102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  isTeacher ? 'Eğitimci' : 'Öğrenci',
+                  isTeacher ? 'Eğitimci' : isTeam ? "Eğitim Kurumu" : 'Öğrenci',
                   style: GoogleFonts.poppins(fontSize: 18, color: Colors.white),
                 ),
               ],
@@ -2037,7 +2113,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // **************** Hakkında (About) Bölümü ****************
-
   Widget _buildAboutSection() {
     Widget content = InkWell(
       onTap: () => _showFullDescriptionDialog(context),
@@ -2142,7 +2217,8 @@ class _ProfilePageState extends State<ProfilePage> {
         final uploadTask = storageRef.putData(fileBytes);
         final snapshot = await uploadTask.whenComplete(() => null);
         final downloadUrl = await snapshot.ref.getDownloadURL();
-        await FirestoreService().changeUserPhoto(widget.uid, downloadUrl, isTeacher);
+        if(!isTeam) await FirestoreService().changeUserPhoto(widget.uid, downloadUrl, isTeacher);
+        else await FirestoreService().changeTeamPhoto(widget.uid, downloadUrl);
         setState(() {
           userInfo['profilePictureUrl'] = downloadUrl;
         });
@@ -2195,7 +2271,8 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeUserDesc(widget.uid, descController.text, isTeacher);
+                  if(!isTeam) await FirestoreService().changeUserDesc(widget.uid, descController.text, isTeacher);
+                  else await FirestoreService().changeTeamDesc(widget.uid, descController.text);
                   setState(() {
                     userInfo['desc'] = descController.text;
                   });
@@ -2226,7 +2303,7 @@ class _ProfilePageState extends State<ProfilePage> {
         return Container(
           decoration:BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+              colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Gradyan renkleri
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -2263,7 +2340,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () async {
-                    await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
+                    if(!isTeam) await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
+                    else await FirestoreService().changeTeamName(widget.uid, nameController.text);
                     setState(() {
                       userInfo['name'] = nameController.text;
                     });
@@ -2408,6 +2486,25 @@ class _ProfilePageState extends State<ProfilePage> {
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: _headerTextColor)),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: _backgroundColor,
+                      value: courseCreationSelectedTeacher["UID"],
+                      decoration: _inputDecoration('Bir Danışman Seçin'),
+                      icon: Icon(Icons.arrow_drop_down, color: _darkColor),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          courseCreationSelectedTeacher = teachersNeeded.firstWhere((t) => t["UID"] == newValue);
+                          print(courseCreationSelectedTeacher);
+                        });
+                      },
+                      items: teachersNeeded.map<DropdownMenuItem<String>>((cou) {
+                        return DropdownMenuItem<String>(
+                          value: cou['UID'],
+                          child: Text(cou['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
+                        );
+                      }).toList(),
+                    ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameController,
@@ -2671,12 +2768,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: isLoading
           ? SizedBox.shrink()
           : isMobile
           ? Image.asset(
-        'assets/vitament1.png',
+        'assets/AYBUKOM1.png',
         height: isMobile ? 50 : 70,
         key: ValueKey('expanded-logo'),
       ).animate().fadeIn(duration: 1000.ms)
@@ -2684,14 +2781,14 @@ class _ProfilePageState extends State<ProfilePage> {
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 1000.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -2747,7 +2844,7 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
         HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',
@@ -2761,6 +2858,19 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.poppins(color: _darkColor.withOpacity(0.7)),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.9),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
 
 }
 

@@ -7,6 +7,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ozel_ders/Components/CourseCard.dart';
+import 'package:ozel_ders/Components/MenuTeachersWidget.dart';
 import 'package:ozel_ders/Components/TeacherCard.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:go_router/go_router.dart';
@@ -32,8 +33,10 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   final Color _bodyTextColor = const Color(0xFF393E46);
   final Color _primaryColor = const Color(0xFFA7D8DB);
   List<Map<String, dynamic>> notifications = [];
+  List<Map<String, dynamic>> teachersNCourses = [];
+  List<Map<String, dynamic>> teachers = [];
+  List<Map<String, dynamic>> courses = [];
 
-  bool isTeacher = false;
   Map<String, dynamic> userInfo = {};
   String teamUidIfCurrent = "";
   String teamNameIfCurrent = "";
@@ -69,12 +72,15 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     categories = await FirestoreService().getCategories();
     userInfo = await FirestoreService().getTeamByUID(widget.uid);
     if (userInfo.isNotEmpty) {
-      isTeacher = true;
       notifications = await FirestoreService().getNotificationsForTeam(widget.uid);
+      teachersNCourses = await FirestoreService().getSelectedTeachers(widget.uid);
+      for(var teacher in teachersNCourses)
+      {
+        teachers.add(teacher["teacherData"]);
+        courses.addAll(teacher["courses"]);
+      }
     } else {
-      userInfo = await FirestoreService().getTeamByUID(widget.uid);
-      notifications = await FirestoreService().getNotificationsForTeam(widget.uid);
-      isTeacher = false;
+      context.go("/error-not-found");
     }
     setState(() {
       isLoading = false;
@@ -609,6 +615,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     );
   }
   */
+
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 800;
@@ -643,12 +650,12 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: isLoading
           ? SizedBox.shrink()
           : isMobile
           ? Image.asset(
-        'assets/vitament1.png',
+        'assets/AYBUKOM1.png',
         height: isMobile ? 50 : 70,
         key: ValueKey('expanded-logo'),
       ).animate().fadeIn(duration: 1000.ms)
@@ -656,14 +663,14 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 1000.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -719,7 +726,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       children: [
         const HeaderButton(title: 'Ana Sayfa', route: '/'),
         const HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        const HeaderButton(title: 'Blog', route: '/blogs'),
+        const HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',
@@ -732,8 +739,6 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       ],
     );
   }
-
-
 
   Widget _buildMainContent(bool isMobile) {
     return Container(
@@ -767,7 +772,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
 
   SliverAppBar _buildSliverAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       pinned: true,
       expandedHeight: 120,
       centerTitle: isMobile || _isAppBarExpanded,
@@ -781,14 +786,14 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         duration: const Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: const ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: const ValueKey('collapsed-logo'),
           ),
@@ -830,7 +835,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       children: [
         const HeaderButton(title: 'Ana Sayfa', route: '/'),
         const HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        const HeaderButton(title: 'Blog', route: '/blogs'),
+        const HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',
@@ -906,7 +911,6 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                     //_buildCoursesSection(isExpanded: false),
                     SizedBox(height: 16),
                     _buildTeachersSection(isExpanded: false),
-                    //TeacherCard(),
                   ],
                 ),
               ),
@@ -916,7 +920,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       ),
     );
   }
-  /*
+/*
   Widget _buildCoursesSection({required bool isExpanded}) {
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
@@ -1005,7 +1009,6 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         : content;
   }
 */
-  // **************** Bloglar Bölümü ****************
 /*
   Widget _buildBlogsSection({required bool isExpanded}) {
     Widget content = Column(
@@ -1102,8 +1105,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         : content;
   }
 */
-
-  /*
+/*
   bunun olmasına gerek yok
   void showAppointmentsBottomSheet(BuildContext context,) {
     showModalBottomSheet(
@@ -1651,6 +1653,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
     );
   }
 */
+
   Widget _buildProfileHeader() {
     return Container(
       width: double.infinity,
@@ -1658,7 +1661,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [_primaryColor.withOpacity(0.6), _darkColor, _primaryColor.withOpacity(0.6)],
+          colors: [_darkColor, _darkColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1726,16 +1729,6 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                     fontWeight: FontWeight.bold,
                     color: _headerTextColor),
               ).animate().fadeIn(duration: 500.ms),
-              TextButton(
-                onPressed: () => _showOurEmployeeDialog(context),
-                child: Text(
-                  "Bu Kişi Benim Ekibimden",
-                  style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.white),
-                ),
-              )
             ],
           )),
           const SizedBox(height: 10),
@@ -1743,18 +1736,9 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                NotificationIconButtonWithBadge(
-                  userType: isTeacher ? UserType.teacher : UserType.student,
-                  userUID: widget.uid,
-                ),
-                if (isTeacher)
-                  IconButton(
-                    onPressed: () => {},// showAppointmentsBottomSheet(context), düzelt düzelt düzelt
-                    icon: const Icon(Icons.calendar_month, color: Colors.white),
-                  ),
                 const SizedBox(width: 4),
                 Text(
-                  isTeacher ? 'Eğitim Takımı' : 'Öğrenci',
+                  'Eğitim Takımı',
                   style: GoogleFonts.poppins(fontSize: 18, color: Colors.white),
                 ),
               ],
@@ -1765,7 +1749,6 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
   }
 
   Widget _buildTeachersSection({required bool isExpanded}) {
-    isTeacher=true;
     print("_buildTeachersSection");
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, // 🔹 İçeriği hizala
@@ -1782,70 +1765,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         const SizedBox(height: 16),
         Container( // 🔹 Genişliği zorunlu tutuyoruz
           width: double.infinity,
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: FirestoreService().getSelectedTeachers(widget.uid),
-            builder: (context, snapshot) {
-              print("future");
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                    height: 50,
-                    child: Center(child: CircularProgressIndicator()));
-              }
-              else if (snapshot.hasError) {
-                return Text('Hata: ${snapshot.error}',
-                    style: GoogleFonts.poppins(color: _bodyTextColor));
-              } else {
-                final teachers = snapshot.data ?? [];
-                print("teachers");
-                print(teachers);
-
-                if (teachers.isEmpty) {
-                  return Text('Henüz eğitmen yok.',
-                      style: GoogleFonts.poppins(color: _bodyTextColor));
-                } else {
-                  return CarouselSlider(
-                    options: CarouselOptions(
-                      aspectRatio: 1.3,
-                      enableInfiniteScroll: false,
-                      enlargeCenterPage: true,
-                      scrollDirection: Axis.horizontal,
-                    ),
-                    items: teachers.map((teacher) {
-                      Map<String, dynamic> teacherData = teacher['teacherData'];
-                      print("teacherData");
-
-                      print(teacherData);
-
-                      List<Map<String, dynamic>>courses = teacher['courses'];
-                      print("courses");
-
-                      print(courses);
-                      return Container( // 🔹 Genişliği zorla
-                        width: double.infinity,
-                        child: Stack(
-                          children: [
-                            TeacherCard(teacherData: teacherData, teacherCourses: courses),
-                            if (isSelf)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: IconButton(
-                                  icon: const Icon(Icons.build_circle,
-                                      color: Colors.black, size: 35),
-                                  onPressed: () {
-                                    //context.go("/blog-update/${userInfo["UID"]}/${blog["UID"]}");
-                                  },
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }
-              }
-            },
-          ),
+          child: TopTeachersWidget(onSeeAllPressed: (){}, topTeachers: teachers, courses: courses),
         ),
       ],
     ).animate().fadeIn(duration: 500.ms);
@@ -1937,7 +1857,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
         final uploadTask = storageRef.putData(fileBytes);
         final snapshot = await uploadTask.whenComplete(() => null);
         final downloadUrl = await snapshot.ref.getDownloadURL();
-        await FirestoreService().changeUserPhoto(widget.uid, downloadUrl, isTeacher);
+        await FirestoreService().changeTeamPhoto(widget.uid, downloadUrl);
         setState(() {
           userInfo['profilePictureUrl'] = downloadUrl;
         });
@@ -1990,7 +1910,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeUserDesc(widget.uid, descController.text, isTeacher);
+                  await FirestoreService().changeTeamDesc(widget.uid, descController.text);
                   setState(() {
                     userInfo['desc'] = descController.text;
                   });
@@ -2049,7 +1969,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  await FirestoreService().changeUserName(widget.uid, nameController.text, isTeacher);
+                  await FirestoreService().changeTeamName(widget.uid, nameController.text);
                   setState(() {
                     userInfo['name'] = nameController.text;
                   });
@@ -2098,48 +2018,6 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                 child: Text('Evet, Çıkış Yap', style: GoogleFonts.poppins()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showOurEmployeeDialog(BuildContext context) async {
-    String type = isTeacher ? "Eğitimci" : "Öğrenci";
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _backgroundColor,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Wrap(
-            children: [
-              Text('Bu $type Sizin Ekibinizden Mi?',
-                  style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _headerTextColor)),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  if (isTeacher) {
-                    await FirestoreService().sendRFromTeamToTeacher(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
-                  } else {
-                    await FirestoreService().sendRFromTeamToStudent(widget.uid, teamUidIfCurrent, teamNameIfCurrent);
-                  }
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Katılma isteği gönderildi')),
-                  );
-                },
-                child: Text('Evet, Katılma İsteği Gönder', style: GoogleFonts.poppins()),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 50),
                 ),
@@ -2423,14 +2301,13 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
       },
     );
   }
-
 }
 /*
 return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
         backgroundColor: const Color(0xFF222831),
-        title: Image.asset('assets/vitament1.png',
+        title: Image.asset('assets/AYBUKOM1.png',
             height: MediaQuery
                 .of(context)
                 .size

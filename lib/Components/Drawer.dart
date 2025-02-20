@@ -75,8 +75,8 @@ class DrawerMenu extends StatelessWidget {
             ),
             _buildDrawerItem(
               icon: Ionicons.book,
-              text: 'Blog',
-              onTap: () => context.go('/blogs'),
+              text: 'İçerikler',
+              onTap: () => context.go('/contents'),
               primaryColor: primaryColor,
               darkColor: darkColor,
             ),

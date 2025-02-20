@@ -14,7 +14,7 @@ import 'package:ozel_ders/services/FirebaseController.dart';
 
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ozel_ders/services/JitsiService.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -186,7 +186,7 @@ class _HomePageState extends State<HomePage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: isLoading
           ? SizedBox.shrink()
           : isMobile
@@ -284,10 +284,10 @@ class _HomePageState extends State<HomePage> {
           bottomLeft: Radius.circular(40),
           bottomRight: Radius.circular(40),
         ),
-        gradient: LinearGradient(
-          colors: [_primaryColor, _darkColor],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+        gradient: RadialGradient(
+          colors: [_darkColor.withOpacity(0.8), _darkColor],
+          radius: 1,
+          tileMode: TileMode.repeated
         ),
       ),
       child: Padding(
@@ -314,6 +314,26 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(height: 40),
             _buildSearchCard(),
+            SizedBox(height: 40,),
+            Container(
+              width: 800,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    launchUrl(Uri.parse("https://chatgpt.com/g/g-67988d9bcd0c8191b6f241c1765104d2-do"));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text("ChatBot'a Git", style: GoogleFonts.poppins(fontSize: 18)),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -502,7 +522,7 @@ class HeaderMenu extends StatelessWidget implements PreferredSizeWidget {
         children: [
           HeaderMenuItem(title: 'Ana Sayfa', route: '/'),
           HeaderMenuItem(title: 'Danışmanlıklar', route: '/courses'),
-          HeaderMenuItem(title: 'Blog', route: '/blogs'),
+          HeaderMenuItem(title: 'İçerikler', route: '/contents'),
           if (isLoggedIn)
             HeaderMenuItem(
                 title: 'Randevularım',

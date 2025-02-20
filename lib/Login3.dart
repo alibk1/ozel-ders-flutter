@@ -1,22 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:docx_to_text/docx_to_text.dart'; // .docx dosyasını okumak için
-
+import 'package:google_fonts/google_fonts.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
-import 'package:archive/archive.dart';  // .docx ZIP formatındadır
-import 'dart:convert';
 import 'package:flutter/services.dart';
 
 
 import 'Components/LoadingIndicator.dart';
-
-enum UserType {
-  Veli,
-  Ogretmen,
-  Kurum,
-}
 
 class LoginRegisterScreen extends StatefulWidget {
   const LoginRegisterScreen({Key? key}) : super(key: key);
@@ -32,14 +22,17 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   bool isMobile = false;
 
   /// Kayıt esnasında seçilecek kullanıcı tipi
-  UserType selectedUserType = UserType.Veli;
+  String selectedUserType = "Danışan";
+  List<String> userTypes = ["Danışan", "Danışman", "Kurum"];
 
-  final Gradient _gradientBackground = LinearGradient(
+  final Gradient _gradientBackground = const LinearGradient(
     colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
+  final Color _headerTextColor = const Color(0xFF222831);
+  final Color _bodyTextColor = const Color(0xFF393E46);
   // Yeni eklenen controllerlar
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -47,48 +40,46 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _problemController = TextEditingController();
   final TextEditingController _studentNameController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController(); // Yeni TextField için controller
-
+  final TextEditingController _dateController = TextEditingController();
+  List<Map<String, dynamic>> categories = [];
+  List<Map<String, dynamic>> subCategories = [];
+  String selectedCategoryTemp = "";
+  String? selectedSubCategoryTemp;
+  List<String> selectedCategories = [];
+  List<String> selectedCategoriesNames = [];
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool isKVKKChecked = false;
   String kvkkText = "KVKK metni yükleniyor...";
 
-  Future<void> _loadKVKKText() async {
-    try {
-      // assets/kvkk.docx dosyasını yükle
-      ByteData data = await rootBundle.load("assets/kvkk.docx");
-      print(data);
-
-      List<int> bytes = data.buffer.asUint8List();
-      print(bytes);
-
-
-      // .docx dosyasını ZIP formatında açıyoruz
-      final archive = ZipDecoder().decodeBytes(bytes);
-      print(archive);
-
-      // Dosyaların adlarını ve içeriklerini kontrol et
-      for (final file in archive.files) {
-        print('Dosya Adı: ${file.name}');  // Debug: dosya adlarını kontrol et
-
-        // 'word/document.xml' dosyasını bul ve içeriğini çöz
-        if (file.name == 'word/document.xml') {
-          String kvkkXmlText = utf8.decode(file.content);
-
-          // XML etiketlerini temizle
-          kvkkText = kvkkXmlText.replaceAll(RegExp(r'<.*?>'), '').trim();
-          break;
-        }
-      }
-    } catch (e) {
-      kvkkText = "KVKK metni yüklenirken hata oluştu!";
-      print('Hata: $e');  // Debug: Hata mesajı
-    }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    loadData();
   }
-
-
-
+  Future<void> loadData() async {
+    categories = await FirestoreService().getCategories();
+    print("yüklendi");
+    setState(() {});
+  }
+  Future<void> _loadKVKKText() async {
+    kvkkText = "VERİ SAHİBİNİN AÇIK RIZA BEYAN FORMU\n\nKişisel verilerimin, özel nitelikli kişisel verilerimin, sağlık verilerimin işlenmesine,\n"
+        "tarafımca sözlü/yazılı ve/veya elektronik ortamda verilen kimliğimi belirleyen veya belirlemeye yarayanlar da dahil olmak üzere her türlü kişisel\n"
+        "verimin, 6698 sayılı “Kişisel Verilerin Korunması Kanunu” ve “Kişisel Sağlık Verilerinin İşlenmesi ve Mahremiyetinin Sağlanması Hakkında Yönetmelik”\n"
+        "gereğince, Ankara Yıldırım Beyazıt Üniversitesi tarafından;   Kişinin kimliğine dair bilgilerin bulunduğu verilerdir; ad-soyad, T.C.Kimlik numarası,\n"
+        "uyruk bilgisi, anne adı-baba adı, doğum yeri, doğum tarihi, cinsiyet gibi bilgileri içeren ehliyet, nüfus cüzdanı ve pasaport gibi belgeler ile vergi numarası,\n"
+        "SGK numarası, imza bilgisi, taşıt plakası v.b. bilgiler Telefon numarası, adres, e-mail adresi, faks numarası, IP adresi gibi bilgiler Fiziksel mekana girişte,\n"
+        "fiziksel mekanın içerisinde kalış sırasında alınan kayıtlar ve belgelere ilişkin kişisel veriler; kamera kayıtları, parmak izi kayıtları ve güvenlik noktasında\n"
+        "alınan kayıtlar Fotoğraf, kamera, video konferans ve toplantı kayıtları (Fiziksel Mekan Güvenlik Bilgisi kapsamında giren kayıtlar hariç), kişisel veri içeren belgelerin\n"
+        "kopyası niteliğindeki belgelerde yer alan veriler Kişisel Verilerin Korunması Kanunu’nun 6. maddesinde belirtilen veriler (örn. kan grubu da dahil sağlık verileri,\n"
+        " biyometrik veriler vb.) (Yabancı Öğrenciler İçin) ırkı, etnik kökeni, (Kimlikte Bulunması Halinde) dini, dernek, vakıf ya da sendika üyeliği, (Engel Durumu Olanlar İçin)\n"
+        "sağlığı, ceza mahkûmiyeti ve güvenlik tedbirleriyle ilgili verileri ile biyometrik ve genetik verileri Ankara Yıldırım Beyazıt Üniversitesi’ne yöneltilmiş olan\n"
+        "her türlü talep veya şikayetin alınması ve değerlendirilmesine ilişkin kişisel verilerimin  Yasadaki esaslar çerçevesinde toplanmasına, kaydedilmesine, işlenmesine,\n"
+        "saklanmasına ve mevzuatta sayılı görevleri yerine getirebilmesi için yurt içi ve yurt dışı menşeili kurumlarla paylaşılmasına peşinen izin verdiğimi gayri kabili rücu\n"
+        "olarak kabul, beyan ve taahhüt ederim.\n\n"
+        "Ankara Yıldırım Beyazıt Üniversitesi tarafından Kişisel Verilerin Korunması ve İşlenmesi Hakkında web sitesinde bulunan Bilgilendirme metnini ve haklarımı okudum ve kabul ediyorum. ";
+  }
   Widget kvkkCheckbox(BuildContext context, VoidCallback onChanged) {
     return Row(
       children: [
@@ -105,20 +96,20 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                title: Text("KVKK Aydınlatma Metni"),
+                title: const Text("KVKK Aydınlatma Metni"),
                 content: SingleChildScrollView(
                   child: Text(kvkkText),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text("Tamam"),
+                    child: const Text("Tamam"),
                   ),
                 ],
               ),
             );
           },
-          child: Text(
+          child: const Text(
             "KVKK Aydınlatma Metni'ni kabul ediyorum",
             style: TextStyle(
               color: Colors.blue,
@@ -217,17 +208,17 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   BorderRadiusGeometry radius() {
     if (isMobile) {
       if (isLogin)
-        return BorderRadius.only(
+        return const BorderRadius.only(
             bottomLeft: Radius.circular(50), bottomRight: Radius.circular(50));
       else
-        return BorderRadius.only(
+        return const BorderRadius.only(
             topRight: Radius.circular(50), topLeft: Radius.circular(50));
     } else {
       if (isLogin)
-        return BorderRadius.only(
+        return const BorderRadius.only(
             topRight: Radius.circular(80), bottomRight: Radius.circular(80));
       else
-        return BorderRadius.only(
+        return const BorderRadius.only(
             bottomLeft: Radius.circular(80), topLeft: Radius.circular(80));
     }
   }
@@ -239,11 +230,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         gradient: _gradientBackground,
         borderRadius: radius(),
       ),
-      child: Center(
+      child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "AYBÜKOM'a Hoşgeldiniz!",
               style: TextStyle(
                 color: Colors.white,
@@ -251,8 +242,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               "Danışmanlık İçin Doğru Adres",
               style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
@@ -262,7 +253,6 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     );
   }
 
-  /// Login Form'unu döndüren widget metodu
   Widget _buildLoginForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,60 +264,60 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         const SizedBox(height: 24),
         // Username
         TextFormField(
-          style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
+          style: const TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _emailController,
           decoration: InputDecoration(
             labelText: 'E-posta',
-            prefixIcon: Icon(Icons.person, size: 28),
+            prefixIcon: const Icon(Icons.person, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 2.0,
                   color: Colors.black), // Kenarlık kalınlığı ve rengi
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 2.0,
                   color: Colors.grey), // Varsayılan kenarlık kalınlığı
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 3.0,
                   color: Colors.blue), // Odaklanıldığında kenarlık kalınlığı
             ),
-            contentPadding: EdgeInsets.symmetric(
+            contentPadding: const EdgeInsets.symmetric(
                 vertical: 20, horizontal: 16), // Daha geniş iç boşluk
           ),
         ),
         const SizedBox(height: 16),
         // Password
         TextFormField(
-          style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
+          style: const TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _passwordController,
           decoration: InputDecoration(
             labelText: 'Şifre',
-            prefixIcon: Icon(Icons.lock, size: 28),
+            prefixIcon: const Icon(Icons.lock, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 2.0,
                   color: Colors.black), // Kenarlık kalınlığı ve rengi
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 2.0,
                   color: Colors.grey), // Varsayılan kenarlık kalınlığı
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 3.0,
                   color: Colors.blue), // Odaklanıldığında kenarlık kalınlığı
             ),
-            contentPadding: EdgeInsets.symmetric(
+            contentPadding: const EdgeInsets.symmetric(
                 vertical: 20, horizontal: 16), // Daha geniş iç boşluk
           ),
           obscureText: true,
@@ -399,7 +389,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   }
 
   /// Register Form'unu döndüren widget metodu
-  Widget _buildRegisterForm(UserType userType) {
+  Widget _buildRegisterForm(String userType) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -419,16 +409,13 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         const SizedBox(height: 20),
         //_buildUserTypeDropdown(),
         _buildUserTypeSelection(),
-
         const SizedBox(height: 24),
-        // Ortak Alanlar
-
         TextFormField(
-          style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
+          style: const TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _nameController,
           decoration: InputDecoration(
             labelText: 'Adınız',
-            prefixIcon: Icon(Icons.person, size: 28),
+            prefixIcon: const Icon(Icons.person, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
               borderSide: const BorderSide(
@@ -453,11 +440,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         ),
         const SizedBox(height: 16),
         TextFormField(
-          style: TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
+          style: const TextStyle(fontSize: 18), // Yazı boyutunu büyüttük
           controller: _emailController,
           decoration: InputDecoration(
             labelText: 'E-posta',
-            prefixIcon: Icon(Icons.email, size: 28),
+            prefixIcon: const Icon(Icons.email, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
               borderSide: const BorderSide(
@@ -489,35 +476,35 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
             prefixIcon: const Icon(Icons.lock, size: 28),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12), // Köşeleri yuvarladık
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 2.0,
                   color: Colors.black), // Kenarlık kalınlığı ve rengi
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 2.0,
                   color: Colors.grey), // Varsayılan kenarlık kalınlığı
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   width: 3.0,
                   color: Colors.blue), // Odaklanıldığında kenarlık kalınlığı
             ),
-            contentPadding: EdgeInsets.symmetric(
+            contentPadding: const EdgeInsets.symmetric(
                 vertical: 20, horizontal: 16), // Daha geniş iç boşluk
           ),
           obscureText: true,
         ),
         const SizedBox(height: 16),
-
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
           child: _buildExtraFieldsForUserType(userType),
         ),
         const SizedBox(height: 16),
         kvkkCheckbox(context, () => setState(() {})),
+        const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -577,12 +564,12 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
 
 // Kullanıcı Tipi Dropdown
   Widget _buildUserTypeDropdown() {
-    return DropdownButton<UserType>(
+    return DropdownButton<String>(
       value: selectedUserType,
-      items: UserType.values.map((type) {
+      items: userTypes.map((type) {
         return DropdownMenuItem(
           value: type,
-          child: Text(type.toString().split('.').last),
+          child: Text(type),
         );
       }).toList(),
       onChanged: (value) {
@@ -598,7 +585,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   Widget _buildUserTypeSelection() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: UserType.values.map((type) {
+      children: userTypes.map((type) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Container(
@@ -608,7 +595,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                   ? null // Seçili olan için border yok
                   : Border.all(color: Colors.black, width: 1), // Seçili olmayanlar için siyah border
               gradient: selectedUserType == type
-                  ? LinearGradient(
+                  ? const LinearGradient(
                 colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Seçiliyse gradient ekle
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -623,7 +610,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
               },
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.transparent, // Arkaplanı transparan bırak
-                side: BorderSide(color: Colors.transparent), // Border'ı transparan yap
+                side: const BorderSide(color: Colors.transparent), // Border'ı transparan yap
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20), // Köşeleri yuvarlak
                 ),
@@ -631,7 +618,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
               ),
               child: Text(
                 type.toString().split('.').last,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.black, // Yazı rengi siyah
                   fontWeight: FontWeight.normal, // Font kalın (bold) değil
                 ),
@@ -643,154 +630,152 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     );
   }
 
+  Widget buildSelectedCategoriesChips() {
+    return Wrap(
+      spacing: 8.0, // Yatay boşluk
+      runSpacing: 4.0, // Dikey boşluk
+      children: List.generate(selectedCategoriesNames.length, (index) {
+        return Chip(
+          label: Text(selectedCategoriesNames[index]),
+          deleteIcon: const Icon(Icons.close),
+          onDeleted: () {
+            setState(() {
+              // İki listede de aynı index'teki değeri kaldırıyoruz
+              selectedCategoriesNames.removeAt(index);
+              selectedCategories.removeAt(index);
+              print(selectedCategoriesNames);
+              print(selectedCategories);
+            });
+          },
+        );
+      }),
+    );
+  }
 
 // ayrı ayrı kişilikler falan ayru field'lar
-  Widget _buildExtraFieldsForUserType(UserType userType) {
+  Widget _buildExtraFieldsForUserType(String userType) {
     switch (userType) {
-      case UserType.Veli: // veli için
+      case "Danışan":
         return Column(
-          key: ValueKey("Veli"),
+          key: const ValueKey("Danışan"),
           children: [
             TextFormField(
-              style: TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 18),
               controller: _referenceController,
               decoration: InputDecoration(
                 labelText: 'Referans Kodu',
-                prefixIcon: Icon(Icons.code, size: 28),
+                prefixIcon: const Icon(Icons.code, size: 28),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(width: 2.0, color: Colors.black),
+                  borderSide: const BorderSide(width: 2.0, color: Colors.black),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _studentNameController,
-              style: TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 18),
               decoration: InputDecoration(
                 labelText: 'Çocuğunuzun Adı',
-                prefixIcon: Icon(Icons.child_care, size: 28),
+                prefixIcon: const Icon(Icons.child_care, size: 28),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(width: 2.0, color: Colors.black),
+                  borderSide: const BorderSide(width: 2.0, color: Colors.black),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              style: TextStyle(fontSize: 18),
-              controller: _problemController,
+            const Text('İlgilendiğiniz Kategorileri Seçiniz:', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            buildSelectedCategoriesChips(),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              dropdownColor: Colors.white,
+              value: selectedCategoryTemp.isEmpty ? null : selectedCategoryTemp,
+              hint: Text('Kategori Seç', style: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7))),
               decoration: InputDecoration(
-                labelText: 'Çocuğunuzun Durumunu Özetleyiniz',
-                prefixIcon: Icon(Icons.notes, size: 28),
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(width: 2.0, color: Colors.black),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedCategoryTemp = newValue ?? "";
+                  // Kategori değiştiği için alt kategoriler listesi yenileniyor
+                  subCategories = categories.firstWhere((c) => c["UID"] == selectedCategoryTemp)["subCategories"];
+                  // İkinci dropdown'ın seçili değerini sıfırlıyoruz
+                  selectedSubCategoryTemp = null;
+                });
+              },
+              items: categories.map<DropdownMenuItem<String>>((cat) {
+                return DropdownMenuItem<String>(
+                  value: cat['UID'],
+                  child: Text(cat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
+                );
+              }).toList(),
             ),
-            const SizedBox(height: 16),
-            // GestureDetector(
-            //   onTap: () async {
-            //     DateTime? pickedDate = await showDatePicker(
-            //       context: context,
-            //       initialDate: DateTime.now(),
-            //       firstDate: DateTime(1900),
-            //       lastDate: DateTime.now(),
-            //     );
-            //     if (pickedDate != null) {
-            //       setState(() {
-            //         _dateController.text =
-            //             DateFormat('yyyy-MM-dd').format(pickedDate);
-            //       });
-            //     }
-            //   },
-            //   child: AbsorbPointer(
-            //     child: TextFormField(
-            //       controller: _dateController,
-            //       style: TextStyle(fontSize: 18),
-            //       decoration: InputDecoration(
-            //         labelText: 'Doğum Tarihiniz',
-            //         prefixIcon: Icon(Icons.calendar_today, size: 28),
-            //         border: OutlineInputBorder(
-            //           borderRadius: BorderRadius.circular(12),
-            //           borderSide: BorderSide(width: 2.0, color: Colors.black),
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
+            const SizedBox(height: 8),
+            if(selectedCategoryTemp != "") DropdownButtonFormField<String>(
+              dropdownColor: Colors.white,
+              value: selectedSubCategoryTemp,
+              hint: Text('Alt Kategori Seç', style: GoogleFonts.poppins(color: _bodyTextColor.withOpacity(0.7))),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedSubCategoryTemp = newValue;
+                if (newValue != null) {
+                  final String combined = "$selectedCategoryTemp-$newValue";
+                  if(!selectedCategories.contains(combined)) {
+                    selectedCategories.add(combined);
+                  }
+                  String subCatName = subCategories.firstWhere((c) => c["UID"] == newValue)["name"];
+                  if(!selectedCategoriesNames.contains(subCatName)) {
+                    selectedCategoriesNames.add(subCatName);
+                  }
+                  print(selectedCategoriesNames);
+                  print(selectedCategories);
+                }
+                });
+              },
+              items: subCategories.map<DropdownMenuItem<String>>((cat) {
+                return DropdownMenuItem<String>(
+                  value: cat['UID'],
+                  child: Text(cat['name'], style: GoogleFonts.poppins(color: _bodyTextColor)),
+                );
+              }).toList(),
+            ),
           ],
         );
-      case UserType.Ogretmen:
+      case "Danışman":
         return Column(
-          key: ValueKey("Ogretmen"),
+          key: const ValueKey("Danışman"),
           children: [
             TextFormField(
-              style: TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 18),
               controller: _referenceController,
               decoration: InputDecoration(
                 labelText: 'Referans Kodu',
-                prefixIcon: Icon(Icons.code, size: 28),
+                prefixIcon: const Icon(Icons.code, size: 28),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(width: 2.0, color: Colors.black),
+                  borderSide: const BorderSide(width: 2.0, color: Colors.black),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-
-            // GestureDetector(
-            //   onTap: () async {
-            //     DateTime? pickedDate = await showDatePicker(
-            //       context: context,
-            //       initialDate: DateTime.now(),
-            //       firstDate: DateTime(1900),
-            //       lastDate: DateTime.now(),
-            //     );
-            //     if (pickedDate != null) {
-            //       setState(() {
-            //         _dateController.text =
-            //             DateFormat('yyyy-MM-dd').format(pickedDate);
-            //       });
-            //     }
-            //   },
-            //   child: AbsorbPointer(
-            //     child: TextFormField(
-            //       controller: _dateController,
-            //       style: TextStyle(fontSize: 18),
-            //       decoration: InputDecoration(
-            //         labelText: 'Doğum Tarihiniz',
-            //         prefixIcon: Icon(Icons.calendar_today, size: 28),
-            //         border: OutlineInputBorder(
-            //           borderRadius: BorderRadius.circular(12),
-            //           borderSide: BorderSide(width: 2.0, color: Colors.black),
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         );
       default:
         return Container();
     }
-  }
-
-
-  /// Sosyal giriş butonları (örnek)
-  Widget _buildSocialButton(IconData icon, String label) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        // Sosyal giriş fonksiyonu
-      },
-      icon: Icon(icon),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.blue,
-      ),
-    );
   }
 
   Future<void> _login() async {
@@ -799,15 +784,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       User? user = await AuthService()
           .signInWithEmail(_emailController.text, _passwordController.text);
 
-      var teamCheck = await FirestoreService().getTeamByUID(user!.uid);
-      if (teamCheck.isNotEmpty) {
-        String uid = teamCheck["UID"];
-        context.go("/team/$uid");
-      }
-      else{
-        context.go("/profile/" + user!.uid);
-
-      }
+      context.go("/profile/" + user!.uid);
 
     } catch (e) {
       // Herhangi bir hata oluştuğunda burada yakalanır
@@ -827,7 +804,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     try {
       User? user = await AuthService()
           .registerWithEmail(_emailController.text, _passwordController.text);
-      if (UserType == "Öğretmen") {
+      if (selectedUserType == "Danışman") {
         await FirestoreService().createTeacherDocument(
             user!.uid,
             _emailController.text,
@@ -838,7 +815,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
             "",
             _referenceController.text);
       }
-      if (UserType == "Kurum") {
+      if (selectedUserType == "Kurum") {
         await FirestoreService().createTeamDocument(user!.uid,
             _emailController.text, _nameController.text, "Ankara", "", 10);
       } else {
@@ -851,17 +828,10 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
             21,
             "Ankara",
             "",
-            _referenceController.text);
+            _referenceController.text, selectedCategories);
       }
-      var teamCheck = await FirestoreService().getTeamByUID(user!.uid);
-      if (teamCheck.isNotEmpty) {
-        String uid = teamCheck["UID"];
-        context.go("/team/$uid");
-      }
-      else{
-        context.go("/profile/" + user!.uid);
+      context.go("/profile/" + user.uid);
 
-      }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Kayıt hatası')),
@@ -880,9 +850,9 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
         return Center(
           child: Container(
             width: 525, // Kutunun genişliğini 1.5 katına çıkardık
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -897,13 +867,13 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                 Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () {
                       Navigator.pop(context); // Kapama işlemi
                     },
                   ),
                 ),
-                Text(
+                const Text(
                   "Kayıt Olurken Kullandığınız E-posta'yı Giriniz:",
                   style: TextStyle(
                     fontSize: 18,
@@ -911,11 +881,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(
+                const SizedBox(
                     height: 20), // E-posta field ile yazı arasındaki boşluk
                 TextField(
                   controller: emailController,
-                  style: TextStyle(color: Colors.black),
+                  style: const TextStyle(color: Colors.black),
                   decoration: InputDecoration(
                     hintText: 'E-posta',
                     hintStyle: TextStyle(color: Colors.grey[700]),
@@ -927,7 +897,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
                     LoadingIndicator(context).showLoading();
@@ -936,11 +906,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                     Navigator.pop(context);
                     Navigator.pop(context);
                   },
-                  child: Text('Gönder'),
+                  child: const Text('Gönder'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: Color(0xFF3C72C2),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    foregroundColor: const Color(0xFF3C72C2),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

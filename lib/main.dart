@@ -11,6 +11,7 @@ import 'package:ozel_ders/ContentsPage.dart';
 import 'package:ozel_ders/CoursePage.dart';
 import 'package:ozel_ders/CoursesPage.dart';
 import 'package:ozel_ders/HomePage.dart';
+import 'package:ozel_ders/NotFoundPage.dart';
 import 'package:ozel_ders/YoutubeVideosPage.dart';
 import 'package:ozel_ders/TeamProfilePage.dart';
 import 'Components/YoutubeCard.dart';
@@ -127,7 +128,10 @@ class MyApp extends StatelessWidget {
         path: '/login',
         builder: (context, state) => LoginRegisterScreen(),
       ),
-
+      GoRoute(
+        path: '/error-not-found',
+        builder: (context, state) => NotFoundPage(),
+      ),
       /*GoRoute(
         path: '/newuser/:uid',
         builder: (context, state) {

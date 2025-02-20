@@ -37,7 +37,6 @@ class _CoursesPageState extends State<CoursesPage> {
   List<Map<String, dynamic>> appointments = [];
   bool isLoading = true;
   bool isLoggedIn = false;
-  bool canGetEveryCourse = true;
 
   String? selectedCategory;
   String? selectedSubCategory;
@@ -72,7 +71,6 @@ class _CoursesPageState extends State<CoursesPage> {
       if (!isTeacher) {
         var userInfo = await _firestore.getStudentByUID(uid);
         bool hasPersonal = userInfo["hasPersonalCheck"];
-        canGetEveryCourse = hasPersonal;
       }
     }
     filterCourses();
@@ -81,10 +79,6 @@ class _CoursesPageState extends State<CoursesPage> {
   void filterCourses() {
     setState(() {
       courses = coursesHolder;
-      if (!canGetEveryCourse) {
-        selectedCategory = "ORo10XNqzYkLcQUl420k";
-        selectedSubCategory = "i4rsttkgwvY5NhP1uJTh";
-      }
       List<Map<String, dynamic>> filteredCourses = courses.where((course) {
         return (selectedCategory == 'Seçilmedi' && course["status"] == 1 ||
             course['category'] == selectedCategory) &&
@@ -156,7 +150,7 @@ class _CoursesPageState extends State<CoursesPage> {
                   color: _darkColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   gradient: LinearGradient(
-                    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+                    colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Gradyan renkleri
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -327,7 +321,7 @@ class _CoursesPageState extends State<CoursesPage> {
                   color: _darkColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   gradient: LinearGradient(
-                    colors: [Color(0xFF3C72C2), Color(0xFFA7D8DB)], // Gradyan renkleri
+                    colors: [Color(0xFF3C72C2), Color(0xFF3C72C2)], // Gradyan renkleri
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -510,19 +504,19 @@ class _CoursesPageState extends State<CoursesPage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -575,7 +569,7 @@ class _CoursesPageState extends State<CoursesPage> {
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
         HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',

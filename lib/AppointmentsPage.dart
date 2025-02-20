@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:go_router/go_router.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ozel_ders/Components/AppointmentCard.dart';
 import 'package:ozel_ders/Components/Footer.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
@@ -124,7 +123,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
         crossAxisCount: MediaQuery.of(context).size.width >= 800 ? 4 : 2,
         crossAxisSpacing: 30,
         mainAxisSpacing: 30,
-        childAspectRatio: MediaQuery.of(context).size.width >= 800 ? 1.5 : 0.75,
+        childAspectRatio: MediaQuery.of(context).size.width >= 800 ? 0.75 : 0.75,
       ),
       itemCount: userAppointments.length,
       itemBuilder: (context, index) {
@@ -143,19 +142,19 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -208,7 +207,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     return [
       HeaderButton(title: 'Ana Sayfa', route: '/'),
       HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-      HeaderButton(title: 'Blog', route: '/blogs'),
+      HeaderButton(title: 'İçerikler', route: '/contents'),
       if (isLoggedIn)
         HeaderButton(title: 'Randevularım', route: '/appointments/' + AuthService().userUID()),
       HeaderButton(
@@ -245,7 +244,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [_backgroundColor, _primaryColor.withOpacity(0.1)],
+                colors: [ _backgroundColor, _backgroundColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

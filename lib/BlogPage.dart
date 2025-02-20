@@ -259,19 +259,19 @@ class _BlogPageState extends State<BlogPage> {
 
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: AnimatedSwitcher(
         duration: Duration(milliseconds: 300),
         child: _isAppBarExpanded
             ? Image.asset(
-          'assets/vitament1.png',
+          'assets/AYBUKOM1.png',
           height: isMobile ? 50 : 70,
           key: ValueKey('expanded-logo'),
         ).animate().fadeIn(duration: 500.ms)
             : Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 50,
             key: ValueKey('collapsed-logo'),
           ),
@@ -318,7 +318,7 @@ class _BlogPageState extends State<BlogPage> {
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
         HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(title: 'İçerikler', route: '/contents'),
         if (isLoggedIn)
           HeaderButton(
             title: 'Randevularım',

@@ -82,9 +82,9 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
   }
   SliverAppBar _buildAppBar(bool isMobile) {
     return SliverAppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFFEEEEEE),
       title: isMobile ? Image.asset(
-        'assets/vitament1.png',
+        'assets/AYBUKOM1.png',
         height: isMobile ? 50 : 80,
         key: ValueKey('expanded-logo'),
       ).animate()
@@ -95,7 +95,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
         child:  Align(
           alignment: Alignment.centerLeft,
           child: Image.asset(
-            'assets/vitament1.png',
+            'assets/AYBUKOM1.png',
             height: isMobile ? 40 : 70,
             key: ValueKey('collapsed-logo'),
           ),
@@ -186,7 +186,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       children: [
         HeaderButton(title: 'Ana Sayfa', route: '/'),
         HeaderButton(title: 'Danışmanlıklar', route: '/courses'),
-        HeaderButton(title: 'Blog', route: '/blogs'),
+        HeaderButton(title: 'İçerikler', route: '/contents'),
         HeaderButton(
           title: 'Giriş Yap / Kaydol',
           route: '/login',
@@ -561,7 +561,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> with SingleTickerProv
       if(_selectedRole == "Kurum") {
         await FirestoreService().createTeamDocument(user!.uid, _emailController.text, _nameController.text, "Ankara", "", 10);
       } else {
-        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, _studentNameController.text, _problemController.text, 21, "Ankara", "", _referenceController.text);
+        await FirestoreService().createStudentDocument(user!.uid, _emailController.text, _nameController.text, _studentNameController.text, _problemController.text, 21, "Ankara", "", _referenceController.text, []);
       }
       context.go("/profile/" + user.uid);
     } on FirebaseAuthException catch (e) {

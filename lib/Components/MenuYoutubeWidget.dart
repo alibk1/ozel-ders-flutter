@@ -83,17 +83,17 @@ class _TopYoutubeVideosWidgetState extends State<TopYoutubeVideosWidget> {
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, // 4 sütun olarak daha uyumlu
+          crossAxisCount: 5, // 4 sütun olarak daha uyumlu
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.75, // Esnek ve uyumlu oran
+          childAspectRatio: 1, // Esnek ve uyumlu oran
         ),
         itemCount: youtubeVideos.length,
         itemBuilder: (context, index) {
           return AnimationConfiguration.staggeredGrid(
             position: index,
             duration: Duration(milliseconds: 500),
-            columnCount: 4,
+            columnCount: 5,
             child: ScaleAnimation(
               child: FadeInAnimation(
                 child: YoutubeCard(videoData: youtubeVideos[index]),
