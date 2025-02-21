@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:html';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ozel_ders/services/FirebaseController.dart';
 import 'package:zefyrka/zefyrka.dart';
 
@@ -343,20 +347,28 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
 
   // 3. Kategoriler Sekmesi
   Widget _buildCategoriesTab() {
-    return ListView.builder(
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        var category = categories[index];
-        return ListTile(
-          title: Text(category['name']),
-          subtitle: Text('${category['subCategories'].length} Alt Kategoriler'),
-          onTap: () {
-            _showCategoryEditor(context, category);
-          },
-        );
-      },
+    return Scaffold(
+      body: ListView.builder(
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          var category = categories[index];
+          return ListTile(
+            title: Text(category['name']),
+            subtitle: Text('${category['subCategories'].length} Alt Kategoriler'),
+            onTap: () {
+              _showCategoryEditor(context, category);
+            },
+            trailing: IconButton(onPressed: (){
+
+            }, icon: Icon(Icons.delete)),
+          );
+        },
+      ),
+      floatingActionButton: BuildCategoryButton()
     );
   }
+  void _deleteCategory(){}
+
 
   void _showCategoryEditor(BuildContext context, Map<String, dynamic> category) {
     TextEditingController categoryNameController = TextEditingController(text: category['name']);
@@ -629,3 +641,155 @@ class _AdminPanel2State extends State<AdminPanel2> with SingleTickerProviderStat
     return null;
   }
 }
+
+class BuildCategoryButton extends StatelessWidget {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _subCategoryController = TextEditingController();
+  final List<String> _subCategories = [];
+  File? _image;
+  bool _isLoading = false;
+
+  Future<void> _pickImage(BuildContext context) async {
+    FileUploadInputElement uploadInput = FileUploadInputElement();
+    uploadInput.accept = 'image/*';
+    uploadInput.click();
+
+    uploadInput.onChange.listen((event) {
+      final files = uploadInput.files;
+      if (files!.isNotEmpty) {
+        final reader = FileReader();
+        reader.readAsDataUrl(files[0]);
+        reader.onLoadEnd.listen((event) {
+          _image = files[0];
+          (context as Element).markNeedsBuild();
+        });
+      }
+    });
+  }
+
+  Future<String?> _uploadImage(File image) async {
+    try {
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference storageRef = FirebaseStorage.instance.ref().child('category_images/$fileName');
+      await storageRef.putBlob(image);
+      return await storageRef.getDownloadURL();
+    } catch (e) {
+      print("Image upload error: $e");
+      return null;
+    }
+  }
+
+  Future<void> _createCategory(BuildContext context) async {
+    if (_nameController.text.isEmpty || _image == null) return;
+    _isLoading = true;
+    (context as Element).markNeedsBuild();
+
+    String? imageUrl = await _uploadImage(_image!);
+    if (imageUrl == null) {
+      _isLoading = false;
+      (context as Element).markNeedsBuild();
+      return;
+    }
+
+    DocumentReference categoryRef = await FirebaseFirestore.instance.collection('categories1').add({
+      'name': _nameController.text,
+      'imageUrl': imageUrl,
+    });
+
+    for (String subCategoryName in _subCategories) {
+      await categoryRef.collection('subCategories').add({'name': subCategoryName});
+    }
+
+    _isLoading = false;
+    (context as Element).markNeedsBuild();
+    Navigator.of(context).pop();
+  }
+
+  void _showAddCategoryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("Kategori Ekle"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(labelText: "Kategori Adı"),
+                  ),
+                  SizedBox(height: 10),
+                  _image != null
+                      ? Text("Fotoğraf seçildi")
+                      : ElevatedButton(
+                    onPressed: () => _pickImage(context),
+                    child: Text("Fotoğraf Seç"),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _subCategoryController,
+                          decoration: InputDecoration(labelText: "Alt Kategori Ekle"),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.add_circle, color: Colors.blue),
+                        onPressed: () {
+                          if (_subCategoryController.text.isNotEmpty) {
+                            setState(() {
+                              _subCategories.add(_subCategoryController.text);
+                              _subCategoryController.clear();
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  Wrap(
+                    spacing: 5,
+                    children: _subCategories
+                        .map(
+                          (sub) => Chip(
+                        label: Text(sub),
+                        onDeleted: () {
+                          setState(() {
+                            _subCategories.remove(sub);
+                          });
+                        },
+                      ),
+                    )
+                        .toList(),
+                  )
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text("İptal"),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () => _createCategory(context),
+                  child: _isLoading ? CircularProgressIndicator() : Text("Ekle"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () => _showAddCategoryDialog(context),
+      child: Icon(Icons.add),
+    );
+  }
+}
+
+
+
